@@ -1,0 +1,553 @@
+# CLAUDE.md — Project Context for Claude Code
+
+This file gives Claude Code the full context for the Cooling Tower Sales and Service Field Operations Platform. Read this before making changes.
+
+---
+
+## Project Overview
+
+**Name:** Cooling Tower Sales and Service — Field Operations Platform **Type:** Internal field operations platform for a 45-year-old trade services business **Status:** Phase 0 (framework) complete. Phase 1a (database + auth) next. **Stack:** Vercel (hosting) · Next.js 14 (App Router) · Node.js · TypeScript · Tailwind CSS · Neon Postgres · Clerk (auth) · Vercel Blob Storage (files) **UX mandate:** Mobile-first, fully responsive, PWA-enabled — technicians use this on-site from their phones.
+
+### What This Platform Does
+
+A mobile-first field operations platform that closes the data capture gap between field work and the back office. It does not replace the business's existing Simpro platform — it fills the gaps Simpro is not solving.
+
+**The platform's job:** capture field information (time, variations, status) at the point of work so that job costing is accurate and variation revenue is captured before invoicing.
+
+### Why It Exists
+
+The business currently runs on manual processes that no longer match its scale:
+
+- Technicians guess hours at end of day — job costing is unreliable
+- Variation work (extra work found on site) is communicated verbally — often never invoiced
+- Compliance documents are built from scratch every job — no templates
+- Scheduling lives in Excel — disconnected from job costing
+- Simpro is paid for but bypassed because it was never properly configured
+
+Estimated revenue leakage: **$100K–$300K annually** from uninvoiced variations alone.
+
+### The Business
+
+- Cooling Tower Sales and Service (Queensland, Australia, founded 1981)
+- 20 staff, 7 field technicians
+- Clients include Rio Tinto, Coca-Cola, Queensland Health, Westfield, NextDC, Telstra, CS Energy, Stanwell, Orica, Incitec Pivot
+- Full lifecycle service: custom engineering, fabrication, installation, service, refurbishment, emergency breakdown response
+
+---
+
+## Users and Roles
+
+Six distinct user types. Role-based access control is enforced at three layers: middleware, server components, and UI.
+
+|Role|Count|Device|Phase|What They Do|
+|---|---|---|---|---|
+|`technician`|7|Mobile only|1b|Clock in/out, log variations on site|
+|`director`|2|Mobile + desktop|1a|Approve variations, view job costing, oversee operations|
+|`service_manager`|1|Desktop primary|1a|Manage crew, schedule, breakdowns — single point of failure|
+|`admin`|2|Desktop|2|Compliance documents, invoicing|
+|`sales_engineer`|2|Desktop|2|Quoting from historical job data|
+|`draftsman`|2|Desktop|3|Engineering drawings (out of MVP scope)|
+
+### Role Permissions
+
+|Feature|Technician|Director|Service Manager|Admin|
+|---|:-:|:-:|:-:|:-:|
+|Clock in/out|✅|✅|✅|❌|
+|Log variation|✅|❌|❌|❌|
+|Approve variation|❌|✅|❌|❌|
+|View financial data|❌|✅|Limited|✅|
+|Assign technicians|❌|✅|✅|❌|
+|View all jobs|❌|✅|✅|✅|
+|View own jobs only|✅|❌|❌|❌|
+
+**Critical security rule:** technicians must never see job financial data. RBAC must enforce this at the API level, not just the UI.
+
+---
+
+## Tech Stack and Conventions
+
+### Frontend
+
+- **Next.js 14** App Router (not Pages Router)
+- **React 18** with Server Components by default
+- **TypeScript** with strict mode — never use `any` without explanation
+- **Tailwind CSS** for all styling — no styled-components, no CSS modules
+- **lucide-react** for icons — no other icon libraries
+- **Geist Sans / Geist Mono** for fonts via the `geist` package
+
+### Hosting
+
+- **Vercel** for deployment and hosting (free tier — solid for this workload)
+- **Sydney region** for all data at rest (NF-19)
+
+### Backend (Phase 1a onwards)
+
+- **Next.js API routes** under `src/app/api/` (Node.js runtime)
+- **Neon Postgres** as the database (serverless Postgres, Vercel integration)
+- **Prisma** as the ORM
+- **Clerk** for authentication — handles sessions, user management, JWTs, MFA
+- **Vercel Blob Storage** for file uploads (variation photos, compliance docs)
+- **Zod** for input validation
+
+### Code Style
+
+- Use TypeScript interfaces over types unless union/intersection is needed
+- Use named exports unless a default makes more sense (page components, layouts)
+- Use Server Components by default. Add `"use client"` only when needed (interactivity, hooks, browser APIs)
+- Use the `cn()` utility from `src/lib/utils/cn.ts` for conditional Tailwind classes
+- Use Australian English spelling in user-facing text (organise, behaviour, colour, optimise) — code keeps US spelling for npm/library compatibility
+
+### File Naming
+
+- Components: `PascalCase.tsx`
+- Utilities and configs: `kebab-case.ts`
+- Pages: `page.tsx` (Next.js convention)
+- Layouts: `layout.tsx`
+- Types: `models.ts` in `src/types/`
+
+### Imports
+
+Use the `@/` path alias for all imports from `src/`:
+
+```typescript
+import { Sidebar } from "@/components/nav/Sidebar";
+import { navItems } from "@/lib/nav-config";
+import type { User } from "@/types/models";
+```
+
+---
+
+## Folder Structure
+
+```
+src/
+├── app/                        # Next.js App Router
+│   ├── (auth)/                 # Auth route group (login, register)
+│   ├── (dashboard)/            # Protected routes (Phase 1a onwards)
+│   ├── api/                    # API routes
+│   ├── dashboard/              # Live overview
+│   ├── jobs/                   # Active jobs
+│   ├── time-tracking/          # Time entries
+│   ├── variations/             # Variation approvals
+│   ├── schedule/               # Crew assignments
+│   ├── team/                   # User management
+│   ├── login/                  # Login page
+│   ├── layout.tsx              # Root layout
+│   ├── page.tsx                # Landing (redirects to /dashboard)
+│   └── globals.css             # Tailwind + base styles
+├── components/
+│   ├── ui/                     # Reusable primitives (Button, Card, Modal)
+│   ├── nav/                    # Sidebar, TopBar
+│   └── layout/                 # AppShell and other layouts
+├── lib/
+│   ├── auth/                   # Clerk config and role-enforcement helpers
+│   ├── db/                     # Prisma client and Neon Postgres queries
+│   ├── nav-config.ts           # Single source of truth for routes
+│   └── utils/                  # cn(), date helpers, formatters
+└── types/
+    └── models.ts               # Shared TypeScript types matching DB schema
+```
+
+**Important:** new features always extend `nav-config.ts` rather than hardcoding routes elsewhere.
+
+---
+
+## Data Model
+
+Six core tables defined in `src/types/models.ts`. Match these exactly when building the Prisma schema for Neon Postgres in Phase 1a.
+
+### `users`
+
+```typescript
+{
+  id: string;            // uuid
+  name: string;
+  email: string;         // unique
+  phone: string;
+  role: UserRole;        // see Users and Roles section
+  isActive: boolean;
+  createdAt: Date;
+}
+```
+
+### `jobs`
+
+```typescript
+{
+  id: string;
+  customerName: string;
+  siteName: string;
+  siteAddress: string;
+  status: "scheduled" | "active" | "complete" | "cancelled";
+  quotedHours: number;
+  createdAt: Date;
+}
+```
+
+### `assignments`
+
+```typescript
+{
+  id: string;
+  userId: string;
+  jobId: string;
+  assignedDate: Date;
+}
+```
+
+Links technicians to jobs. Separate from `time_entries` because a technician can be assigned to a job without being clocked in yet.
+
+### `time_entries`
+
+```typescript
+{
+  id: string;
+  userId: string;
+  jobId: string;
+  clockInTime: Date;
+  clockOutTime: Date | null;     // null = currently clocked in
+  durationMinutes: number | null;
+  status: "active" | "complete";
+}
+```
+
+### `variations`
+
+```typescript
+{
+  id: string;
+  jobId: string;
+  technicianId: string;
+  description: string;            // min 10 chars
+  costEstimate: number;           // must be > 0
+  photoUrl: string | null;
+  status: "pending" | "approved" | "rejected" | "queried";
+  directorDecision: VariationStatus | null;
+  decisionReason: string | null;  // required if status = rejected
+  submittedAt: Date;
+  decidedAt: Date | null;
+}
+```
+
+### `invoices`
+
+```typescript
+{
+  id: string;
+  jobId: string;
+  baseAmount: number;
+  variationsTotal: number;
+  totalAmount: number;
+  createdAt: Date;
+}
+```
+
+Lightweight record. Simpro still generates the actual invoice PDF.
+
+### Auth Tables (Phase 1a addition)
+
+Clerk manages sessions and user identity. The only auth-related table in our Postgres DB:
+
+|Table|Purpose|
+|---|---|
+|`auth_events`|Audit log of logins, logouts, failed attempts (Clerk webhook → our DB)|
+
+User records in `users` are seeded/synced from Clerk via webhook on user creation.
+
+---
+
+## Design System
+
+### Aesthetic Direction
+
+Refined industrial. Clean, professional, trades-credible. Not flashy.
+
+- **Tone:** utilitarian, precise, confident
+- **Density:** information-dense with breathing room
+- **Avoid:** purple gradients, generic SaaS aesthetics, decorative illustrations, marketing fluff
+
+### Colour Palette
+
+Defined in `tailwind.config.ts`. Use Tailwind classes — never hex codes directly in JSX.
+
+|Token|Hex|Use|
+|---|---|---|
+|`slate-950`|`#0a0e14`|Darkest background (dark mode)|
+|`slate-900`|`#0f1419`|Dark mode body bg|
+|`slate-800`|`#1c232c`|Cards, surfaces (dark mode)|
+|`slate-700`|`#2d3744`|Borders (dark mode)|
+|`slate-50`|`#f4f7fa`|Light mode body bg|
+|`amber-500`|`#f59e0b`|Primary accent — actions, active states, alerts|
+|`amber-600`|`#d97706`|Hover state for accent|
+
+### Typography
+
+- **Body:** Geist Sans, 14px default
+- **Mono:** Geist Mono — used for labels, status indicators, role tags
+- **Sizes:** 11px (`text-2xs`), 12px (`text-xs`), 14px (`text-sm`), 16px (`text-base`), 18px (`text-lg`)
+- **Weights:** 400 regular, 500 medium (for emphasis), 600 semibold (for headings only)
+
+### Component Patterns
+
+**Active state in navigation:**
+
+- Background: `bg-slate-100 dark:bg-slate-800`
+- Text: `text-slate-900 dark:text-slate-50`
+- Left accent: 0.5 width amber bar `bg-amber-500`
+- Icon: `text-amber-500`
+
+**Phase indicators:**
+
+- Show next to nav items and on placeholder pages
+- Format: small mono label, uppercase, tracked
+- Class: `text-2xs font-mono uppercase tracking-wider`
+
+**Status pills:**
+
+- Pending: `bg-amber-100 text-amber-900` (light) / `bg-amber-900/30 text-amber-200` (dark)
+- Approved: `bg-emerald-100 text-emerald-900` / similar dark
+- Rejected: `bg-red-100 text-red-900` / similar dark
+
+**Buttons:**
+
+- Primary: `bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900`
+- Secondary: `border border-slate-200 dark:border-slate-700 bg-transparent`
+- Destructive: `bg-red-600 text-white`
+
+### Accessibility
+
+- Touch targets minimum 44×44 px (NF-13)
+- Text contrast minimum 4.5:1 (WCAG AA)
+- Keyboard navigation must work for all interactive elements
+- Forms must work on iPhone SE (small screen baseline)
+
+---
+
+## Phase Plan
+
+### Phase 0 — Foundation (Complete)
+
+- Folder structure
+- Next.js + Tailwind setup
+- Sidebar navigation
+- Placeholder pages for all 6 feature modules
+- TypeScript types defined for all data models
+
+### Phase 1a — Database, Auth, RBAC (Next)
+
+- Neon Postgres setup with Prisma
+- All 6 core tables migrated
+- Clerk configured — phone/email login, session management, MFA optional
+- Clerk metadata used to store `role` field (synced to our `users` table via webhook)
+- Middleware route protection via Clerk `authMiddleware`
+- `requireRole()` helper for server components (reads Clerk session claims)
+- Sidebar filters nav items by user role
+- 5-attempt lockout (Clerk built-in)
+- Audit log on all auth events (via Clerk webhook → `auth_events` table)
+
+### Phase 1b — Time Tracking
+
+- Technician mobile app: today's jobs, clock in/out
+- Live timer when clocked in
+- Service manager dashboard: live crew board, 5-second refresh
+- Director dashboard: hours vs quoted per job
+- 10% overage flag
+- Server-side timestamps (never trust client time)
+- Time entry validation (cannot clock into two jobs simultaneously)
+
+### Phase 1c — Variation Capture
+
+- Technician variation form: description, cost, photo
+- Photo uploads stored in Vercel Blob Storage; URL persisted in `variations.photoUrl`
+- Validation: description ≥ 10 chars, cost > 0
+- Push notification to director on submission (web push via PWA service worker)
+- Director approval flow: approve/reject/query
+- Rejection requires reason ≥ 10 chars
+- Approved variations auto-add to invoice record
+- Notification back to technician on decision
+
+### Phase 1d — Testing & Launch
+
+- Real technician testing on a real job for 3 days
+- Bug fixing and UX iteration
+- Role-specific training sessions
+- Go-live with all 7 technicians
+
+### Phase 2 (Backlog)
+
+- Compliance document templates (SWMS, JSA, WHS)
+- Quoting checklist with historical job data
+- Full scheduling view
+- Admin module — invoicing flow
+
+### Phase 3 (Future, Not Committed)
+
+- Communication log
+- Material tracking
+- Draftsman module
+
+---
+
+## Critical Functional Requirements
+
+These come from the FR document. Key ones to enforce in code:
+
+|ID|Requirement|
+|---|---|
+|TT-01|Clock-in must record server timestamp, never client time|
+|TT-04|Technician cannot be clocked into two jobs simultaneously|
+|TT-08|Service manager dashboard updates within 5 seconds|
+|VC-02|Variation description minimum 10 characters|
+|VC-03|Variation cost estimate must be greater than zero|
+|VC-06|Director rejection requires reason field|
+|VC-08|Approved variations create invoice record automatically|
+|AU-04|Five failed login attempts triggers lockout|
+|AU-06|Sessions can be revoked centrally|
+
+---
+
+## Critical Non-Functional Requirements
+
+|ID|Requirement|Implementation Note|
+|---|---|---|
+|NF-01|Job list loads in under 3 seconds|Index `jobs.status`|
+|NF-02|Clock actions complete in under 2 seconds|Optimistic UI + server confirm|
+|NF-03|Push notifications delivered within 60 seconds|Use FCM priority high|
+|NF-07|99.5% uptime 6am–6pm AEST Mon–Fri|Monitor with Pingdom or UptimeRobot|
+|NF-13|Touch targets minimum 44×44 px|Tailwind min-h-11 min-w-11|
+|NF-19|Australian data servers only|Use Sydney region|
+|NF-22|TLS 1.2+ for all transmissions|Enforce at hosting layer|
+|NF-26|Passwords/PINs hashed with bcrypt|Cost factor 12+|
+|NF-27|Session tokens expire after 7 days inactivity|Clerk session config|
+|NF-48|Comply with Privacy Act 1988 (Australia)|Data minimisation, right to be forgotten|
+
+---
+
+## Anti-Patterns — Never Do These
+
+- **Never trust client-supplied timestamps for clock in/out.** Always use server time.
+- **Never expose financial data to the technician role at the API level.** UI hiding is not enough.
+- **Never store PINs or passwords in the application database.** Clerk owns all credentials.
+- **Never bypass Clerk session validation.** Always verify the session server-side via Clerk helpers — do not trust client-supplied user IDs.
+- **Never check authorisation only in middleware.** Defence in depth: middleware + server components + UI filtering.
+- **Never bypass `nav-config.ts`** when adding a route. Single source of truth.
+- **Never use `any` in TypeScript** without a comment explaining why.
+- **Never write features that depend on internet connectivity** without considering offline behaviour. Field technicians work in remote sites with bad signal.
+- **Never modify existing user-facing copy without checking it matches Australian English.**
+
+---
+
+## How to Add a New Feature
+
+The pattern across the codebase:
+
+1. **Define the route in `src/lib/nav-config.ts`** — set `label`, `href`, `icon`, `visibleTo`, `phase`
+2. **Create the page** at `src/app/[feature]/page.tsx` using `AppShell`
+3. **Add types** to `src/types/models.ts` if new data shape
+4. **Add Prisma model** to `prisma/schema.prisma` if persistent
+5. **Add API route** under `src/app/api/[feature]/route.ts`
+6. **Enforce role check at top of every API handler** via `requireRole()`
+7. **Validate input with Zod** before any database call
+8. **Write the UI component** with Server Component default; add `"use client"` only if needed
+9. **Test it works for each role** that should and should not have access
+
+---
+
+## Common Tasks Reference
+
+### Add a protected API route
+
+```typescript
+// src/app/api/jobs/route.ts
+import { requireRole } from "@/lib/auth/clerk";
+import { db } from "@/lib/db/client";
+import { NextResponse } from "next/server";
+
+export async function GET() {
+  const user = await requireRole(["director", "service_manager", "admin"]);
+  const jobs = await db.job.findMany({
+    where: { status: "active" },
+  });
+  return NextResponse.json(jobs);
+}
+```
+
+### Add a Server Component page
+
+```typescript
+// src/app/[feature]/page.tsx
+import { AppShell } from "@/components/layout/AppShell";
+import { requireRole } from "@/lib/auth/clerk";
+
+export default async function FeaturePage() {
+  await requireRole(["director", "admin"]);
+  return (
+    <AppShell>
+      {/* page content */}
+    </AppShell>
+  );
+}
+```
+
+### Add a Client Component for interactivity
+
+```typescript
+// src/components/feature/InteractiveBit.tsx
+"use client";
+
+import { useState } from "react";
+
+export function InteractiveBit() {
+  const [value, setValue] = useState("");
+  return <input value={value} onChange={(e) => setValue(e.target.value)} />;
+}
+```
+
+---
+
+## External References
+
+These are stored in the project's `/docs` folder (Google Drive). Refer to them by name when needed:
+
+- **Business Summary** — company context, market data
+- **Problem Statement** — root cause analysis
+- **Industry Problems & Pain Points** — what is broken and why
+- **User Personas** — six personas with quotes, frustrations, tech comfort
+- **User Stories & Use Cases** — every story with acceptance criteria
+- **Functional Requirements** — full FR list by module
+- **Non-Functional Requirements** — full NFR list with measurements
+- **Risks & Assumptions** — risk register with mitigations
+- **Phase 1 PRD** — the canonical Phase 1 specification
+- **Competitive Analysis** — build vs configure vs buy
+- **Adoption Plan** — change management strategy
+- **Phase 2 Trigger Criteria** — when Phase 2 starts (or does not)
+- **Glossary** — definitions of SWMS, JSA, FSM, MVP, RBAC, etc.
+
+---
+
+## Working With Claude Code
+
+When asked to make changes, Claude should:
+
+1. **Read the relevant files first** before suggesting changes
+2. **Stay in scope** — do not refactor unrelated code unless asked
+3. **Match the existing code style** — see Code Style section
+4. **Use the design system** — Tailwind classes only, defined colour palette
+5. **Enforce role checks** at the API level on every protected route
+6. **Validate input with Zod** for any data crossing a boundary
+7. **Write code that handles the offline/poor connectivity case** for technician-facing features
+8. **Use Australian English** in user-facing strings
+9. **Add a brief comment when introducing a new pattern** — explain the why
+10. **Ask before changing the data model** — schema changes need a Prisma migration against Neon Postgres
+11. **This app must be fully mobile responsive and PWA-ready.** Every UI component must work on a phone screen first. Use `min-h-[44px]` touch targets, stack layouts vertically on small screens, and never design desktop-first. PWA requirements: service worker for offline support, web app manifest, installable on iOS/Android home screen.
+
+When something is ambiguous, ask. Do not invent features that were not requested.
+
+s
+
+## Project Owner
+
+- **Developer (intern):** Luke Herod
+- **Mentor:** Brett — The Consulting CIO
+- **Business stakeholders:** Directors of Cooling Tower Sales and Service
+- **End users:** 7 field technicians, 2 directors, 1 service manager, 2 admin, 2 sales engineers
