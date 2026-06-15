@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  technician
+  director
+  service_manager
+  admin
+  sales_engineer
+  draftsman
+}
+
+enum JobStatus {
+  scheduled
+  active
+  complete
+  cancelled
+}
+
+enum TimeEntryStatus {
+  active
+  complete
+}
+
+enum VariationStatus {
+  pending
+  approved
+  rejected
+  queried
+}
+
+model User {
+  id        String   @id @default(uuid())
+  clerkId   String   @unique
+  name      String
+  email     String   @unique
+  phone     String   @default("")
+  role      UserRole
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  assignments       Assignment[]
+  timeEntries       TimeEntry[]
+  variations        Variation[]        @relation("TechnicianVariations")
+  authEvents        AuthEvent[]
+  pushSubscriptions PushSubscription[]
+}
+
+model Job {
+  id           String    @id @default(uuid())
+  customerName String
+  siteName     String
+  siteAddress  String
+  status       JobStatus @default(scheduled)
+  quotedHours  Float
+  createdAt    DateTime  @default(now())
+
+  assignments Assignment[]
+  timeEntries TimeEntry[]
+  variations  Variation[]
+  invoices    Invoice[]
+
+  @@index([status])
+}
+
+model Assignment {
+  id           String   @id @default(uuid())
+  userId       String
+  jobId        String
+  assignedDate DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  job  Job  @relation(fields: [jobId], references: [id])
+
+  @@unique([userId, jobId, assignedDate])
+}
+
+model TimeEntry {
+  id              String          @id @default(uuid())
+  userId          String
+  jobId           String
+  clockInTime     DateTime
+  clockOutTime    DateTime?
+  durationMinutes Int?
+  status          TimeEntryStatus @default(active)
+
+  user User @relation(fields: [userId], references: [id])
+  job  Job  @relation(fields: [jobId], references: [id])
+
+  @@index([status])
+  @@index([userId, status])
+}
+
+model Variation {
+  id               String           @id @default(uuid())
+  jobId            String
+  technicianId     String
+  description      String
+  costEstimate     Float
+  photoUrl         String?
+  status           VariationStatus  @default(pending)
+  directorDecision VariationStatus?
+  decisionReason   String?
+  submittedAt      DateTime         @default(now())
+  decidedAt        DateTime?
+
+  job        Job  @relation(fields: [jobId], references: [id])
+  technician User @relation("TechnicianVariations", fields: [technicianId], references: [id])
+
+  @@index([status])
+  @@index([jobId])
+}
+
+model Invoice {
+  id              String   @id @default(uuid())
+  jobId           String
+  baseAmount      Float
+  variationsTotal Float
+  totalAmount     Float
+  createdAt       DateTime @default(now())
+
+  job Job @relation(fields: [jobId], references: [id])
+}
+
+model AuthEvent {
+  id        String   @id @default(uuid())
+  userId    String?
+  eventType String
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}

@@ -1,19 +1,18 @@
-/**
- * DATABASE MODULE — PLACEHOLDER
- *
- * This file will hold the database client and helper functions in Phase 1a.
- * Planned: PostgreSQL via Prisma ORM.
- *
- * The six core tables (per PRD):
- *   - users
- *   - jobs
- *   - assignments (links users to jobs)
- *   - time_entries
- *   - variations
- *   - invoices
- */
+import { PrismaClient } from "@prisma/client";
+import { neon } from "@neondatabase/serverless";
+import { PrismaNeon } from "@prisma/adapter-neon";
 
-// Placeholder — to be implemented in Phase 1a
-export const db = {
-  // db.users.findMany() etc. will live here once Prisma is set up
-};
+function createPrismaClient() {
+  const sql = neon(process.env.DATABASE_URL!);
+  const adapter = new PrismaNeon(sql);
+  return new PrismaClient({
+    adapter,
+    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+  });
+}
+
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+
+export const db = globalForPrisma.prisma ?? createPrismaClient();
+
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
