@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { db } from "@/lib/db/client";
 import type { UserRole } from "@/lib/nav-config";
 
@@ -15,8 +15,29 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   const { userId } = await auth();
   if (!userId) return null;
 
-  const user = await db.user.findUnique({ where: { clerkId: userId } });
-  if (!user || !user.isActive) return null;
+  let user = await db.user.findUnique({ where: { clerkId: userId } });
+
+  if (!user) {
+    // JIT provision: user authenticated in Clerk but not yet in DB
+    // (webhook may have missed the creation event)
+    const clerkUser = await currentUser();
+    if (!clerkUser) return null;
+
+    const email = clerkUser.emailAddresses[0]?.emailAddress ?? "";
+    const name =
+      [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") ||
+      email;
+    const role = (clerkUser.publicMetadata?.role as UserRole) ?? "technician";
+    const phone = clerkUser.phoneNumbers[0]?.phoneNumber ?? "";
+
+    user = await db.user.upsert({
+      where: { clerkId: userId },
+      update: { name, email, role, phone },
+      create: { clerkId: userId, name, email, role, phone, isActive: true },
+    });
+  }
+
+  if (!user.isActive) return null;
 
   return {
     id: user.id,
