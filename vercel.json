@@ -1,0 +1,4 @@
+{
+  "regions": ["syd1"],
+  "installCommand": "pnpm install --no-frozen-lockfile"
+}
