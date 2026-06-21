@@ -4,6 +4,7 @@ const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/api/webhooks(.*)",
+  "/api/upload/photo", // Vercel Blob CDN posts onUploadCompleted without a Clerk session
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
