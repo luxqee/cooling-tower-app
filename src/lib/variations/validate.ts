@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const variationInputSchema = z.object({
   jobId: z.string().uuid(),
-  description: z.string().min(10, "Description must be at least 10 characters"),
+  description: z.string().min(1, "Please enter a description"),
   costEstimate: z.number().positive("Cost estimate must be greater than zero"),
   photoUrl: z.union([z.string().url(), z.null()]),
 });

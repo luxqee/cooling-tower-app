@@ -14,8 +14,8 @@ describe("validateVariationInput", () => {
     expect(result.success).toBe(true);
   });
 
-  it("fails when description is shorter than 10 characters (VC-02)", () => {
-    const result = validateVariationInput({ ...valid, description: "Too short" });
+  it("fails when description is empty (VC-02)", () => {
+    const result = validateVariationInput({ ...valid, description: "" });
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.issues[0].path).toContain("description");

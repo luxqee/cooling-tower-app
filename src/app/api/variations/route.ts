@@ -32,9 +32,11 @@ export async function POST(req: Request) {
 
   const { jobId, description, costEstimate, photoUrl } = parsed.data;
 
-  const assignment = await db.assignment.findFirst({ where: { userId: user.id, jobId } });
-  if (!assignment) {
-    return NextResponse.json({ error: "Not assigned to this job" }, { status: 403 });
+  const job = await db.job.findFirst({
+    where: { id: jobId, status: { in: ["active", "scheduled"] } },
+  });
+  if (!job) {
+    return NextResponse.json({ error: "Job not found or not active" }, { status: 404 });
   }
 
   const variation = await db.variation.create({
