@@ -1,23 +1,26 @@
 import { AppShell } from "@/components/layout/AppShell";
-import { PlaceholderPage } from "@/components/ui/PlaceholderPage";
-import { LayoutDashboard } from "lucide-react";
+import { requireRole } from "@/lib/auth/clerk";
+import { redirect } from "next/navigation";
+import { CrewBoard } from "./CrewBoard";
+import { HoursOverview } from "./HoursOverview";
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const user = await requireRole(["director", "service_manager", "admin"]).catch(() => null);
+  if (!user) redirect("/sign-in");
+
   return (
     <AppShell>
-      <PlaceholderPage
-        title="Dashboard"
-        description="Live overview of jobs, crew, and pending approvals for directors and the service manager."
-        icon={LayoutDashboard}
-        phase="1a"
-        features={[
-          "Real-time view of all active jobs with hours logged vs quoted",
-          "Visual flag when actual hours exceed quoted by 10%",
-          "Pending variation approvals with photo previews",
-          "Live crew status — who is clocked into which job right now",
-          "Refreshes every 30 seconds without manual reload",
-        ]}
-      />
+      <div className="max-w-3xl mx-auto px-4 py-6 space-y-8">
+        <h1 className="text-xl font-semibold">Dashboard</h1>
+
+        {(user.role === "service_manager" || user.role === "director") && (
+          <CrewBoard />
+        )}
+
+        {(user.role === "director" || user.role === "admin") && (
+          <HoursOverview />
+        )}
+      </div>
     </AppShell>
   );
 }
