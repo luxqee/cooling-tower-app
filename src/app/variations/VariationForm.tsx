@@ -1,7 +1,32 @@
 "use client";
 
 import { useState, useTransition, useRef } from "react";
-import { upload } from "@vercel/blob/client";
+
+async function compressImage(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const MAX_DIM = 2048;
+      let { width, height } = img;
+      const ratio = Math.min(MAX_DIM / width, MAX_DIM / height, 1);
+      width = Math.round(width * ratio);
+      height = Math.round(height * ratio);
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error("Compression failed"))),
+        "image/jpeg",
+        0.75
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("Could not read image")); };
+    img.src = objectUrl;
+  });
+}
 
 interface Job {
   id: string;
@@ -28,12 +53,15 @@ export function VariationForm({ jobs }: VariationFormProps) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadProgress(true);
+    setErrors((prev) => { const n = { ...prev }; delete n.photo; return n; });
     try {
-      const blob = await upload(`variations/${Date.now()}-${file.name}`, file, {
-        access: "public",
-        handleUploadUrl: "/api/upload/photo",
-      });
-      setPhotoUrl(blob.url);
+      const compressed = await compressImage(file);
+      const form = new FormData();
+      form.append("file", compressed, "photo.jpg");
+      const res = await fetch("/api/upload/photo", { method: "POST", body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Upload failed");
+      setPhotoUrl(data.url);
     } catch (err) {
       setErrors((prev) => ({
         ...prev,
