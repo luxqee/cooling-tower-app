@@ -11,7 +11,7 @@ export function TopBar() {
   );
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur px-8">
+    <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur pl-14 pr-4 lg:px-8">
       <div>
         <div className="text-2xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-500">
           Field Operations

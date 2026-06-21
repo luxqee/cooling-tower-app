@@ -11,7 +11,7 @@ export async function Sidebar() {
     : [];
 
   return (
-    <aside className="fixed left-0 top-0 z-30 flex h-screen w-64 flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+    <aside className="hidden lg:flex fixed left-0 top-0 z-30 h-screen w-64 flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
       {/* Brand */}
       <div className="flex h-16 items-center gap-3 border-b border-slate-200 dark:border-slate-800 px-6">
         <div className="flex h-8 w-8 items-center justify-center rounded-md bg-amber-500 text-slate-950 font-mono text-sm font-bold">

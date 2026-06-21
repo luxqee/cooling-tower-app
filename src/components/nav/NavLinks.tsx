@@ -10,9 +10,10 @@ import { navItems, type UserRole } from "@/lib/nav-config";
 interface Props {
   visibleHrefs: string[];
   user: { name: string; role: UserRole } | null;
+  onNavigate?: () => void;
 }
 
-export function NavLinks({ visibleHrefs, user }: Props) {
+export function NavLinks({ visibleHrefs, user, onNavigate }: Props) {
   const pathname = usePathname();
   const visibleItems = navItems.filter((item) =>
     visibleHrefs.includes(item.href)
@@ -34,6 +35,7 @@ export function NavLinks({ visibleHrefs, user }: Props) {
               <li key={item.href}>
                 <Link
                   href={item.href}
+                  onClick={onNavigate}
                   className={cn(
                     "group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
                     isActive
