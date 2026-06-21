@@ -49,7 +49,7 @@ export const navItems: NavItem[] = [
     href: "/time-tracking",
     icon: Clock,
     description: "Clock-in records and live crew status",
-    visibleTo: ["director", "service_manager", "admin"],
+    visibleTo: ["director", "service_manager", "admin", "technician"],
     phase: "1b",
   },
   {
@@ -58,6 +58,14 @@ export const navItems: NavItem[] = [
     icon: FileEdit,
     description: "Pending approvals and approved variation history",
     visibleTo: ["director", "admin"],
+    phase: "1c",
+  },
+  {
+    label: "Log Variation",
+    href: "/variations/submit",
+    icon: FileEdit,
+    description: "Submit extra work found on site",
+    visibleTo: ["technician"],
     phase: "1c",
   },
   {
