@@ -1,35 +1,31 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
-import { VariationCard } from "./VariationCard";
+import { requireRole } from "@/lib/auth/clerk";
+import { db } from "@/lib/db/client";
+import { VariationsList } from "./VariationsList";
+import { redirect } from "next/navigation";
 
-interface Variation {
-  id: string;
-  description: string;
-  costEstimate: number;
-  photoUrl: string | null;
-  submittedAt: string;
-  technician: { name: string };
-  job: { customerName: string; siteName: string };
-}
+export default async function VariationsPage() {
+  const user = await requireRole(["director", "admin"]).catch(() => null);
+  if (!user) redirect("/sign-in");
 
-export default function VariationsPage() {
-  const [variations, setVariations] = useState<Variation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const rows = await db.variation.findMany({
+    where: { status: "pending" },
+    include: {
+      technician: { select: { name: true } },
+      job: { select: { customerName: true, siteName: true } },
+    },
+    orderBy: { submittedAt: "asc" },
+  });
 
-  useEffect(() => {
-    fetch("/api/variations")
-      .then((r) => r.json())
-      .then((data) => {
-        setVariations(data);
-        setLoading(false);
-      });
-  }, []);
-
-  function handleDecided(id: string) {
-    setVariations((prev) => prev.filter((v) => v.id !== id));
-  }
+  const variations = rows.map((v) => ({
+    id: v.id,
+    description: v.description,
+    costEstimate: v.costEstimate,
+    photoUrl: v.photoUrl,
+    submittedAt: v.submittedAt.toISOString(),
+    technician: v.technician,
+    job: v.job,
+  }));
 
   return (
     <AppShell>
@@ -40,18 +36,7 @@ export default function VariationsPage() {
             Pending approvals
           </p>
         </div>
-
-        {loading && <p className="text-sm text-slate-500">Loading…</p>}
-
-        {!loading && variations.length === 0 && (
-          <p className="text-sm text-slate-500">No pending variations.</p>
-        )}
-
-        <div className="space-y-4">
-          {variations.map((v) => (
-            <VariationCard key={v.id} variation={v} onDecided={handleDecided} />
-          ))}
-        </div>
+        <VariationsList initialVariations={variations} />
       </div>
     </AppShell>
   );
