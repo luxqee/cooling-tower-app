@@ -8,14 +8,13 @@ export default async function SubmitVariationPage() {
   const user = await requireRole(["technician"]).catch(() => null);
   if (!user) redirect("/sign-in");
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
-
   const assignments = await db.assignment.findMany({
-    where: { userId: user.id, assignedDate: { gte: today, lt: tomorrow } },
+    where: {
+      userId: user.id,
+      job: { status: { in: ["active", "scheduled"] } },
+    },
     include: { job: { select: { id: true, customerName: true, siteName: true } } },
+    distinct: ["jobId"],
   });
 
   const jobs = assignments.map((a) => a.job);

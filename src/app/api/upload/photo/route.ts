@@ -17,17 +17,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "File too large. Maximum 10 MB." }, { status: 413 });
   }
 
-  const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/heic"];
-  if (!allowedTypes.includes(file.type)) {
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", ""];
+  if (file.type && !allowedTypes.includes(file.type)) {
     return NextResponse.json(
       { error: "Invalid file type. Use JPEG, PNG, WebP or HEIC." },
       { status: 415 }
     );
   }
 
-  const ext = file.type.split("/")[1];
+  const ext = file.type ? file.type.split("/")[1] : "jpg";
   const filename = `variations/${user.id}/${Date.now()}.${ext}`;
-  const blob = await put(filename, file, { access: "public" });
 
-  return NextResponse.json({ url: blob.url }, { status: 201 });
+  try {
+    const blob = await put(filename, file, { access: "public" });
+    return NextResponse.json({ url: blob.url }, { status: 201 });
+  } catch (err) {
+    console.error("Blob upload error:", err);
+    return NextResponse.json({ error: "Upload failed. Check BLOB_READ_WRITE_TOKEN is set." }, { status: 500 });
+  }
 }
