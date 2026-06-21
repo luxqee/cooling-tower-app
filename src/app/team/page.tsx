@@ -2,24 +2,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
 import { redirect } from "next/navigation";
-
-const ROLE_LABELS: Record<string, string> = {
-  technician: "Technician",
-  director: "Director",
-  service_manager: "Service Manager",
-  admin: "Admin",
-  sales_engineer: "Sales Engineer",
-  draftsman: "Draftsman",
-};
-
-const ROLE_COLOURS: Record<string, string> = {
-  technician: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-  director: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
-  service_manager: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
-  admin: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
-  sales_engineer: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  draftsman: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
-};
+import { TeamClient } from "./TeamClient";
 
 export default async function TeamPage() {
   const user = await requireRole(["director", "service_manager"]).catch(() => null);
@@ -33,9 +16,7 @@ export default async function TeamPage() {
       role: true,
       isActive: true,
       assignments: {
-        where: {
-          job: { status: { in: ["active", "scheduled"] } },
-        },
+        where: { job: { status: { in: ["active", "scheduled"] } } },
         include: { job: { select: { customerName: true, siteName: true } } },
         orderBy: { assignedDate: "desc" },
         take: 1,
@@ -43,6 +24,17 @@ export default async function TeamPage() {
     },
     orderBy: [{ role: "asc" }, { name: "asc" }],
   });
+
+  const serialised = users.map((u) => ({
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    isActive: u.isActive,
+    currentJob: u.assignments[0]
+      ? `${u.assignments[0].job.customerName} — ${u.assignments[0].job.siteName}`
+      : null,
+  }));
 
   return (
     <AppShell>
@@ -53,37 +45,7 @@ export default async function TeamPage() {
             {users.length} member{users.length !== 1 ? "s" : ""}
           </p>
         </div>
-
-        <div className="space-y-2">
-          {users.map((u) => (
-            <div
-              key={u.id}
-              className={`flex items-start justify-between gap-3 rounded-xl border px-4 py-4 bg-white dark:bg-slate-800 ${
-                u.isActive
-                  ? "border-slate-200 dark:border-slate-700"
-                  : "border-slate-200 dark:border-slate-700 opacity-50"
-              }`}
-            >
-              <div className="min-w-0 space-y-0.5">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-medium">{u.name}</p>
-                  {!u.isActive && (
-                    <span className="text-xs text-slate-400 font-mono">inactive</span>
-                  )}
-                </div>
-                <p className="text-sm text-slate-500 truncate">{u.email}</p>
-                {u.assignments[0] && (
-                  <p className="text-xs text-slate-400 truncate">
-                    {u.assignments[0].job.customerName} — {u.assignments[0].job.siteName}
-                  </p>
-                )}
-              </div>
-              <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${ROLE_COLOURS[u.role] ?? ""}`}>
-                {ROLE_LABELS[u.role] ?? u.role}
-              </span>
-            </div>
-          ))}
-        </div>
+        <TeamClient users={serialised} canEdit={user.role === "director"} />
       </div>
     </AppShell>
   );

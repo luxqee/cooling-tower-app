@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Image from "next/image";
 import { cn } from "@/lib/utils/cn";
+
+function photoSrc(url: string) {
+  return `/api/photos?url=${encodeURIComponent(url)}`;
+}
 
 interface Variation {
   id: string;
@@ -73,12 +76,12 @@ export function VariationCard({ variation, onDecided }: VariationCardProps) {
       </div>
 
       {variation.photoUrl && (
-        <div className="relative w-full aspect-video bg-slate-100 dark:bg-slate-900">
-          <Image
-            src={variation.photoUrl}
+        <div className="w-full aspect-video bg-slate-100 dark:bg-slate-900 overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={photoSrc(variation.photoUrl)}
             alt="Variation photo"
-            fill
-            className="object-cover"
+            className="w-full h-full object-cover"
           />
         </div>
       )}

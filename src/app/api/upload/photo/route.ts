@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   const filename = `variations/${user.id}/${Date.now()}.jpg`;
 
   try {
-    const blob = await put(filename, file, { access: "public" });
+    const blob = await put(filename, file, { access: "private" });
     return NextResponse.json({ url: blob.url }, { status: 201 });
   } catch (err) {
     console.error("Blob upload error:", err);
