@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef } from "react";
+import { upload } from "@vercel/blob/client";
 
 interface Job {
   id: string;
@@ -27,16 +28,20 @@ export function VariationForm({ jobs }: VariationFormProps) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadProgress(true);
-    const form = new FormData();
-    form.append("file", file);
-    const res = await fetch("/api/upload/photo", { method: "POST", body: form });
-    setUploadProgress(false);
-    if (!res.ok) {
-      setErrors((prev) => ({ ...prev, photo: "Photo upload failed. Try again." }));
-      return;
+    try {
+      const blob = await upload(`variations/${Date.now()}-${file.name}`, file, {
+        access: "public",
+        handleUploadUrl: "/api/upload/photo",
+      });
+      setPhotoUrl(blob.url);
+    } catch (err) {
+      setErrors((prev) => ({
+        ...prev,
+        photo: (err as Error).message ?? "Photo upload failed. Try again.",
+      }));
+    } finally {
+      setUploadProgress(false);
     }
-    const { url } = await res.json();
-    setPhotoUrl(url);
   }
 
   function handleSubmit() {
