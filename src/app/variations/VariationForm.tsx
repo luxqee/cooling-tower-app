@@ -75,7 +75,7 @@ export function VariationForm({ jobs }: VariationFormProps) {
   function handleSubmit() {
     const newErrors: Record<string, string> = {};
     if (!jobId) newErrors.jobId = "Select a job.";
-    if (description.length < 10) newErrors.description = "At least 10 characters required.";
+    if (!description.trim()) newErrors.description = "Please enter a description.";
     const cost = parseFloat(costEstimate);
     if (!costEstimate || isNaN(cost) || cost <= 0)
       newErrors.costEstimate = "Enter a cost greater than $0.";
@@ -143,10 +143,7 @@ export function VariationForm({ jobs }: VariationFormProps) {
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">
-          Description{" "}
-          <span className="text-slate-400">({description.length}/10 min)</span>
-        </label>
+        <label className="text-sm font-medium">Description</label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
