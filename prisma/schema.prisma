@@ -44,11 +44,12 @@ model User {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  assignments       Assignment[]
-  timeEntries       TimeEntry[]
-  variations        Variation[]        @relation("TechnicianVariations")
-  authEvents        AuthEvent[]
-  pushSubscriptions PushSubscription[]
+  assignments         Assignment[]
+  timeEntries         TimeEntry[]
+  variations          Variation[]          @relation("TechnicianVariations")
+  authEvents          AuthEvent[]
+  pushSubscriptions   PushSubscription[]
+  complianceDocuments ComplianceDocument[] @relation("ComplianceDocuments")
 }
 
 model Job {
@@ -60,10 +61,11 @@ model Job {
   quotedHours  Float
   createdAt    DateTime  @default(now())
 
-  assignments Assignment[]
-  timeEntries TimeEntry[]
-  variations  Variation[]
-  invoices    Invoice[]
+  assignments         Assignment[]
+  timeEntries         TimeEntry[]
+  variations          Variation[]
+  invoices            Invoice[]
+  complianceDocuments ComplianceDocument[]
 
   @@index([status])
 }
@@ -152,4 +154,36 @@ model PushSubscription {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model ComplianceTemplate {
+  id        String   @id @default(uuid())
+  name      String
+  type      String
+  sections  Json
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  documents ComplianceDocument[]
+
+  @@index([isActive])
+}
+
+model ComplianceDocument {
+  id          String   @id @default(uuid())
+  jobId       String
+  templateId  String
+  createdById String
+  values      Json
+  pdfUrl      String?
+  submittedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  job       Job                @relation(fields: [jobId], references: [id])
+  template  ComplianceTemplate @relation(fields: [templateId], references: [id])
+  createdBy User               @relation("ComplianceDocuments", fields: [createdById], references: [id])
+
+  @@index([jobId])
+  @@index([createdById])
 }
