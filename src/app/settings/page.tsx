@@ -28,7 +28,7 @@ export default async function SettingsPage() {
 
         <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-6 py-6">
           <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-5">Business Profile</h2>
-          <SettingsForm initial={initial} />
+          <SettingsForm initial={initial} initialLogoUrl={profile?.logoUrl ?? null} />
         </div>
       </div>
     </AppShell>

@@ -136,6 +136,7 @@ model BusinessProfile {
   phone     String   @default("")
   email     String   @default("")
   address   String   @default("")
+  logoUrl   String?
   updatedAt DateTime @updatedAt
 }
 

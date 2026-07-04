@@ -8,7 +8,7 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const profile = await db.businessProfile.findFirst();
-  return NextResponse.json(profile ?? { name: "CT Field Ops", abn: "", phone: "", email: "", address: "" });
+  return NextResponse.json(profile ?? { name: "CT Field Ops", abn: "", phone: "", email: "", address: "", logoUrl: null });
 }
 
 const updateSchema = z.object({

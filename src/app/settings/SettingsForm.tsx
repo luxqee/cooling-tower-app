@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 interface BusinessProfile {
   name: string;
@@ -10,11 +10,21 @@ interface BusinessProfile {
   address: string;
 }
 
-export function SettingsForm({ initial }: { initial: BusinessProfile }) {
+interface SettingsFormProps {
+  initial: BusinessProfile;
+  initialLogoUrl: string | null;
+}
+
+export function SettingsForm({ initial, initialLogoUrl }: SettingsFormProps) {
   const [form, setForm] = useState<BusinessProfile>(initial);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<"idle" | "saved" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+
+  const [logoUrl, setLogoUrl] = useState<string | null>(initialLogoUrl);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const set = (field: keyof BusinessProfile) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm((f) => ({ ...f, [field]: e.target.value }));
@@ -48,91 +58,176 @@ export function SettingsForm({ initial }: { initial: BusinessProfile }) {
     }
   }
 
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoUploading(true);
+    setLogoError(null);
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const res = await fetch("/api/settings/logo", { method: "POST", body: formData });
+      const data = await res.json() as { logoUrl?: string; error?: string };
+      if (!res.ok) { setLogoError(data.error ?? "Upload failed"); }
+      else { setLogoUrl(data.logoUrl ?? null); }
+    } catch {
+      setLogoError("Upload failed — please try again");
+    } finally {
+      setLogoUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  async function handleLogoRemove() {
+    setLogoUploading(true);
+    setLogoError(null);
+    try {
+      await fetch("/api/settings/logo", { method: "DELETE" });
+      setLogoUrl(null);
+    } catch {
+      setLogoError("Remove failed — please try again");
+    } finally {
+      setLogoUploading(false);
+    }
+  }
+
   const inputClass =
     "w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent";
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <div className="space-y-8">
+      {/* Logo */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-          Business Name <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          value={form.name}
-          onChange={set("name")}
-          required
-          maxLength={100}
-          placeholder="CT Field Ops"
-          className={inputClass}
-        />
-      </div>
+        <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Business Logo</h3>
+        <div className="flex items-start gap-4">
+          {logoUrl ? (
+            <div className="w-20 h-20 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 flex items-center justify-center overflow-hidden shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={logoUrl} alt="Business logo" className="w-full h-full object-contain p-1" />
+            </div>
+          ) : (
+            <div className="w-20 h-20 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 flex items-center justify-center shrink-0">
+              <span className="text-2xl text-slate-300 dark:text-slate-600">🏢</span>
+            </div>
+          )}
 
-      <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">ABN</label>
-        <input
-          type="text"
-          value={form.abn}
-          onChange={set("abn")}
-          maxLength={20}
-          placeholder="12 345 678 901"
-          className={inputClass}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Phone</label>
-          <input
-            type="tel"
-            value={form.phone}
-            onChange={set("phone")}
-            maxLength={30}
-            placeholder="1300 123 456"
-            className={inputClass}
-          />
+          <div className="space-y-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={handleLogoUpload}
+              disabled={logoUploading}
+            />
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                disabled={logoUploading}
+                onClick={() => fileInputRef.current?.click()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
+              >
+                {logoUploading ? "Uploading…" : logoUrl ? "Replace logo" : "Upload logo"}
+              </button>
+              {logoUrl && !logoUploading && (
+                <button
+                  type="button"
+                  onClick={handleLogoRemove}
+                  className="text-sm text-red-500 hover:text-red-700 dark:hover:text-red-400 underline underline-offset-2"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-slate-400">PNG, JPG, or WebP — max 2 MB. Shown in PDF headers.</p>
+            {logoError && <p className="text-xs text-red-600 dark:text-red-400">{logoError}</p>}
+          </div>
         </div>
+      </div>
+
+      {/* Business details */}
+      <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            Business Name <span className="text-red-500">*</span>
+          </label>
           <input
-            type="email"
-            value={form.email}
-            onChange={set("email")}
+            type="text"
+            value={form.name}
+            onChange={set("name")}
+            required
             maxLength={100}
-            placeholder="admin@yourbusiness.com.au"
+            placeholder="CT Field Ops"
             className={inputClass}
           />
         </div>
-      </div>
 
-      <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Address</label>
-        <textarea
-          value={form.address}
-          onChange={set("address")}
-          maxLength={200}
-          rows={2}
-          placeholder="123 Industrial Drive, Brisbane QLD 4000"
-          className={inputClass + " resize-none"}
-        />
-      </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">ABN</label>
+          <input
+            type="text"
+            value={form.abn}
+            onChange={set("abn")}
+            maxLength={20}
+            placeholder="12 345 678 901"
+            className={inputClass}
+          />
+        </div>
 
-      <div className="flex items-center gap-3 pt-2">
-        <button
-          type="submit"
-          disabled={saving}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-sm font-semibold transition-colors"
-        >
-          {saving ? "Saving…" : "Save Changes"}
-        </button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Phone</label>
+            <input
+              type="tel"
+              value={form.phone}
+              onChange={set("phone")}
+              maxLength={30}
+              placeholder="1300 123 456"
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email</label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={set("email")}
+              maxLength={100}
+              placeholder="admin@yourbusiness.com.au"
+              className={inputClass}
+            />
+          </div>
+        </div>
 
-        {status === "saved" && (
-          <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">✓ Saved</span>
-        )}
-        {status === "error" && (
-          <span className="text-sm text-red-600 dark:text-red-400">{errorMsg}</span>
-        )}
-      </div>
-    </form>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Address</label>
+          <textarea
+            value={form.address}
+            onChange={set("address")}
+            maxLength={200}
+            rows={2}
+            placeholder="123 Industrial Drive, Brisbane QLD 4000"
+            className={inputClass + " resize-none"}
+          />
+        </div>
+
+        <div className="flex items-center gap-3 pt-2">
+          <button
+            type="submit"
+            disabled={saving}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white text-sm font-semibold transition-colors"
+          >
+            {saving ? "Saving…" : "Save Changes"}
+          </button>
+
+          {status === "saved" && (
+            <span className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">✓ Saved</span>
+          )}
+          {status === "error" && (
+            <span className="text-sm text-red-600 dark:text-red-400">{errorMsg}</span>
+          )}
+        </div>
+      </form>
+    </div>
   );
 }

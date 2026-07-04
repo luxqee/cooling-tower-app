@@ -6,6 +6,9 @@ import type { TemplateSections, DocumentValues } from "./types";
 const styles = StyleSheet.create({
   page:          { padding: 40, fontSize: 10, fontFamily: "Helvetica", color: "#1e293b" },
   header:        { marginBottom: 20, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "#e2e8f0" },
+  headerRow:     { flexDirection: "row", alignItems: "flex-start", marginBottom: 6 },
+  logoImage:     { width: 48, height: 48, marginRight: 10 },
+  headerText:    { flex: 1 },
   typeBadge:     { fontSize: 8, fontFamily: "Helvetica-Bold", color: "#ffffff", backgroundColor: "#f59e0b", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 3, marginBottom: 6, alignSelf: "flex-start", textTransform: "uppercase" },
   docTitle:      { fontSize: 16, fontFamily: "Helvetica-Bold", marginBottom: 4 },
   headerMeta:    { fontSize: 9, color: "#64748b", marginTop: 2 },
@@ -25,6 +28,7 @@ export interface GeneratePdfArgs {
   job: Job;
   createdBy: User;
   businessName?: string;
+  logoUrl?: string | null;
 }
 
 function formatDate(iso: string) {
@@ -49,9 +53,36 @@ export function FieldValue({ type, value }: { type: string; value: unknown }) {
   return createElement(Text, { style: styles.fieldValue }, String(value));
 }
 
-export async function generatePdf({ document, template, job, createdBy, businessName }: GeneratePdfArgs): Promise<Buffer> {
+export async function generatePdf({ document, template, job, createdBy, businessName, logoUrl }: GeneratePdfArgs): Promise<Buffer> {
   const sections = template.sections as unknown as TemplateSections;
   const values   = (document.values ?? {}) as DocumentValues;
+
+  const headerContent = [
+    createElement(Text, { style: styles.typeBadge }, template.type.toUpperCase()),
+    createElement(Text, { style: styles.docTitle }, template.name),
+    createElement(Text, { style: styles.headerMeta }, `Job: ${job.customerName} — ${job.siteName}`),
+    createElement(Text, { style: styles.headerMeta }, `Submitted by: ${createdBy.name}`),
+    createElement(Text, { style: styles.headerMeta }, `Date: ${document.submittedAt ? new Date(document.submittedAt).toLocaleDateString("en-AU") : "—"}`),
+  ];
+
+  const headerRow = logoUrl
+    ? createElement(
+        View,
+        { style: styles.headerRow },
+        createElement(Image, { src: logoUrl, style: styles.logoImage }),
+        createElement(
+          View,
+          { style: styles.headerText },
+          ...(businessName ? [createElement(Text, { style: styles.companyName }, businessName)] : []),
+          ...headerContent,
+        ),
+      )
+    : createElement(
+        View,
+        null,
+        ...(businessName ? [createElement(Text, { style: styles.companyName }, businessName)] : []),
+        ...headerContent,
+      );
 
   const docElement = createElement(
     Document,
@@ -63,12 +94,7 @@ export async function generatePdf({ document, template, job, createdBy, business
       createElement(
         View,
         { style: styles.header },
-        ...(businessName ? [createElement(Text, { style: styles.companyName }, businessName)] : []),
-        createElement(Text, { style: styles.typeBadge }, template.type.toUpperCase()),
-        createElement(Text, { style: styles.docTitle }, template.name),
-        createElement(Text, { style: styles.headerMeta }, `Job: ${job.customerName} — ${job.siteName}`),
-        createElement(Text, { style: styles.headerMeta }, `Submitted by: ${createdBy.name}`),
-        createElement(Text, { style: styles.headerMeta }, `Date: ${document.submittedAt ? new Date(document.submittedAt).toLocaleDateString("en-AU") : "—"}`),
+        headerRow,
       ),
       // Sections
       ...sections.map((section) =>

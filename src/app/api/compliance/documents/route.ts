@@ -50,7 +50,7 @@ export async function POST(req: Request) {
 
   try {
     const businessProfile = await db.businessProfile.findFirst();
-    const pdfBuffer = await generatePdf({ document, template, job, createdBy: { ...user, phone: "", createdAt: new Date() } as any, businessName: businessProfile?.name });
+    const pdfBuffer = await generatePdf({ document, template, job, createdBy: { ...user, phone: "", createdAt: new Date() } as any, businessName: businessProfile?.name, logoUrl: businessProfile?.logoUrl });
     const blob = await put(`compliance/${document.id}.pdf`, pdfBuffer, { access: "private", contentType: "application/pdf" });
 
     document = await db.complianceDocument.update({

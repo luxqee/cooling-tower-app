@@ -59,6 +59,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     job:          mockJob,
     createdBy:    mockUser,
     businessName: businessProfile?.name,
+    logoUrl:      businessProfile?.logoUrl,
   });
 
   const safeName = template.name.replace(/[^a-z0-9]/gi, "-").toLowerCase();
