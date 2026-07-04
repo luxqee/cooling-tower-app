@@ -1,5 +1,5 @@
 import { AppShell } from "@/components/layout/AppShell";
-import { requireRole } from "@/lib/auth/clerk";
+import { getSessionUser } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -13,8 +13,9 @@ const TYPE_COLOURS: Record<string, string> = {
 };
 
 export default async function TemplatesPage() {
-  const user = await requireRole(["admin"]).catch(() => null);
+  const user = await getSessionUser();
   if (!user) redirect("/sign-in");
+  if (user.role !== "admin") redirect("/compliance");
 
   const templates = await db.complianceTemplate.findMany({
     where: { isActive: true },
