@@ -129,6 +129,16 @@ model Invoice {
   job Job @relation(fields: [jobId], references: [id])
 }
 
+model BusinessProfile {
+  id        String   @id @default(uuid())
+  name      String   @default("CT Field Ops")
+  abn       String   @default("")
+  phone     String   @default("")
+  email     String   @default("")
+  address   String   @default("")
+  updatedAt DateTime @updatedAt
+}
+
 model AuthEvent {
   id        String   @id @default(uuid())
   userId    String?
