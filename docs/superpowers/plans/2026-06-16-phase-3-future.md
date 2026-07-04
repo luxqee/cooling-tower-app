@@ -115,6 +115,70 @@ The `draftsman` role already exists in the `UserRole` enum. No schema changes ne
 
 ---
 
+## Module 3d — Asset Tracking
+
+**The problem:** There is no record of which cooling tower units exist at a site, their service history, or which job serviced which asset. This makes warranty tracking and repeat-service quoting difficult.
+
+**What Phase 3d would build:**
+
+- `Asset` model: serial number, type (cooling tower model), location on site, linked to Customer
+- Assets linked to jobs at time of job creation (many-to-many via `JobAsset`)
+- Asset detail page: full service history (all jobs that touched this asset)
+- Technicians can view asset details on their phone during a job
+
+**Data model considerations:**
+
+```
+assets
+- id
+- customerId
+- serialNumber
+- assetType (e.g. "BAC VT1-40", free text)
+- location (free text, e.g. "Roof level 3, north")
+- notes
+- createdAt
+
+job_assets
+- jobId
+- assetId
+- createdAt
+```
+
+Requires Phase 2e (`Customer`) to be complete first.
+
+---
+
+## Module 3e — Purchase Orders / Supplier Invoices
+
+**The problem:** Materials and subcontractor costs are not tracked. Technicians purchase parts on-site and receipts arrive weeks later. Job costing is unreliable.
+
+**What Phase 3e would build:**
+
+- Admin creates purchase orders linked to a job (supplier, description, estimated cost)
+- Supplier invoice upload (receipt photo → Vercel Blob)
+- Reconciliation: match supplier invoice against purchase order
+- Material costs feed into job cost totals
+- Simple job P&L view: revenue (invoice total) vs costs (labour hours × rate + purchase orders)
+
+**Data model considerations:**
+
+```
+purchase_orders
+- id
+- jobId
+- supplierId (or supplier name as string for simplicity)
+- description
+- estimatedCost
+- actualCost (nullable, set when invoice received)
+- receiptUrl (nullable, Vercel Blob)
+- status: "pending" | "received" | "reconciled"
+- createdAt
+```
+
+Builds on the Vercel Blob upload pattern from Phase 1c.
+
+---
+
 ## Architecture Notes for Future-Proofing
 
 These decisions should be maintained in Phases 1–2 to avoid rework in Phase 3:

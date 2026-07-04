@@ -114,21 +114,24 @@ Phase 2 starts when Phase 1 has been live for at least 4 weeks and all of the fo
 
 ---
 
-## Module 2d — Admin Invoicing Flow
+## Module 2d — Invoicing
 
-**The problem:** Invoice records are created automatically from approved variations (Phase 1c), but the admin currently has no way to view, adjust, or mark them as exported to Simpro.
+**The problem:** Invoice records are created automatically from approved variations, but there is no way to view them, set the base labour amount, send them to customers, or track payment status.
 
 **What Phase 2d builds:**
 
 - Admin view of all invoice records by job
-- Ability to set `baseAmount` (from Simpro quote) on each invoice
-- Mark an invoice as "exported to Simpro" (a status flag, not actual Simpro integration)
-- Download a CSV export of invoice line items for import into Simpro
+- Set `baseAmount` (labour hours × rate) on each invoice
+- Invoice status lifecycle: `draft → sent → paid`
+- Generate a PDF invoice (company logo, line items: labour + variations)
+- Send the PDF invoice to a customer contact via email (Resend)
+- Director can mark invoices as paid
 
 **Key data requirements:**
 
-- Add `exportedAt DateTime?` and `simpiroExportRef String?` to `invoices` table (migration required)
-- No actual Simpro API integration in Phase 2 — CSV export only
+- Add `status InvoiceStatus` enum (`draft | sent | paid`) to `invoices` table
+- Add `sentAt DateTime?` and `paidAt DateTime?` to `invoices` table
+- No Simpro integration — this is the full invoicing workflow
 
 **Roles:**
 
@@ -136,8 +139,36 @@ Phase 2 starts when Phase 1 has been live for at least 4 weeks and all of the fo
 |---------|:-----:|:--------:|
 | View invoices | ✅ | ✅ |
 | Set base amount | ✅ | ❌ |
-| Mark exported | ✅ | ❌ |
-| Download CSV | ✅ | ✅ |
+| Send invoice email | ✅ | ✅ |
+| Mark as paid | ❌ | ✅ |
+
+---
+
+## Module 2e — Customer / Contact Records
+
+**The problem:** Jobs currently store `customerName` as a plain string. There is no reusable customer record, no contact email/phone for sending invoices, and no way to see all jobs for a given customer.
+
+**What Phase 2e builds:**
+
+- `Customer` model: name, ABN, contact person, email, phone, address
+- Jobs linked to a Customer (optional FK — existing jobs keep their `customerName` string)
+- Customer list and create/edit pages (admin only)
+- Job creation form updated to search/select an existing customer or enter a one-off name
+- Customer detail page showing all linked jobs
+
+**Key data requirements:**
+
+- New `Customer` table migration
+- Optional `customerId` FK on `Job` — nullable so existing jobs are unaffected
+- Customer email is what Phase 2d uses to send invoices
+
+**Roles:**
+
+| Feature | Admin | Director | Sales Engineer |
+|---------|:-----:|:--------:|:--------------:|
+| View customers | ✅ | ✅ | ✅ |
+| Create / edit | ✅ | ❌ | ❌ |
+| Link to job | ✅ | ❌ | ❌ |
 
 ---
 
@@ -145,9 +176,10 @@ Phase 2 starts when Phase 1 has been live for at least 4 weeks and all of the fo
 
 When Phase 2 is approved, implement in this order:
 
-1. **2a** (Compliance Documents) — highest operational risk if left unaddressed; directly saves technician time
-2. **2b** (Quoting) — high revenue impact; sales engineers already asking for this
-3. **2d** (Admin Invoicing) — closes the loop on the variation capture built in Phase 1c
-4. **2c** (Scheduling) — most complex; service manager may self-manage in Excel until Phase 2c is ready
+1. **2a** (Compliance Documents) ✅ complete
+2. **2b** (Quoting) — historical job data for sales engineers
+3. **2e** (Customers) — foundational; 2d invoicing needs customer email
+4. **2d** (Invoicing) — native invoice workflow with PDF + email send
+5. **2c** (Scheduling) — replaces Excel; most complex UI
 
 Each module should get its own implementation plan document before work begins.
