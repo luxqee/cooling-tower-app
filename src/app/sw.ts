@@ -1,15 +1,17 @@
 import { defaultCache } from "@serwist/next/worker";
-import { installSerwist } from "serwist";
+import { Serwist } from "serwist";
 
 declare const self: ServiceWorkerGlobalScope;
 
-installSerwist({
+const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
   runtimeCaching: defaultCache,
 });
+
+serwist.addEventListeners();
 
 self.addEventListener("push", (event) => {
   const data = event.data?.json() as { title: string; body: string; url: string } | undefined;
