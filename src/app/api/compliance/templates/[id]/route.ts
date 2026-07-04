@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireRole } from "@/lib/auth/clerk";
+import { requireRole, getSessionUser } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
 
 const updateSchema = z.object({
@@ -10,7 +10,7 @@ const updateSchema = z.object({
 });
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const user = await requireRole(["technician", "director", "service_manager", "admin", "sales_engineer", "draftsman"]).catch(() => null);
+  const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const template = await db.complianceTemplate.findUnique({ where: { id: params.id } });
