@@ -7,6 +7,7 @@ import {
   Users,
   ShieldCheck,
   FileText,
+  Settings,
   type LucideIcon,
 } from "lucide-react";
 
@@ -100,6 +101,14 @@ export const navItems: NavItem[] = [
     icon: FileText,
     description: "Manage compliance document templates",
     visibleTo: ["admin"],
+    phase: "2",
+  },
+  {
+    label: "Settings",
+    href: "/settings",
+    icon: Settings,
+    description: "Business profile and system settings",
+    visibleTo: ["director", "admin"],
     phase: "2",
   },
 ];

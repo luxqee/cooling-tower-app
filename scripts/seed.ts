@@ -130,10 +130,216 @@ async function main() {
     await db.assignment.deleteMany();
     await db.job.deleteMany();
     await db.user.deleteMany();
+    await db.businessProfile.deleteMany();
+
+    console.log("🏢 Seeding business profile…");
+    await db.businessProfile.create({
+      data: {
+        name:    "CT Field Ops",
+        abn:     "12 345 678 901",
+        phone:   "1300 123 456",
+        email:   "admin@ctfieldops.com.au",
+        address: "123 Industrial Drive, Brisbane QLD 4000",
+      },
+    });
+    console.log("  ✓ Business profile");
 
     console.log("🏗️  Seeding jobs…");
     const jobs = await Promise.all(JOBS.map((data) => db.job.create({ data })));
     jobs.forEach((j) => console.log(`  ✓ ${j.customerName} — ${j.siteName}`));
+
+    console.log("\n📋 Seeding compliance templates…");
+    const TEMPLATES = [
+      {
+        name: "SWMS — Cooling Tower Maintenance",
+        type: "SWMS",
+        isActive: true,
+        sections: [
+          {
+            id: "s1", title: "Site & Job Details",
+            fields: [
+              { id: "s1f1", label: "Date",                    type: "date",     required: true  },
+              { id: "s1f2", label: "Job Site / Location",     type: "text",     required: true  },
+              { id: "s1f3", label: "Site Supervisor",         type: "text",     required: true  },
+              { id: "s1f4", label: "Permit to Work Number",   type: "text",     required: false },
+              { id: "s1f5", label: "Workers Present",         type: "textarea", required: true  },
+            ],
+          },
+          {
+            id: "s2", title: "Hazard Identification",
+            fields: [
+              { id: "s2f1", label: "Working at Heights Risk Identified",             type: "checkbox", required: false },
+              { id: "s2f2", label: "Chemical / Biological Exposure Risk Identified", type: "checkbox", required: false },
+              { id: "s2f3", label: "Electrical Hazards Identified",                  type: "checkbox", required: false },
+              { id: "s2f4", label: "Confined Space Entry Required",                  type: "checkbox", required: false },
+              { id: "s2f5", label: "Additional Hazards Noted",                       type: "textarea", required: false },
+            ],
+          },
+          {
+            id: "s3", title: "Control Measures",
+            fields: [
+              {
+                id: "s3f1", label: "PPE Required", type: "checklist", required: true,
+                options: ["Hard hat", "Safety harness", "Chemical gloves", "Eye protection", "Respiratory protection", "Non-slip footwear", "Hi-vis vest"],
+              },
+              { id: "s3f2", label: "Isolation & Lockout Procedures",  type: "textarea", required: true  },
+              { id: "s3f3", label: "Emergency Contact / Rescue Plan",  type: "textarea", required: true  },
+            ],
+          },
+          {
+            id: "s4", title: "Work Procedure",
+            fields: [
+              { id: "s4f1", label: "Pre-Start Inspection Notes",                 type: "textarea", required: true  },
+              { id: "s4f2", label: "Tower Access Method",                         type: "text",     required: true  },
+              { id: "s4f3", label: "Cleaning & Descaling Procedure",              type: "textarea", required: false },
+              { id: "s4f4", label: "Disinfection & Water Treatment Process",      type: "textarea", required: false },
+            ],
+          },
+          {
+            id: "s5", title: "Sign-Off",
+            fields: [
+              { id: "s5f1", label: "I have read and understood this SWMS", type: "checkbox",  required: true },
+              { id: "s5f2", label: "Worker Name",                           type: "text",      required: true },
+              { id: "s5f3", label: "Worker Signature",                      type: "signature", required: true },
+              { id: "s5f4", label: "Supervisor Name",                       type: "text",      required: true },
+              { id: "s5f5", label: "Supervisor Signature",                  type: "signature", required: true },
+              { id: "s5f6", label: "Date Completed",                        type: "date",      required: true },
+            ],
+          },
+        ],
+      },
+      {
+        name: "JSA — Working at Heights",
+        type: "JSA",
+        isActive: true,
+        sections: [
+          {
+            id: "j1", title: "Task Information",
+            fields: [
+              { id: "j1f1", label: "Task / Activity Description",          type: "textarea", required: true  },
+              { id: "j1f2", label: "Date",                                  type: "date",     required: true  },
+              { id: "j1f3", label: "Location",                              type: "text",     required: true  },
+              { id: "j1f4", label: "Working at Heights Permit Number",      type: "text",     required: false },
+              { id: "j1f5", label: "Estimated Duration",                    type: "text",     required: false },
+            ],
+          },
+          {
+            id: "j2", title: "Persons Involved",
+            fields: [
+              { id: "j2f1", label: "Names & Competencies",                                          type: "textarea", required: true  },
+              { id: "j2f2", label: "All persons hold current Working at Heights certification",     type: "checkbox", required: true  },
+              { id: "j2f3", label: "Rescue-trained person on-site",                                 type: "checkbox", required: true  },
+            ],
+          },
+          {
+            id: "j3", title: "Height Work Controls",
+            fields: [
+              { id: "j3f1", label: "Fall arrest system inspected and in-date",     type: "checkbox", required: true  },
+              { id: "j3f2", label: "Anchor points rated and inspected",             type: "checkbox", required: true  },
+              { id: "j3f3", label: "Exclusion zones established below work area",  type: "checkbox", required: true  },
+              { id: "j3f4", label: "Rescue plan documented and understood",        type: "checkbox", required: true  },
+              { id: "j3f5", label: "Wind / weather conditions assessed as safe",   type: "checkbox", required: false },
+              { id: "j3f6", label: "Additional Control Notes",                     type: "textarea", required: false },
+            ],
+          },
+          {
+            id: "j4", title: "PPE Checklist",
+            fields: [
+              {
+                id: "j4f1", label: "PPE Confirmed Present & Serviceable", type: "checklist", required: true,
+                options: ["Full-body harness", "Shock-absorbing lanyard", "Hard hat", "Non-slip safety boots", "Gloves", "Safety glasses", "Hi-vis vest"],
+              },
+            ],
+          },
+          {
+            id: "j5", title: "Risk Assessment",
+            fields: [
+              { id: "j5f1", label: "Initial Risk Rating (Likelihood × Consequence)", type: "text",     required: true  },
+              { id: "j5f2", label: "Residual Risk Rating (after controls)",           type: "text",     required: true  },
+              { id: "j5f3", label: "Risk Reduction Notes",                            type: "textarea", required: false },
+            ],
+          },
+          {
+            id: "j6", title: "Authorisation",
+            fields: [
+              { id: "j6f1", label: "Supervisor Name",      type: "text",      required: true },
+              { id: "j6f2", label: "Supervisor Signature", type: "signature", required: true },
+              { id: "j6f3", label: "Date Authorised",      type: "date",      required: true },
+            ],
+          },
+        ],
+      },
+      {
+        name: "WHS Pre-Start Safety Checklist",
+        type: "WHS",
+        isActive: true,
+        sections: [
+          {
+            id: "w1", title: "Site Information",
+            fields: [
+              { id: "w1f1", label: "Site / Project Name",   type: "text",  required: true  },
+              { id: "w1f2", label: "Date",                   type: "date",  required: true  },
+              { id: "w1f3", label: "Weather Conditions",     type: "text",  required: false },
+              { id: "w1f4", label: "Site Supervisor",        type: "text",  required: true  },
+            ],
+          },
+          {
+            id: "w2", title: "General Site Safety",
+            fields: [
+              { id: "w2f1", label: "Exclusion zones clearly marked",             type: "checkbox", required: false },
+              { id: "w2f2", label: "First aid kit stocked and accessible",        type: "checkbox", required: true  },
+              { id: "w2f3", label: "Emergency evacuation plan displayed",         type: "checkbox", required: true  },
+              { id: "w2f4", label: "Safety Data Sheets (SDS) available on-site", type: "checkbox", required: false },
+              { id: "w2f5", label: "Site induction completed by all workers",     type: "checkbox", required: true  },
+            ],
+          },
+          {
+            id: "w3", title: "Equipment Check",
+            fields: [
+              { id: "w3f1", label: "Primary Equipment in Use",                          type: "text",     required: true  },
+              { id: "w3f2", label: "Equipment Defects / Damage Noted",                  type: "textarea", required: false },
+              { id: "w3f3", label: "All equipment fit for purpose and in good condition", type: "checkbox", required: true  },
+              { id: "w3f4", label: "Equipment inspection tags current",                  type: "checkbox", required: false },
+            ],
+          },
+          {
+            id: "w4", title: "Cooling Tower Specific",
+            fields: [
+              { id: "w4f1", label: "Water treatment records current and on-site",        type: "checkbox", required: true  },
+              { id: "w4f2", label: "Legionella risk assessment current (≤ 12 months)",   type: "checkbox", required: true  },
+              { id: "w4f3", label: "Date of Last Service / Disinfection",                type: "date",     required: false },
+              { id: "w4f4", label: "Water temperature within normal operating range",    type: "checkbox", required: false },
+              { id: "w4f5", label: "Chemical dosing levels verified",                    type: "checkbox", required: false },
+              { id: "w4f6", label: "Drift eliminators in good condition",                type: "checkbox", required: false },
+            ],
+          },
+          {
+            id: "w5", title: "Pre-Start Briefing",
+            fields: [
+              { id: "w5f1", label: "Tool-box / pre-start briefing conducted",          type: "checkbox", required: true  },
+              { id: "w5f2", label: "All workers acknowledged hazards and controls",     type: "checkbox", required: true  },
+              {
+                id: "w5f3", label: "Topics Covered in Briefing", type: "checklist", required: false,
+                options: ["Hazard identification", "Emergency procedures", "PPE requirements", "Manual handling", "Chemical handling", "Working at heights", "Isolation procedures"],
+              },
+              { id: "w5f4", label: "Additional Notes from Briefing",                    type: "textarea", required: false },
+            ],
+          },
+          {
+            id: "w6", title: "Sign-Off",
+            fields: [
+              { id: "w6f1", label: "Completed By", type: "text",      required: true },
+              { id: "w6f2", label: "Signature",     type: "signature", required: true },
+              { id: "w6f3", label: "Date",           type: "date",      required: true },
+            ],
+          },
+        ],
+      },
+    ];
+    for (const tmpl of TEMPLATES) {
+      const t = await db.complianceTemplate.create({ data: { ...tmpl, sections: tmpl.sections as any } });
+      console.log(`  ✓ ${t.type} — ${t.name}`);
+    }
 
     console.log("\n👤 Creating test users in Clerk + DB…");
     const createdUsers: Array<{ role: string; email: string; clerkId: string }> = [];

@@ -9,10 +9,12 @@ vi.mock("@/lib/db/client", () => ({
       findMany:   vi.fn(),
       create:     vi.fn(),
       update:     vi.fn(),
+      delete:     vi.fn(),
       findUnique: vi.fn(),
     },
     complianceTemplate: { findUnique: vi.fn() },
-    job:               { findUnique: vi.fn() },
+    job:                { findUnique: vi.fn() },
+    businessProfile:    { findFirst: vi.fn().mockResolvedValue(null) },
   },
 }));
 
