@@ -23,18 +23,24 @@ export default async function DevLoginPage() {
     draftsman:       "bg-slate-50   border-slate-200   text-slate-800",
   };
 
-  const TEST_USERS = [
-    { role: "technician",      email: "test.technician@ctfieldops.dev",      what: "Clock in/out, fill compliance docs" },
-    { role: "director",        email: "test.director@ctfieldops.dev",         what: "Full access, invite team, approve variations" },
-    { role: "service_manager", email: "test.service_manager@ctfieldops.dev",  what: "All jobs, crew board, schedule" },
-    { role: "admin",           email: "test.admin@ctfieldops.dev",            what: "Director + manage compliance templates" },
-    { role: "sales_engineer",  email: "test.sales_engineer@ctfieldops.dev",   what: "Jobs and customer data" },
-    { role: "draftsman",       email: "test.draftsman@ctfieldops.dev",        what: "Read-only access" },
-  ];
+  // Detect seeded test accounts by role name pattern
+  const roleOrder = ["technician", "director", "service_manager", "admin", "sales_engineer", "draftsman"];
+  const ROLE_WHAT: Record<string, string> = {
+    technician:      "Clock in/out, fill compliance docs",
+    director:        "Full access, invite team, approve variations",
+    service_manager: "All jobs, crew board, schedule",
+    admin:           "Director + manage compliance templates",
+    sales_engineer:  "Jobs and customer data",
+    draftsman:       "Read-only access",
+  };
+
+  const seededUsers = roleOrder
+    .map((role) => users.find((u) => u.role === role && u.name?.startsWith("Test ")))
+    .filter(Boolean) as typeof users;
 
   const SIGN_IN_URL = process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL ?? "/sign-in";
 
-  const seeded = users.some((u) => u.email?.endsWith("@ctfieldops.dev"));
+  const seeded = seededUsers.length > 0;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-6">
@@ -72,38 +78,50 @@ export default async function DevLoginPage() {
         <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 divide-y divide-slate-100 dark:divide-slate-700">
           <div className="px-4 py-3 flex items-center justify-between">
             <h2 className="font-semibold text-sm">Test accounts</h2>
-            <span className="text-xs font-mono bg-slate-100 dark:bg-slate-900 px-2 py-0.5 rounded">
-              Password: TestLogin123!
-            </span>
+            {seeded && (
+              <span className="text-xs font-mono bg-slate-100 dark:bg-slate-900 px-2 py-0.5 rounded">
+                Password: TestLogin123!
+              </span>
+            )}
           </div>
 
           {!seeded && (
-            <div className="px-4 py-3 text-sm text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20">
-              ⚠ No test accounts found. Run{" "}
-              <code className="bg-amber-100 dark:bg-amber-900/40 px-1 rounded font-mono text-xs">pnpm seed</code>{" "}
-              to create them.
+            <div className="px-4 py-4 space-y-2 text-sm">
+              <p className="text-amber-700 dark:text-amber-400 font-medium">⚠ No test accounts found.</p>
+              <ol className="text-slate-600 dark:text-slate-400 list-decimal list-inside space-y-1">
+                <li>Add to <code className="bg-slate-100 dark:bg-slate-900 px-1 rounded text-xs font-mono">.env.local</code>:</li>
+              </ol>
+              <pre className="bg-slate-100 dark:bg-slate-900 rounded px-3 py-2 text-xs font-mono overflow-x-auto">
+                {"SEED_EMAIL_BASE=your.real.email@gmail.com\nCLERK_SECRET_KEY=sk_..."}
+              </pre>
+              <p className="text-slate-500 text-xs">Then run <code className="bg-slate-100 dark:bg-slate-900 px-1 rounded font-mono">pnpm seed</code>. Verification codes go to your real inbox.</p>
             </div>
           )}
 
-          {TEST_USERS.map(({ role, email, what }) => {
-            const dbUser = users.find((u) => u.email === email);
-            return (
-              <div key={role} className="px-4 py-3 flex items-start gap-3">
-                <span className={`shrink-0 mt-0.5 text-xs font-medium px-2 py-0.5 rounded-full border ${ROLE_COLOUR[role] ?? ""}`}>
-                  {role.replace("_", " ")}
-                </span>
-                <div className="min-w-0 flex-1 space-y-0.5">
-                  <p className="text-xs font-mono text-slate-700 dark:text-slate-300">{email}</p>
-                  <p className="text-xs text-slate-400">{what}</p>
-                </div>
-                {dbUser ? (
-                  <span className="shrink-0 text-xs text-emerald-600 dark:text-emerald-400 font-medium">✓ in DB</span>
-                ) : (
-                  <span className="shrink-0 text-xs text-slate-400">not seeded</span>
-                )}
+          {seededUsers.map((u) => (
+            <div key={u.role} className="px-4 py-3 flex items-start gap-3">
+              <span className={`shrink-0 mt-0.5 text-xs font-medium px-2 py-0.5 rounded-full border ${ROLE_COLOUR[u.role] ?? ""}`}>
+                {u.role.replace("_", " ")}
+              </span>
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <p className="text-xs font-mono text-slate-700 dark:text-slate-300">{u.email}</p>
+                <p className="text-xs text-slate-400">{ROLE_WHAT[u.role]}</p>
               </div>
-            );
-          })}
+              <span className="shrink-0 text-xs text-emerald-600 dark:text-emerald-400 font-medium">✓ ready</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Clerk impersonation — useful when you can't receive the verification email */}
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-4 text-sm space-y-3">
+          <h2 className="font-semibold">Can&apos;t receive the sign-in code?</h2>
+          <p className="text-slate-500 text-xs">Use Clerk&apos;s Impersonate feature to sign in as any user from the dashboard — no email needed.</p>
+          <ol className="space-y-1.5 text-slate-600 dark:text-slate-400 list-decimal list-inside">
+            <li>Open <strong>dashboard.clerk.com</strong> → your app → <strong>Users</strong></li>
+            <li>Click the user you want to test as</li>
+            <li>Click <strong>&quot;Impersonate user&quot;</strong> at the top right</li>
+            <li>A new tab opens — you&apos;re signed in as that user instantly</li>
+          </ol>
         </div>
 
         {/* How to switch roles */}

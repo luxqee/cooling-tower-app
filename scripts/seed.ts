@@ -2,16 +2,16 @@
  * Seed script — run with: pnpm seed
  *
  * Creates 4 example jobs and one Clerk test account per role.
- * Requires CLERK_SECRET_KEY in .env.local to create Clerk accounts.
+ * Requires CLERK_SECRET_KEY and SEED_EMAIL_BASE in .env.local.
  *
- * Test credentials (all roles, shared password):
- *   test.technician@ctfieldops.dev
- *   test.director@ctfieldops.dev
- *   test.service_manager@ctfieldops.dev
- *   test.admin@ctfieldops.dev
- *   test.sales_engineer@ctfieldops.dev
- *   test.draftsman@ctfieldops.dev
- *   Password: TestLogin123!
+ * SEED_EMAIL_BASE must be a real email you own, e.g. lukeherod7@gmail.com
+ * Gmail and most providers support "+" aliases — the seed creates:
+ *   lukeherod7+technician@gmail.com  → delivered to lukeherod7@gmail.com
+ *   lukeherod7+director@gmail.com    → delivered to lukeherod7@gmail.com
+ *   etc.
+ *
+ * On first sign-in for each account Clerk sends a verification code to your
+ * real inbox. Enter it once and you're in. After that: email + TestLogin123!
  */
 
 import { loadEnvConfig } from "@next/env";
@@ -23,14 +23,20 @@ loadEnvConfig(process.cwd());
 
 const TEST_PASSWORD = "TestLogin123!";
 
-const TEST_USERS = [
-  { role: "technician",      firstName: "Test", lastName: "Technician",    email: "test.technician@ctfieldops.dev" },
-  { role: "director",        firstName: "Test", lastName: "Director",       email: "test.director@ctfieldops.dev" },
-  { role: "service_manager", firstName: "Test", lastName: "Service Mgr",    email: "test.service_manager@ctfieldops.dev" },
-  { role: "admin",           firstName: "Test", lastName: "Admin",          email: "test.admin@ctfieldops.dev" },
-  { role: "sales_engineer",  firstName: "Test", lastName: "Sales Engineer", email: "test.sales_engineer@ctfieldops.dev" },
-  { role: "draftsman",       firstName: "Test", lastName: "Draftsman",      email: "test.draftsman@ctfieldops.dev" },
-] as const;
+// Build test-user email list from SEED_EMAIL_BASE, e.g. lukeherod7@gmail.com
+// Produces lukeherod7+technician@gmail.com, lukeherod7+director@gmail.com, etc.
+function buildTestUsers(emailBase: string) {
+  const [local, domain] = emailBase.split("@");
+  const make = (tag: string) => `${local}+${tag}@${domain}`;
+  return [
+    { role: "technician",      firstName: "Test", lastName: "Technician",    email: make("technician") },
+    { role: "director",        firstName: "Test", lastName: "Director",       email: make("director") },
+    { role: "service_manager", firstName: "Test", lastName: "Service Mgr",    email: make("service_manager") },
+    { role: "admin",           firstName: "Test", lastName: "Admin",          email: make("admin") },
+    { role: "sales_engineer",  firstName: "Test", lastName: "Sales Engineer", email: make("sales_engineer") },
+    { role: "draftsman",       firstName: "Test", lastName: "Draftsman",      email: make("draftsman") },
+  ] as const;
+}
 
 const JOBS = [
   { customerName: "Rio Tinto",           siteName: "Weipa Site A",          siteAddress: "Weipa QLD 4874",                        status: "active" as const,    quotedHours: 8 },
@@ -96,6 +102,23 @@ async function main() {
   const db = new PrismaClient({ adapter });
 
   try {
+    const clerkKey = process.env.CLERK_SECRET_KEY;
+    if (!clerkKey) {
+      console.error("❌  CLERK_SECRET_KEY not set in .env.local — cannot create test accounts.");
+      process.exit(1);
+    }
+
+    const emailBase = process.env.SEED_EMAIL_BASE;
+    if (!emailBase || !emailBase.includes("@")) {
+      console.error("❌  SEED_EMAIL_BASE not set in .env.local.");
+      console.error("   Add your real email, e.g.:  SEED_EMAIL_BASE=lukeherod7@gmail.com");
+      console.error("   The seed creates Gmail aliases like lukeherod7+technician@gmail.com");
+      console.error("   Verification codes are delivered to your real inbox — enter once, done.");
+      process.exit(1);
+    }
+
+    const TEST_USERS = buildTestUsers(emailBase);
+
     console.log("🌱 Clearing existing data…");
     await db.authEvent.deleteMany();
     await db.pushSubscription.deleteMany();
@@ -111,13 +134,6 @@ async function main() {
     console.log("🏗️  Seeding jobs…");
     const jobs = await Promise.all(JOBS.map((data) => db.job.create({ data })));
     jobs.forEach((j) => console.log(`  ✓ ${j.customerName} — ${j.siteName}`));
-
-    const clerkKey = process.env.CLERK_SECRET_KEY;
-    if (!clerkKey) {
-      console.log("\n⚠  CLERK_SECRET_KEY not set — skipping Clerk user creation.");
-      console.log("   Add it to .env.local and re-run to create test accounts.");
-      return;
-    }
 
     console.log("\n👤 Creating test users in Clerk + DB…");
     const createdUsers: Array<{ role: string; email: string; clerkId: string }> = [];
@@ -156,14 +172,15 @@ async function main() {
     }
 
     console.log("\n✅ Seed complete!\n");
-    console.log("Test credentials (all roles, same password):");
-    console.log("─".repeat(55));
+    console.log("Test credentials — sign in at /sign-in");
+    console.log("─".repeat(60));
     for (const u of createdUsers) {
       console.log(`  ${u.role.padEnd(16)} ${u.email}`);
     }
     console.log(`  ${"Password:".padEnd(16)} ${TEST_PASSWORD}`);
-    console.log("─".repeat(55));
-    console.log("\nSign in at /sign-in or visit /dev for a role-switcher guide.");
+    console.log("─".repeat(60));
+    console.log("\nFirst sign-in for each account: Clerk sends a code to your inbox.");
+    console.log("Enter it once — after that it's just email + password.");
   } finally {
     await db.$disconnect();
   }
