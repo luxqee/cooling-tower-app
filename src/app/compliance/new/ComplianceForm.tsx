@@ -117,18 +117,30 @@ export function ComplianceForm({ jobs, templates }: ComplianceFormProps) {
         <p className="text-sm font-medium">Select document type</p>
         <div className="space-y-2">
           {templates.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => { setTemplate(t); setValues({}); setStep("form"); }}
-              className="w-full text-left rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-4 hover:border-amber-400 dark:hover:border-amber-500 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${TYPE_COLOURS[t.type] ?? ""}`}>
-                  {TYPE_LABELS[t.type] ?? t.type}
-                </span>
-                <span className="font-medium">{t.name}</span>
+            <div key={t.id} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-amber-400 dark:hover:border-amber-500 transition-colors">
+              <button
+                onClick={() => { setTemplate(t); setValues({}); setStep("form"); }}
+                className="w-full text-left px-4 pt-4 pb-3"
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${TYPE_COLOURS[t.type] ?? ""}`}>
+                    {TYPE_LABELS[t.type] ?? t.type}
+                  </span>
+                  <span className="font-medium">{t.name}</span>
+                </div>
+              </button>
+              <div className="px-4 pb-3">
+                <a
+                  href={`/api/compliance/templates/${t.id}/preview`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 underline underline-offset-2"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Preview PDF ↗
+                </a>
               </div>
-            </button>
+            </div>
           ))}
         </div>
         <button

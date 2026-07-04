@@ -57,6 +57,14 @@ export default async function TemplatesPage() {
                       <p className="text-xs text-slate-400">{sectionCount} sections · {fieldCount} fields</p>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
+                      <a
+                        href={`/api/compliance/templates/${t.id}/preview`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 underline underline-offset-2"
+                      >
+                        Preview
+                      </a>
                       <Link href={`/compliance/templates/${t.id}/edit`} className="text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 underline underline-offset-2">
                         Edit
                       </Link>
