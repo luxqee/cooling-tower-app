@@ -23,7 +23,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     pdfUrl:      null,
     submittedAt: null,
     createdAt:   new Date(),
-  } as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  } as any;
 
   const mockJob = {
     id:           "preview",
