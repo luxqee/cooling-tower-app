@@ -5,6 +5,8 @@ import {
   FileEdit,
   Calendar,
   Users,
+  ShieldCheck,
+  FileText,
   type LucideIcon,
 } from "lucide-react";
 
@@ -83,5 +85,21 @@ export const navItems: NavItem[] = [
     description: "Technicians, roles, and assignments",
     visibleTo: ["director", "service_manager"],
     phase: "1a",
+  },
+  {
+    label: "Compliance",
+    href: "/compliance",
+    icon: ShieldCheck,
+    description: "SWMS, JSA, and WHS compliance documents",
+    visibleTo: ["technician", "director", "service_manager", "admin", "sales_engineer", "draftsman"],
+    phase: "2",
+  },
+  {
+    label: "Templates",
+    href: "/compliance/templates",
+    icon: FileText,
+    description: "Manage compliance document templates",
+    visibleTo: ["admin"],
+    phase: "2",
   },
 ];
