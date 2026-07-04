@@ -23,11 +23,12 @@ const DOC_TYPES = [
 ];
 
 interface TemplateBuilderProps {
-  initialName:     string;
-  initialType:     string;
-  initialSections: TemplateSections;
-  onSave:          (payload: { name: string; type: string; sections: TemplateSections }) => Promise<void>;
-  saving:          boolean;
+  templateId?:  string;
+  initialData?: {
+    name:     string;
+    type:     string;
+    sections: TemplateSections;
+  };
 }
 
 function emptyField(): TemplateField {
@@ -38,11 +39,16 @@ function emptySection(): TemplateSection {
   return { id: uuid(), title: "", fields: [] };
 }
 
-export function TemplateBuilder({ initialName, initialType, initialSections, onSave, saving }: TemplateBuilderProps) {
-  const [name,     setName]     = useState(initialName);
-  const [type,     setType]     = useState(initialType || "swms");
-  const [sections, setSections] = useState<TemplateSections>(initialSections.length > 0 ? initialSections : [emptySection()]);
+export function TemplateBuilder({ templateId, initialData }: TemplateBuilderProps) {
+  const router = useRouter();
+  const [name,     setName]     = useState(initialData?.name     ?? "");
+  const [type,     setType]     = useState(initialData?.type     ?? "swms");
+  const [sections, setSections] = useState<TemplateSections>(
+    (initialData?.sections ?? []).length > 0 ? (initialData?.sections ?? []) : [emptySection()]
+  );
   const [error,    setError]    = useState<string | null>(null);
+  const [saved,    setSaved]    = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   // Section operations
   function updateSectionTitle(id: string, title: string) {
@@ -103,12 +109,38 @@ export function TemplateBuilder({ initialName, initialType, initialSections, onS
 
   async function handleSave() {
     setError(null);
+    setSaved(false);
     if (!name.trim()) { setError("Template name is required."); return; }
     const hasFieldlessSections = sections.some((s) => s.fields.length === 0);
     if (sections.length === 0 || hasFieldlessSections) {
       setError("Each section must have at least one field."); return;
     }
-    await onSave({ name: name.trim(), type, sections }).catch((e: Error) => setError(e.message ?? "Failed to save."));
+    if (sections.some(s => !s.title.trim())) {
+      setError("All sections must have a title."); return;
+    }
+    startTransition(async () => {
+      try {
+        const url    = templateId ? `/api/compliance/templates/${templateId}` : "/api/compliance/templates";
+        const method = templateId ? "PATCH" : "POST";
+        const res    = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: name.trim(), type, sections }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          setError((body as { error?: string }).error ?? "Failed to save.");
+          return;
+        }
+        if (templateId) {
+          setSaved(true);
+        } else {
+          router.push("/compliance/templates");
+        }
+      } catch {
+        setError("Failed to save.");
+      }
+    });
   }
 
   const inputCls = "w-full min-h-[40px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-sm";
@@ -206,13 +238,14 @@ export function TemplateBuilder({ initialName, initialType, initialSections, onS
       </div>
 
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {saved  && <p className="text-sm text-green-600 dark:text-green-400">✓ Saved</p>}
 
       <button
         onClick={handleSave}
-        disabled={saving}
+        disabled={isPending}
         className="w-full min-h-[44px] rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm disabled:opacity-40"
       >
-        {saving ? "Saving…" : "Save template"}
+        {isPending ? "Saving…" : "Save template"}
       </button>
     </div>
   );
