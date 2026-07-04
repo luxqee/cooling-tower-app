@@ -89,3 +89,27 @@ describe("POST /api/compliance/documents", () => {
     expect(data.pdfUrl).toBeTruthy();
   });
 });
+
+describe("GET /api/compliance/documents/[id]", () => {
+  it("returns 401 when not authenticated", async () => {
+    vi.mocked(requireRole).mockRejectedValue(new Error("Unauthorized"));
+    const res = await getDoc(new Request("http://localhost/api/compliance/documents/doc-1"), { params: { id: "doc-1" } });
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 200 with document when found", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockUser as any);
+    vi.mocked(db.complianceDocument.findUnique).mockResolvedValue(mockDoc as any);
+    const res = await getDoc(new Request("http://localhost/api/compliance/documents/doc-1"), { params: { id: "doc-1" } });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.id).toBe("doc-1");
+  });
+
+  it("returns 404 when document not found", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockUser as any);
+    vi.mocked(db.complianceDocument.findUnique).mockResolvedValue(null);
+    const res = await getDoc(new Request("http://localhost/api/compliance/documents/missing"), { params: { id: "missing" } });
+    expect(res.status).toBe(404);
+  });
+});
