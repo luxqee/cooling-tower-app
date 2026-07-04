@@ -6,6 +6,16 @@ A multi-tenant field operations platform for cooling tower service businesses. T
 
 ---
 
+## Docs & Reviews
+
+| Document | Description |
+|----------|-------------|
+| [Expert Review — 2026-07-05](docs/reviews/2026-07-05-expert-review.md) | Solution, security, UX, and database findings across Phase 1 + 2a. 15 prioritised issues including critical SSRF, monetary type bug, race conditions, and mobile UX gaps. |
+| [Phase 2 Backlog](docs/superpowers/plans/2026-06-16-phase-2-backlog.md) | Implementation plan for Phase 2b–2e (quoting, invoicing, scheduling, customers). |
+| [Phase 3 Future Scope](docs/superpowers/plans/2026-06-16-phase-3-future.md) | Asset tracking, purchase orders, communication log, draftsman module. |
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
