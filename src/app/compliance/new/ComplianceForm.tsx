@@ -29,6 +29,7 @@ export function ComplianceForm({ jobs, templates }: ComplianceFormProps) {
   const [template, setTemplate]       = useState<Template | null>(null);
   const [values, setValues]           = useState<DocumentValues>({});
   const [error, setError]             = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPending, startTransition]  = useTransition();
 
   function setValue(fieldId: string, value: DocumentValues[string]) {
@@ -54,26 +55,30 @@ export function ComplianceForm({ jobs, templates }: ComplianceFormProps) {
       return;
     }
 
+    setIsSubmitting(true);
     startTransition(async () => {
-      const res = await fetch("/api/compliance/documents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobId, templateId: template.id, values }),
-      });
-      if (!res.ok) {
-        // Fix 1: wrap json() in try/catch to handle non-JSON error bodies (e.g. 502/504)
-        let errorMsg = "Failed to submit. Please try again.";
-        try {
-          const data = await res.json();
-          errorMsg = data?.error ?? errorMsg;
-        } catch {
-          // non-JSON body, use default message
+      try {
+        const res = await fetch("/api/compliance/documents", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jobId, templateId: template.id, values }),
+        });
+        if (!res.ok) {
+          let errorMsg = "Failed to submit. Please try again.";
+          try {
+            const data = await res.json();
+            errorMsg = data?.error ?? errorMsg;
+          } catch {
+            // non-JSON body, use default message
+          }
+          setError(errorMsg);
+          return;
         }
-        setError(errorMsg);
-        return;
+        router.push("/compliance");
+        router.refresh();
+      } finally {
+        setIsSubmitting(false);
       }
-      router.push("/compliance");
-      router.refresh();
     });
   }
 
@@ -225,17 +230,17 @@ export function ComplianceForm({ jobs, templates }: ComplianceFormProps) {
       <div className="flex gap-3 pt-2">
         <button
           onClick={() => setStep("template")}
-          disabled={isPending}
+          disabled={isPending || isSubmitting}
           className="flex-1 min-h-[44px] rounded-xl border border-slate-300 dark:border-slate-600 text-sm disabled:opacity-40"
         >
           ← Back
         </button>
         <button
           onClick={submit}
-          disabled={isPending}
+          disabled={isPending || isSubmitting}
           className="flex-1 min-h-[44px] rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm disabled:opacity-40"
         >
-          {isPending ? "Generating PDF…" : "Submit"}
+          {isPending || isSubmitting ? "Generating PDF…" : "Submit"}
         </button>
       </div>
     </div>

@@ -6,15 +6,15 @@ import { db } from "@/lib/db/client";
 const updateSchema = z.object({
   name:     z.string().min(1).optional(),
   type:     z.enum(["swms", "jsa", "whs"]).optional(),
-  sections: z.array(z.any()).optional(),
+  sections: z.array(z.any()).min(1, "At least one section is required").optional(),
 });
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const template = await db.complianceTemplate.findUnique({ where: { id: params.id } });
-  if (!template) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const template = await db.complianceTemplate.findUnique({ where: { id: params.id, isActive: true } });
+  if (!template) return NextResponse.json({ error: "Template not found" }, { status: 404 });
 
   return NextResponse.json(template);
 }

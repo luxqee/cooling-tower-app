@@ -23,10 +23,12 @@ export default async function NewComplianceDocumentPage() {
 
   if (templates.length === 0) {
     return (
-      <main className="px-4 py-8 max-w-lg mx-auto">
-        <h1 className="text-xl font-semibold mb-4">New Compliance Document</h1>
-        <p className="text-slate-500">No templates available. Ask an admin to create one.</p>
-      </main>
+      <AppShell>
+        <div className="max-w-lg mx-auto px-4 py-8">
+          <h1 className="text-xl font-semibold mb-4">New Compliance Document</h1>
+          <p className="text-slate-500">No templates available. Ask an admin to create one.</p>
+        </div>
+      </AppShell>
     );
   }
 

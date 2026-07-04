@@ -21,11 +21,16 @@ import { db } from "@/lib/db/client";
 import { GET as listDocs, POST as createDoc } from "../documents/route";
 import { GET as getDoc } from "../documents/[id]/route";
 
+const TMPL_ID = "22222222-2222-4222-8222-222222222222";
+const JOB_ID  = "11111111-1111-4111-8111-111111111111";
+const DOC_ID  = "33333333-3333-4333-8333-333333333333";
+const MISSING = "44444444-4444-4444-8444-444444444444";
+
 const mockUser = { id: "u1", role: "technician" as const, name: "Jake", clerkId: "c1", email: "j@t.com", phone: "", isActive: true };
 
-const mockTemplate = { id: "tmpl-1", name: "SWMS", type: "swms", sections: [], isActive: true, createdAt: new Date(), updatedAt: new Date() };
-const mockJob      = { id: "job-1",  customerName: "Rio Tinto", siteName: "Weipa", siteAddress: "QLD", status: "active", quotedHours: 8, createdAt: new Date() };
-const mockDoc      = { id: "doc-1",  jobId: "job-1", templateId: "tmpl-1", createdById: "u1", values: {}, pdfUrl: null, submittedAt: new Date(), createdAt: new Date() };
+const mockTemplate = { id: TMPL_ID, name: "SWMS", type: "swms", sections: [], isActive: true, createdAt: new Date(), updatedAt: new Date() };
+const mockJob      = { id: JOB_ID,  customerName: "Rio Tinto", siteName: "Weipa", siteAddress: "QLD", status: "active", quotedHours: 8, createdAt: new Date() };
+const mockDoc      = { id: DOC_ID,  jobId: JOB_ID, templateId: TMPL_ID, createdById: "u1", values: {}, pdfUrl: null, submittedAt: new Date(), createdAt: new Date() };
 
 function makeReq(body: unknown) {
   return new Request("http://localhost", {
@@ -57,14 +62,20 @@ describe("GET /api/compliance/documents", () => {
 describe("POST /api/compliance/documents", () => {
   it("returns 401 when not authenticated", async () => {
     vi.mocked(requireRole).mockRejectedValue(new Error("Unauthorized"));
-    const res = await createDoc(makeReq({ jobId: "job-1", templateId: "tmpl-1", values: {} }));
+    const res = await createDoc(makeReq({ jobId: JOB_ID, templateId: TMPL_ID, values: {} }));
     expect(res.status).toBe(401);
+  });
+
+  it("returns 400 when body is missing required fields", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockUser as any);
+    const res = await createDoc(makeReq({ values: {} }));
+    expect(res.status).toBe(400);
   });
 
   it("returns 404 when template not found", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockUser as any);
     vi.mocked(db.complianceTemplate.findUnique).mockResolvedValue(null);
-    const res = await createDoc(makeReq({ jobId: "job-1", templateId: "missing", values: {} }));
+    const res = await createDoc(makeReq({ jobId: JOB_ID, templateId: MISSING, values: {} }));
     expect(res.status).toBe(404);
   });
 
@@ -72,7 +83,7 @@ describe("POST /api/compliance/documents", () => {
     vi.mocked(requireRole).mockResolvedValue(mockUser as any);
     vi.mocked(db.complianceTemplate.findUnique).mockResolvedValue(mockTemplate as any);
     vi.mocked(db.job.findUnique).mockResolvedValue(null);
-    const res = await createDoc(makeReq({ jobId: "missing", templateId: "tmpl-1", values: {} }));
+    const res = await createDoc(makeReq({ jobId: MISSING, templateId: TMPL_ID, values: {} }));
     expect(res.status).toBe(404);
   });
 
@@ -83,7 +94,7 @@ describe("POST /api/compliance/documents", () => {
     vi.mocked(db.complianceDocument.create).mockResolvedValue(mockDoc as any);
     vi.mocked(db.complianceDocument.update).mockResolvedValue({ ...mockDoc, pdfUrl: "https://blob.vercel-storage.com/compliance/doc-1.pdf" } as any);
 
-    const res = await createDoc(makeReq({ jobId: "job-1", templateId: "tmpl-1", values: {} }));
+    const res = await createDoc(makeReq({ jobId: JOB_ID, templateId: TMPL_ID, values: {} }));
     expect(res.status).toBe(201);
     const data = await res.json();
     expect(data.pdfUrl).toBeTruthy();
@@ -93,23 +104,23 @@ describe("POST /api/compliance/documents", () => {
 describe("GET /api/compliance/documents/[id]", () => {
   it("returns 401 when not authenticated", async () => {
     vi.mocked(requireRole).mockRejectedValue(new Error("Unauthorized"));
-    const res = await getDoc(new Request("http://localhost/api/compliance/documents/doc-1"), { params: { id: "doc-1" } });
+    const res = await getDoc(new Request(`http://localhost/api/compliance/documents/${DOC_ID}`), { params: { id: DOC_ID } });
     expect(res.status).toBe(401);
   });
 
   it("returns 200 with document when found", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockUser as any);
     vi.mocked(db.complianceDocument.findUnique).mockResolvedValue(mockDoc as any);
-    const res = await getDoc(new Request("http://localhost/api/compliance/documents/doc-1"), { params: { id: "doc-1" } });
+    const res = await getDoc(new Request(`http://localhost/api/compliance/documents/${DOC_ID}`), { params: { id: DOC_ID } });
     expect(res.status).toBe(200);
     const data = await res.json();
-    expect(data.id).toBe("doc-1");
+    expect(data.id).toBe(DOC_ID);
   });
 
   it("returns 404 when document not found", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockUser as any);
     vi.mocked(db.complianceDocument.findUnique).mockResolvedValue(null);
-    const res = await getDoc(new Request("http://localhost/api/compliance/documents/missing"), { params: { id: "missing" } });
+    const res = await getDoc(new Request(`http://localhost/api/compliance/documents/${MISSING}`), { params: { id: MISSING } });
     expect(res.status).toBe(404);
   });
 });

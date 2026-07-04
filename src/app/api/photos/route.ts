@@ -21,7 +21,7 @@ export async function GET(req: Request) {
 
   return new Response(res.body, {
     headers: {
-      "Content-Type": res.headers.get("Content-Type") ?? "image/jpeg",
+      "Content-Type": res.headers.get("Content-Type") ?? "application/octet-stream",
       "Cache-Control": "private, max-age=3600",
     },
   });

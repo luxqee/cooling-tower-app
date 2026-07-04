@@ -48,6 +48,7 @@ export function TemplateBuilder({ templateId, initialData }: TemplateBuilderProp
   );
   const [error,    setError]    = useState<string | null>(null);
   const [saved,    setSaved]    = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   // Section operations
@@ -118,6 +119,7 @@ export function TemplateBuilder({ templateId, initialData }: TemplateBuilderProp
     if (sections.some(s => !s.title.trim())) {
       setError("All sections must have a title."); return;
     }
+    setIsSubmitting(true);
     startTransition(async () => {
       try {
         const url    = templateId ? `/api/compliance/templates/${templateId}` : "/api/compliance/templates";
@@ -139,6 +141,8 @@ export function TemplateBuilder({ templateId, initialData }: TemplateBuilderProp
         }
       } catch {
         setError("Failed to save.");
+      } finally {
+        setIsSubmitting(false);
       }
     });
   }
@@ -242,10 +246,10 @@ export function TemplateBuilder({ templateId, initialData }: TemplateBuilderProp
 
       <button
         onClick={handleSave}
-        disabled={isPending}
+        disabled={isPending || isSubmitting}
         className="w-full min-h-[44px] rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm disabled:opacity-40"
       >
-        {isPending ? "Saving…" : "Save template"}
+        {isPending || isSubmitting ? "Saving…" : "Save template"}
       </button>
     </div>
   );
@@ -260,7 +264,11 @@ export function DeleteTemplateButton({ id, name }: { id: string; name: string })
   function handleDelete() {
     if (!confirm(`Delete template "${name}"? This cannot be undone.`)) return;
     startTransition(async () => {
-      await fetch(`/api/compliance/templates/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/compliance/templates/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        alert("Failed to delete template. Please try again.");
+        return;
+      }
       router.refresh();
     });
   }
