@@ -1,16 +1,16 @@
 import { AppShell } from "@/components/layout/AppShell";
-import { requireRole } from "@/lib/auth/clerk";
+import { getSessionUser } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
 import { redirect } from "next/navigation";
 import { ComplianceForm } from "./ComplianceForm";
 
 export default async function NewComplianceDocumentPage() {
-  const user = await requireRole(["technician", "director", "service_manager", "admin", "sales_engineer", "draftsman"]).catch(() => null);
-  if (!user) redirect("/sign-in");
+  const user = await getSessionUser();
+  if (!user) redirect("/");
 
   const [jobs, templates] = await Promise.all([
     db.job.findMany({
-      where: { status: { in: ["active", "scheduled"] } },
+      where: { status: { in: ["scheduled", "active"] } },
       select: { id: true, customerName: true, siteName: true },
       orderBy: [{ customerName: "asc" }, { siteName: "asc" }],
     }),
@@ -20,6 +20,15 @@ export default async function NewComplianceDocumentPage() {
       orderBy: { createdAt: "asc" },
     }),
   ]);
+
+  if (templates.length === 0) {
+    return (
+      <main className="px-4 py-8 max-w-lg mx-auto">
+        <h1 className="text-xl font-semibold mb-4">New Compliance Document</h1>
+        <p className="text-slate-500">No templates available. Ask an admin to create one.</p>
+      </main>
+    );
+  }
 
   return (
     <AppShell>
