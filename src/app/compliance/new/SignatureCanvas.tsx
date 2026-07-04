@@ -22,6 +22,18 @@ export function SignatureCanvas({ onChange }: SignatureCanvasProps) {
     ctx.lineJoin    = "round";
   }, []);
 
+  useEffect(() => {
+    function handleWindowMouseUp() {
+      if (!drawing.current) return;
+      drawing.current = false;
+      setIsEmpty(false);
+      onChange(canvasRef.current?.toDataURL("image/png") ?? null);
+    }
+
+    window.addEventListener("mouseup", handleWindowMouseUp);
+    return () => window.removeEventListener("mouseup", handleWindowMouseUp);
+  }, [onChange]);
+
   function getPos(e: React.MouseEvent | React.TouchEvent) {
     const canvas = canvasRef.current!;
     const rect   = canvas.getBoundingClientRect();
