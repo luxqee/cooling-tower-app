@@ -38,6 +38,22 @@ export function ComplianceForm({ jobs, templates }: ComplianceFormProps) {
   function submit() {
     if (!template || !jobId) return;
     setError(null);
+
+    // Fix 3: Validate required fields before submitting
+    const sections = Array.isArray(template?.sections) ? (template.sections as TemplateSections) : [];
+    const missingRequired = sections.flatMap(s => s.fields)
+      .filter(f => f.required)
+      .filter(f => {
+        const val = values[f.id];
+        if (val === null || val === undefined || val === "" || val === false) return true;
+        if (Array.isArray(val) && val.length === 0) return true;
+        return false;
+      });
+    if (missingRequired.length > 0) {
+      setError(`Please fill in all required fields: ${missingRequired.map(f => f.label).join(", ")}`);
+      return;
+    }
+
     startTransition(async () => {
       const res = await fetch("/api/compliance/documents", {
         method: "POST",
@@ -45,8 +61,15 @@ export function ComplianceForm({ jobs, templates }: ComplianceFormProps) {
         body: JSON.stringify({ jobId, templateId: template.id, values }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        setError(data.error ?? "Failed to submit. Please try again.");
+        // Fix 1: wrap json() in try/catch to handle non-JSON error bodies (e.g. 502/504)
+        let errorMsg = "Failed to submit. Please try again.";
+        try {
+          const data = await res.json();
+          errorMsg = data?.error ?? errorMsg;
+        } catch {
+          // non-JSON body, use default message
+        }
+        setError(errorMsg);
         return;
       }
       router.push("/compliance");
@@ -114,7 +137,8 @@ export function ComplianceForm({ jobs, templates }: ComplianceFormProps) {
   }
 
   // Step 3 — fill in form
-  const sections = (template?.sections ?? []) as TemplateSections;
+  // Fix 4: guard against non-array JSON values from DB
+  const sections = Array.isArray(template?.sections) ? (template.sections as TemplateSections) : [];
 
   return (
     <div className="space-y-6">
@@ -201,7 +225,8 @@ export function ComplianceForm({ jobs, templates }: ComplianceFormProps) {
       <div className="flex gap-3 pt-2">
         <button
           onClick={() => setStep("template")}
-          className="flex-1 min-h-[44px] rounded-xl border border-slate-300 dark:border-slate-600 text-sm"
+          disabled={isPending}
+          className="flex-1 min-h-[44px] rounded-xl border border-slate-300 dark:border-slate-600 text-sm disabled:opacity-40"
         >
           ← Back
         </button>
