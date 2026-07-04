@@ -33,6 +33,7 @@
     "react-dom": "^18.3.1",
     "svix": "^1.95.2",
     "tailwind-merge": "^2.5.4",
+    "uuid": "^14.0.1",
     "web-push": "^3.6.7",
     "zod": "^4.4.3"
   },
@@ -46,6 +47,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/uuid": "^11.0.0",
     "@types/web-push": "^3.6.4",
     "@vitejs/plugin-react": "^6.0.2",
     "autoprefixer": "^10.4.0",
