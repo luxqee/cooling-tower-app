@@ -29,7 +29,7 @@ function formatDate(iso: string) {
   try { return new Date(iso).toLocaleDateString("en-AU"); } catch { return iso; }
 }
 
-function FieldValue({ type, value }: { type: string; value: unknown }) {
+export function FieldValue({ type, value }: { type: string; value: unknown }) {
   if (value == null || value === "") return createElement(Text, { style: styles.fieldValue }, "—");
 
   if (type === "signature" && typeof value === "string" && value.startsWith("data:image/")) {
@@ -65,7 +65,7 @@ export async function generatePdf({ document, template, job, createdBy }: Genera
         createElement(Text, { style: styles.docTitle }, template.name),
         createElement(Text, { style: styles.headerMeta }, `Job: ${job.customerName} — ${job.siteName}`),
         createElement(Text, { style: styles.headerMeta }, `Submitted by: ${createdBy.name}`),
-        createElement(Text, { style: styles.headerMeta }, `Date: ${new Date(document.submittedAt).toLocaleDateString("en-AU")}`),
+        createElement(Text, { style: styles.headerMeta }, `Date: ${document.submittedAt ? new Date(document.submittedAt).toLocaleDateString("en-AU") : "—"}`),
       ),
       // Sections
       ...sections.map((section) =>

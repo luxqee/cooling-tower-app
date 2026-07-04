@@ -10,7 +10,8 @@ vi.mock("@react-pdf/renderer", () => ({
   StyleSheet: { create: (s: any) => s },
 }));
 
-import { generatePdf } from "../generatePdf";
+import { generatePdf, FieldValue } from "../generatePdf";
+import { Text, Image } from "@react-pdf/renderer";
 
 const baseTemplate = {
   id: "tmpl-1",
@@ -75,5 +76,81 @@ describe("generatePdf", () => {
     const { renderToBuffer } = await import("@react-pdf/renderer");
     await generatePdf({ document: baseDocument as any, template: baseTemplate as any, job: baseJob as any, createdBy: baseUser as any });
     expect(renderToBuffer).toHaveBeenCalledOnce();
+  });
+
+  it("does not throw when submittedAt is null", async () => {
+    const nullDateDoc = { ...baseDocument, submittedAt: null };
+    await expect(
+      generatePdf({ document: nullDateDoc as any, template: baseTemplate as any, job: baseJob as any, createdBy: baseUser as any })
+    ).resolves.not.toThrow();
+  });
+});
+
+describe("FieldValue component", () => {
+  it("renders em-dash Text for null value", () => {
+    const el = FieldValue({ type: "text", value: null }) as any;
+    expect(el.type).toBe(Text);
+    expect(el.props.children).toBe("—");
+  });
+
+  it("renders em-dash Text for empty-string value", () => {
+    const el = FieldValue({ type: "text", value: "" }) as any;
+    expect(el.type).toBe(Text);
+    expect(el.props.children).toBe("—");
+  });
+
+  it("renders Image for signature with data URL", () => {
+    const el = FieldValue({ type: "signature", value: "data:image/png;base64,abc123" }) as any;
+    expect(el.type).toBe(Image);
+    expect(el.props.src).toBe("data:image/png;base64,abc123");
+  });
+
+  it("falls through to Text string for signature without data URL", () => {
+    const el = FieldValue({ type: "signature", value: "not-a-data-url" }) as any;
+    expect(el.type).toBe(Text);
+    expect(el.props.children).toBe("not-a-data-url");
+  });
+
+  it("renders '☑ Yes' Text for checkbox true", () => {
+    const el = FieldValue({ type: "checkbox", value: true }) as any;
+    expect(el.type).toBe(Text);
+    expect(el.props.children).toBe("☑ Yes");
+  });
+
+  it("renders '☐ No' Text for checkbox false", () => {
+    const el = FieldValue({ type: "checkbox", value: false }) as any;
+    expect(el.type).toBe(Text);
+    expect(el.props.children).toBe("☐ No");
+  });
+
+  it("renders joined items Text for non-empty checklist", () => {
+    const el = FieldValue({ type: "checklist", value: ["Harness", "Helmet"] }) as any;
+    expect(el.type).toBe(Text);
+    expect(el.props.children).toBe("Harness, Helmet");
+  });
+
+  it("renders 'None selected' Text for empty checklist", () => {
+    const el = FieldValue({ type: "checklist", value: [] }) as any;
+    expect(el.type).toBe(Text);
+    expect(el.props.children).toBe("None selected");
+  });
+
+  it("renders formatted date string Text for date type", () => {
+    const el = FieldValue({ type: "date", value: "2026-07-04" }) as any;
+    expect(el.type).toBe(Text);
+    expect(typeof el.props.children).toBe("string");
+    expect(el.props.children).not.toBe("—");
+  });
+
+  it("renders string Text for plain text type", () => {
+    const el = FieldValue({ type: "text", value: "Cooling Tower Services" }) as any;
+    expect(el.type).toBe(Text);
+    expect(el.props.children).toBe("Cooling Tower Services");
+  });
+
+  it("renders string Text for textarea type", () => {
+    const el = FieldValue({ type: "textarea", value: "Replace fill media on unit 3" }) as any;
+    expect(el.type).toBe(Text);
+    expect(el.props.children).toBe("Replace fill media on unit 3");
   });
 });
