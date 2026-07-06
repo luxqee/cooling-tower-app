@@ -4,6 +4,10 @@ import { Webhook } from "svix";
 import { db } from "@/lib/db/client";
 import type { UserRole } from "@/lib/nav-config";
 
+const VALID_ROLES: UserRole[] = [
+  "technician", "director", "service_manager", "admin", "sales_engineer", "draftsman",
+];
+
 export async function POST(req: Request) {
   const secret = process.env.CLERK_WEBHOOK_SECRET;
   if (!secret) return new Response("No webhook secret configured", { status: 500 });
@@ -35,7 +39,10 @@ export async function POST(req: Request) {
     const { id, first_name, last_name, email_addresses, public_metadata, phone_numbers } = evt.data;
     const email = email_addresses[0]?.email_address ?? "";
     const name = [first_name, last_name].filter(Boolean).join(" ") || email;
-    const role = (public_metadata?.role as UserRole) ?? "technician";
+    const rawRole = public_metadata?.role as string | undefined;
+    const role: UserRole = VALID_ROLES.includes(rawRole as UserRole)
+      ? (rawRole as UserRole)
+      : "technician";
     const phone = phone_numbers[0]?.phone_number ?? "";
 
     await db.user.upsert({
