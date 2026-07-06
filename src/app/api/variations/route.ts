@@ -39,6 +39,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Job not found or not active" }, { status: 404 });
   }
 
+  // Security: technician must be assigned to the job to submit a variation
+  const assignment = await db.assignment.findFirst({
+    where: { userId: user.id, jobId },
+  });
+  if (!assignment) {
+    return NextResponse.json({ error: "Not assigned to this job" }, { status: 403 });
+  }
+
   const variation = await db.variation.create({
     data: {
       jobId,
