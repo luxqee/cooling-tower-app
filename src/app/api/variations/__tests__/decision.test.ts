@@ -6,7 +6,7 @@ vi.mock("@/lib/db/client", () => ({
   db: {
     $transaction: vi.fn(),
     variation:    { findUnique: vi.fn(), update: vi.fn() },
-    invoice:      { findFirst: vi.fn(), update: vi.fn(), create: vi.fn() },
+    invoice:      { findUnique: vi.fn(), update: vi.fn(), create: vi.fn() },
     user:         { findUnique: vi.fn() },
   },
 }));
