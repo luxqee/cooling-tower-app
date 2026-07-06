@@ -111,7 +111,9 @@ export function ClockCard({ jobs, activeEntry }: ClockCardProps) {
         <p className="text-sm text-slate-500">No jobs scheduled for today.</p>
       ) : (
         <>
+          <label htmlFor="clock-job-select" className="sr-only">Select job to clock in</label>
           <select
+            id="clock-job-select"
             value={selectedJobId}
             onChange={(e) => setSelectedJobId(e.target.value)}
             className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 px-3 text-base"

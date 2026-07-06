@@ -87,11 +87,12 @@ export function ComplianceForm({ jobs, templates }: ComplianceFormProps) {
     return (
       <div className="space-y-4">
         <div className="space-y-1">
-          <label className="text-sm font-medium">Select job</label>
+          <label htmlFor="compliance-job-select" className="text-sm font-medium">Select job</label>
           <select
+            id="compliance-job-select"
             value={jobId}
             onChange={(e) => setJobId(e.target.value)}
-            className="w-full min-h-[44px] rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-sm"
+            className="w-full min-h-[44px] rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-base"
           >
             <option value="">— Choose a job —</option>
             {jobs.map((j) => (
@@ -164,34 +165,37 @@ export function ComplianceForm({ jobs, templates }: ComplianceFormProps) {
           <h3 className="font-semibold text-sm border-b border-slate-200 dark:border-slate-700 pb-2">{section.title}</h3>
           {section.fields.map((field) => (
             <div key={field.id} className="space-y-1">
-              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              <label htmlFor={`field-${field.id}`} className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 {field.label}{field.required && <span className="text-red-500 ml-0.5">*</span>}
               </label>
 
               {field.type === "text" && (
                 <input
+                  id={`field-${field.id}`}
                   type="text"
                   value={(values[field.id] as string) ?? ""}
                   onChange={(e) => setValue(field.id, e.target.value)}
-                  className="w-full min-h-[40px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-sm"
+                  className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-base"
                 />
               )}
 
               {field.type === "textarea" && (
                 <textarea
+                  id={`field-${field.id}`}
                   value={(values[field.id] as string) ?? ""}
                   onChange={(e) => setValue(field.id, e.target.value)}
                   rows={3}
-                  className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm resize-none"
+                  className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-base resize-none"
                 />
               )}
 
               {field.type === "date" && (
                 <input
+                  id={`field-${field.id}`}
                   type="date"
                   value={(values[field.id] as string) ?? ""}
                   onChange={(e) => setValue(field.id, e.target.value)}
-                  className="w-full min-h-[40px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-sm"
+                  className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-base"
                 />
               )}
 

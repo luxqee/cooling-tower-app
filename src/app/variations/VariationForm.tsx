@@ -126,8 +126,9 @@ export function VariationForm({ jobs }: VariationFormProps) {
   return (
     <div className="space-y-5">
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">Job</label>
+        <label htmlFor="variation-job" className="text-sm font-medium">Job</label>
         <select
+          id="variation-job"
           value={jobId}
           onChange={(e) => setJobId(e.target.value)}
           className="w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-base"
@@ -143,8 +144,9 @@ export function VariationForm({ jobs }: VariationFormProps) {
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">Description</label>
+        <label htmlFor="variation-description" className="text-sm font-medium">Description</label>
         <textarea
+          id="variation-description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={4}
@@ -155,8 +157,9 @@ export function VariationForm({ jobs }: VariationFormProps) {
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">Cost Estimate ($AUD)</label>
+        <label htmlFor="variation-cost" className="text-sm font-medium">Cost Estimate ($AUD)</label>
         <input
+          id="variation-cost"
           type="number"
           inputMode="decimal"
           value={costEstimate}
@@ -170,8 +173,9 @@ export function VariationForm({ jobs }: VariationFormProps) {
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-sm font-medium">Photo (optional)</label>
+        <label htmlFor="variation-photo" className="text-sm font-medium">Photo (optional)</label>
         <input
+          id="variation-photo"
           ref={fileRef}
           type="file"
           accept="image/*"
