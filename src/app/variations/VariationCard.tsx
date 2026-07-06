@@ -93,7 +93,7 @@ export function VariationCard({ variation, onDecided }: VariationCardProps) {
               key={a}
               onClick={() => handleSelect(a)}
               className={cn(
-                "flex-1 min-h-[40px] rounded-lg text-sm font-medium capitalize border transition-colors",
+                "flex-1 min-h-[44px] rounded-lg text-sm font-medium capitalize border transition-colors",
                 action === a
                   ? a === "approved"
                     ? "bg-emerald-600 text-white border-emerald-600"

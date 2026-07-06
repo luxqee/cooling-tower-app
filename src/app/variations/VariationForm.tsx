@@ -216,7 +216,7 @@ export function VariationForm({ jobs }: VariationFormProps) {
       <button
         onClick={handleSubmit}
         disabled={isPending || uploadProgress}
-        className="w-full min-h-[52px] rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-semibold text-base disabled:opacity-40 active:scale-[0.98] transition-transform"
+        className="w-full min-h-[52px] rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-base disabled:opacity-40 active:scale-[0.98] transition-transform"
       >
         {isPending ? "Submitting…" : "Submit Variation"}
       </button>

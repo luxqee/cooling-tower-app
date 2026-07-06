@@ -103,7 +103,7 @@ export function ComplianceForm({ jobs, templates }: ComplianceFormProps) {
         <button
           disabled={!jobId}
           onClick={() => setStep("template")}
-          className="w-full min-h-[44px] rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm disabled:opacity-40"
+          className="w-full min-h-[44px] rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold text-sm disabled:opacity-40"
         >
           Next
         </button>
@@ -254,7 +254,7 @@ export function ComplianceForm({ jobs, templates }: ComplianceFormProps) {
         <button
           onClick={submit}
           disabled={isPending || isSubmitting}
-          className="flex-1 min-h-[44px] rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm disabled:opacity-40"
+          className="flex-1 min-h-[44px] rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold text-sm disabled:opacity-40"
         >
           {isPending || isSubmitting ? "Generating PDF…" : "Submit"}
         </button>

@@ -31,14 +31,23 @@ export default async function TimeTrackingPage() {
   let jobs = assignments.map((a) => a.job);
   let usingFallback = false;
 
-  // Fallback: if no assignments today, show all active/scheduled jobs
-  // so technicians who arrive at an unplanned job can still clock in
-  if (jobs.length === 0) {
-    const fallbackJobs = await db.job.findMany({
-      where: { status: { in: ["active", "scheduled"] } },
-      select: { id: true, customerName: true, siteName: true, siteAddress: true },
-      orderBy: { customerName: "asc" },
+  // Fallback: if no assignments today and user is a technician, show jobs they've
+  // been assigned to historically so they can clock in on unplanned visits.
+  // Directors/service_managers have no assignment expectation — skip the fallback.
+  if (jobs.length === 0 && user.role === "technician") {
+    // Only show jobs the technician has been assigned to before (prevents misleading 403)
+    const historicalAssignments = await db.assignment.findMany({
+      where: { userId: user.id },
+      select: { jobId: true },
     });
+    const assignedJobIds = historicalAssignments.map((a) => a.jobId);
+    const fallbackJobs = assignedJobIds.length > 0
+      ? await db.job.findMany({
+          where: { id: { in: assignedJobIds }, status: { in: ["active", "scheduled"] } },
+          select: { id: true, customerName: true, siteName: true, siteAddress: true },
+          orderBy: { customerName: "asc" },
+        })
+      : [];
     jobs = fallbackJobs;
     usingFallback = true;
   }
