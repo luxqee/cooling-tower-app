@@ -1,20 +1,28 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export function NewJobForm({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [jobTypeOptions, setJobTypeOptions] = useState<string[]>([]);
 
   const [fields, setFields] = useState({
     customerName: "",
     siteName: "",
     siteAddress: "",
     quotedHours: "",
+    jobType: "",
     status: "scheduled" as "scheduled" | "active",
   });
+
+  useEffect(() => {
+    fetch("/api/quotes/job-types")
+      .then((r) => (r.ok ? r.json() : { jobTypes: [] }))
+      .then((d) => setJobTypeOptions(d.jobTypes ?? []));
+  }, []);
 
   function set(key: keyof typeof fields, value: string) {
     setFields((prev) => ({ ...prev, [key]: value }));
@@ -28,6 +36,7 @@ export function NewJobForm({ onClose }: { onClose: () => void }) {
     const hours = parseFloat(fields.quotedHours);
     if (!fields.quotedHours || isNaN(hours) || hours <= 0)
       newErrors.quotedHours = "Enter hours greater than 0";
+    if (!fields.jobType.trim()) newErrors.jobType = "Required";
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -91,6 +100,24 @@ export function NewJobForm({ onClose }: { onClose: () => void }) {
         {errors.siteAddress && <p className="text-sm text-red-600">{errors.siteAddress}</p>}
       </div>
 
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium">Job type</label>
+        <input
+          type="text"
+          list="new-job-type-options"
+          value={fields.jobType}
+          onChange={(e) => set("jobType", e.target.value)}
+          placeholder="e.g. Installation"
+          className={inputClass}
+        />
+        <datalist id="new-job-type-options">
+          {jobTypeOptions.map((t) => (
+            <option key={t} value={t} />
+          ))}
+        </datalist>
+        {errors.jobType && <p className="text-sm text-red-600">{errors.jobType}</p>}
+      </div>
+
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <label className="text-sm font-medium">Quoted hours</label>
@@ -130,7 +157,7 @@ export function NewJobForm({ onClose }: { onClose: () => void }) {
         <button
           onClick={handleSubmit}
           disabled={isPending}
-          className="flex-1 min-h-[48px] rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm disabled:opacity-40"
+          className="flex-1 min-h-[48px] rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-sm disabled:opacity-40"
         >
           {isPending ? "Creating…" : "Create job"}
         </button>
