@@ -1,15 +1,24 @@
 import { Sidebar } from "@/components/nav/Sidebar";
 import { MobileNav } from "@/components/nav/MobileNav";
+import { BottomTabBar } from "@/components/nav/BottomTabBar";
 import { TopBar } from "@/components/nav/TopBar";
+import { getSessionUser } from "@/lib/auth/clerk";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export async function AppShell({ children }: { children: React.ReactNode }) {
+  const user = await getSessionUser();
+  const hasTabs = user?.role === "technician";
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <Sidebar />
       <MobileNav />
+      <BottomTabBar />
       <div className="lg:pl-64">
         <TopBar />
-        <main className="px-4 py-6 lg:px-8 lg:py-8">{children}</main>
+        {/* Extra bottom padding on mobile so content clears the bottom tab bar */}
+        <main className={`px-4 py-6 lg:px-8 lg:py-8 ${hasTabs ? "pb-20 lg:pb-8" : ""}`}>
+          {children}
+        </main>
       </div>
     </div>
   );
