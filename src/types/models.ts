@@ -9,7 +9,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  phone: string;
+  phone: string | null;
   role: UserRole;
   isActive: boolean;
   createdAt: Date;

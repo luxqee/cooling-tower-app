@@ -47,13 +47,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       });
 
       if (decision === "approved") {
-        const existing = await tx.invoice.findFirst({ where: { jobId: variation.jobId } });
+        const existing = await tx.invoice.findUnique({ where: { jobId: variation.jobId } });
         if (existing) {
           await tx.invoice.update({
             where: { id: existing.id },
             data: {
-              variationsTotal: Number(existing.variationsTotal) + Number(variation.costEstimate),
-              totalAmount: Number(existing.totalAmount) + Number(variation.costEstimate),
+              variationsTotal: existing.variationsTotal.plus(variation.costEstimate),
+              totalAmount: existing.totalAmount.plus(variation.costEstimate),
             },
           });
         } else {
@@ -61,8 +61,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
             data: {
               jobId: variation.jobId,
               baseAmount: 0,
-              variationsTotal: Number(variation.costEstimate),
-              totalAmount: Number(variation.costEstimate),
+              variationsTotal: variation.costEstimate,
+              totalAmount: variation.costEstimate,
             },
           });
         }

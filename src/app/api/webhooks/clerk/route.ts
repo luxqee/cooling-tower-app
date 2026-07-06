@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     const role: UserRole = VALID_ROLES.includes(rawRole as UserRole)
       ? (rawRole as UserRole)
       : "technician";
-    const phone = phone_numbers[0]?.phone_number ?? "";
+    const phone = phone_numbers[0]?.phone_number ?? undefined;
 
     await db.user.upsert({
       where: { clerkId: id },
