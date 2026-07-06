@@ -16,8 +16,9 @@ export function SignatureCanvas({ onChange }: SignatureCanvasProps) {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.strokeStyle = "#1e293b";
-    ctx.lineWidth   = 2;
+    const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    ctx.strokeStyle = dark ? "#e2e8f0" : "#1e293b";
+    ctx.lineWidth   = 2.5;
     ctx.lineCap     = "round";
     ctx.lineJoin    = "round";
   }, []);
@@ -29,7 +30,6 @@ export function SignatureCanvas({ onChange }: SignatureCanvasProps) {
       setIsEmpty(false);
       onChange(canvasRef.current?.toDataURL("image/png") ?? null);
     }
-
     window.addEventListener("mouseup", handleWindowMouseUp);
     return () => window.removeEventListener("mouseup", handleWindowMouseUp);
   }, [onChange]);
@@ -77,19 +77,28 @@ export function SignatureCanvas({ onChange }: SignatureCanvasProps) {
   function clear() {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    canvas.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Re-apply stroke style after clear (ctx state survives, but good to reinforce)
+    const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    ctx.strokeStyle = dark ? "#e2e8f0" : "#1e293b";
     setIsEmpty(true);
     onChange(null);
   }
 
   return (
     <div className="space-y-1">
-      <div className="relative rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 overflow-hidden touch-none"
-           style={{ height: 100 }}>
+      {/* Wrapper height (200px) must match the canvas height attribute to keep coordinate mapping 1:1 */}
+      <div
+        className="relative rounded-lg border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 overflow-hidden touch-none"
+        style={{ height: 200 }}
+      >
         <canvas
           ref={canvasRef}
           width={600}
-          height={150}
+          height={200}
+          aria-label="Signature pad — draw your signature here"
           className="w-full h-full"
           onMouseDown={start}
           onMouseMove={move}
