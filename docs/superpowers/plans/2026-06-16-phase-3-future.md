@@ -179,6 +179,47 @@ Builds on the Vercel Blob upload pattern from Phase 1c.
 
 ---
 
+## Module 3d — Quote Generation
+
+**The problem:** The `/quotes` page (Phase 2b) lets sales engineers look up historical job performance to inform price estimates, but there is no way to actually produce a quote. Engineers currently calculate prices manually and send them via email.
+
+**What Phase 3d would build:**
+
+- An **hourly rate** per job type (or a default business rate) — set by the director in Settings
+- A **quote creation flow**: pick a job type, enter estimated hours and any additional line items (materials, callout fee), system calculates a total
+- A **Quote model** in the DB: linked to a customer, includes line items, status (`draft` | `sent` | `accepted` | `declined`)
+- A **quote PDF** generated server-side (logo + ABN from `BusinessProfile`, line items, total, validity period)
+- A **send flow**: mark as sent (records timestamp); optionally email the PDF
+- The `/quotes` historical search page gains a "Create quote from this job type" shortcut — pre-fills estimated hours from the historical average
+
+**Data model considerations:**
+
+```
+Quote
+- id
+- createdById (sales_engineer or director)
+- customerName
+- siteName
+- jobType
+- lineItems Json  -- [{ description, qty, unitPrice }]
+- totalAmount Decimal(12,2)
+- status: "draft" | "sent" | "accepted" | "declined"
+- validUntil DateTime?
+- pdfUrl String?  -- Vercel Blob
+- createdAt
+- updatedAt
+
+RateCard  (optional — or just a single default rate on BusinessProfile)
+- id
+- jobType String
+- hourlyRate Decimal(12,2)
+- effectiveFrom DateTime
+```
+
+**Dependencies:** Builds on `BusinessProfile` (name, ABN, logo), `jobType` from Phase 2b, and the PDF generation pattern from Phase 2a compliance documents.
+
+---
+
 ## Architecture Notes for Future-Proofing
 
 These decisions should be maintained in Phases 1–2 to avoid rework in Phase 3:
