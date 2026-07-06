@@ -8,8 +8,14 @@ export async function GET(req: Request) {
   const blobUrl = searchParams.get("url");
   if (!blobUrl) return new Response("Missing url", { status: 400 });
 
-  // Verify it's a Vercel Blob URL to prevent open-proxy abuse
-  if (!blobUrl.includes(".blob.vercel-storage.com")) {
+  // Parse URL and validate hostname — prevents SSRF via substring bypass
+  let parsed: URL;
+  try {
+    parsed = new URL(blobUrl);
+  } catch {
+    return new Response("Invalid url", { status: 400 });
+  }
+  if (!parsed.hostname.endsWith(".blob.vercel-storage.com")) {
     return new Response("Invalid url", { status: 400 });
   }
 

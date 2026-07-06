@@ -2,6 +2,9 @@ import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/clerk";
 
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic"];
+const MAX_BYTES = 5 * 1024 * 1024;
+
 export async function POST(req: Request) {
   const user = await requireRole(["technician"]).catch(() => null);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -13,7 +16,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  if (file.size > 5 * 1024 * 1024) {
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    return NextResponse.json(
+      { error: "Unsupported format. Use JPEG, PNG, WebP, or HEIC." },
+      { status: 422 }
+    );
+  }
+
+  if (file.size > MAX_BYTES) {
     return NextResponse.json({ error: "File too large after compression. Maximum 5 MB." }, { status: 413 });
   }
 
