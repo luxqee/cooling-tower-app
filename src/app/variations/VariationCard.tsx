@@ -76,12 +76,12 @@ export function VariationCard({ variation, onDecided }: VariationCardProps) {
       </div>
 
       {variation.photoUrl && (
-        <div className="w-full aspect-video bg-slate-100 dark:bg-slate-900 overflow-hidden">
+        <div className="w-full bg-slate-100 dark:bg-slate-900 overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={photoSrc(variation.photoUrl)}
             alt="Variation photo"
-            className="w-full h-full object-cover"
+            className="w-full max-h-64 object-contain"
           />
         </div>
       )}
@@ -103,7 +103,7 @@ export function VariationCard({ variation, onDecided }: VariationCardProps) {
                   : "border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 bg-transparent"
               )}
             >
-              {a}
+              {a === "queried" ? "Send back" : a}
             </button>
           ))}
         </div>

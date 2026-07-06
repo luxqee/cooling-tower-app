@@ -174,18 +174,41 @@ export function VariationForm({ jobs }: VariationFormProps) {
 
       <div className="space-y-1.5">
         <label htmlFor="variation-photo" className="text-sm font-medium">Photo (optional)</label>
-        <input
-          id="variation-photo"
-          ref={fileRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={handlePhotoChange}
-          className="w-full text-sm text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-slate-100 file:text-slate-700 dark:file:bg-slate-700 dark:file:text-slate-200"
-        />
-        {uploadProgress && <p className="text-sm text-slate-500">Uploading…</p>}
-        {photoUrl && <p className="text-sm text-emerald-600">Photo uploaded ✓</p>}
-        {errors.photo && <p className="text-sm text-red-600">{errors.photo}</p>}
+
+        {photoUrl ? (
+          <div className="space-y-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`/api/photos?url=${encodeURIComponent(photoUrl)}`}
+              alt="Uploaded photo preview"
+              className="w-full max-h-48 rounded-lg object-contain bg-slate-100 dark:bg-slate-800"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setPhotoUrl(null);
+                if (fileRef.current) fileRef.current.value = "";
+              }}
+              className="text-sm text-amber-600 underline underline-offset-2"
+            >
+              Retake photo
+            </button>
+          </div>
+        ) : (
+          <>
+            <input
+              id="variation-photo"
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handlePhotoChange}
+              className="w-full text-sm text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-slate-100 file:text-slate-700 dark:file:bg-slate-700 dark:file:text-slate-200"
+            />
+            {uploadProgress && <p className="text-sm text-slate-500">Uploading…</p>}
+            {errors.photo && <p className="text-sm text-red-600">{errors.photo}</p>}
+          </>
+        )}
       </div>
 
       {errors.submit && <p className="text-sm text-red-600">{errors.submit}</p>}
