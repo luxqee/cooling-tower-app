@@ -5,10 +5,11 @@ import { db } from "@/lib/db/client";
 
 const createJobSchema = z.object({
   customerName: z.string().min(2, "Customer name required"),
-  siteName: z.string().min(2, "Site name required"),
-  siteAddress: z.string().min(5, "Site address required"),
-  quotedHours: z.number().positive("Quoted hours must be greater than 0"),
-  status: z.enum(["scheduled", "active"]).default("scheduled"),
+  siteName:     z.string().min(2, "Site name required"),
+  siteAddress:  z.string().min(5, "Site address required"),
+  quotedHours:  z.number().positive("Quoted hours must be greater than 0"),
+  status:       z.enum(["scheduled", "active"]).default("scheduled"),
+  jobType:      z.string().min(1, "Job type required"),
 });
 
 export async function POST(req: Request) {

@@ -3,13 +3,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/lib/auth/clerk", () => ({ requireRole: vi.fn() }));
 vi.mock("@/lib/db/client", () => ({
   db: {
-    job: { update: vi.fn(), delete: vi.fn() },
+    job: { update: vi.fn(), delete: vi.fn(), create: vi.fn() },
   },
 }));
 
 import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
 import { DELETE, PATCH } from "../[id]/route";
+import { POST } from "../route";
 
 const mockDirector = { id: "d1", role: "director" as const, name: "Boss", clerkId: "c1", email: "b@c.com", isActive: true };
 
@@ -49,5 +50,55 @@ describe("DELETE /api/jobs/[id]", () => {
     vi.mocked(db.job.delete).mockRejectedValue(Object.assign(new Error("Not found"), { code: "P2025" }));
     const res = await DELETE(makeDeleteReq("job-1"), { params: { id: "job-1" } });
     expect(res.status).toBe(404);
+  });
+});
+
+function makePostReq(body: unknown) {
+  return new Request("http://localhost/api/jobs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+const validPostBody = {
+  customerName: "ACME Corp",
+  siteName: "North Tower",
+  siteAddress: "123 Main St, Sydney NSW 2000",
+  quotedHours: 8,
+  jobType: "Installation",
+};
+
+describe("POST /api/jobs", () => {
+  it("returns 401 when not authenticated", async () => {
+    vi.mocked(requireRole).mockRejectedValue(new Error("Unauthorized"));
+    const res = await POST(makePostReq(validPostBody));
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 400 when jobType is missing", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
+    const { jobType: _, ...bodyWithoutJobType } = validPostBody;
+    const res = await POST(makePostReq(bodyWithoutJobType));
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 when jobType is empty string", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
+    const res = await POST(makePostReq({ ...validPostBody, jobType: "" }));
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 201 when all fields including jobType are provided", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
+    vi.mocked(db.job.create).mockResolvedValue({
+      id: "j1",
+      ...validPostBody,
+      status: "scheduled",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as any);
+    const res = await POST(makePostReq(validPostBody));
+    expect(res.status).toBe(201);
   });
 });
