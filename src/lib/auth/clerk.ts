@@ -12,41 +12,54 @@ export interface SessionUser {
 }
 
 export async function getSessionUser(): Promise<SessionUser | null> {
-  const { userId } = await auth();
-  if (!userId) return null;
+  try {
+    const { userId } = await auth();
+    if (!userId) return null;
 
-  let user = await db.user.findUnique({ where: { clerkId: userId } });
+    let user = await db.user.findUnique({ where: { clerkId: userId } });
 
-  if (!user) {
-    // JIT provision: user authenticated in Clerk but not yet in DB
-    // (webhook may have missed the creation event)
-    const clerkUser = await currentUser();
-    if (!clerkUser) return null;
+    if (!user) {
+      // JIT provision: user authenticated in Clerk but not yet in DB
+      // (webhook may have missed the creation event)
+      const clerkUser = await currentUser();
+      if (!clerkUser) return null;
 
-    const email = clerkUser.emailAddresses[0]?.emailAddress ?? "";
-    const name =
-      [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") ||
-      email;
-    const role = (clerkUser.publicMetadata?.role as UserRole) ?? "technician";
-    const phone = clerkUser.phoneNumbers[0]?.phoneNumber ?? "";
+      const email = clerkUser.emailAddresses[0]?.emailAddress ?? "";
+      const name =
+        [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") ||
+        email;
+      const role = (clerkUser.publicMetadata?.role as UserRole) ?? "technician";
+      const phone = clerkUser.phoneNumbers[0]?.phoneNumber ?? undefined;
 
-    user = await db.user.upsert({
-      where: { clerkId: userId },
-      update: { name, email, role, phone },
-      create: { clerkId: userId, name, email, role, phone, isActive: true },
-    });
+      // If the email already exists under a different clerkId (e.g. user linked
+      // GitHub to an existing email/password account), find and update that record
+      // rather than creating a duplicate, which would throw a unique-email error.
+      const existing = await db.user.findUnique({ where: { email } });
+      if (existing) {
+        user = await db.user.update({
+          where: { id: existing.id },
+          data: { clerkId: userId, name, phone },
+        });
+      } else {
+        user = await db.user.create({
+          data: { clerkId: userId, name, email, role, phone, isActive: true },
+        });
+      }
+    }
+
+    if (!user.isActive) return null;
+
+    return {
+      id: user.id,
+      clerkId: user.clerkId,
+      name: user.name,
+      email: user.email,
+      role: user.role as UserRole,
+      isActive: user.isActive,
+    };
+  } catch {
+    return null;
   }
-
-  if (!user.isActive) return null;
-
-  return {
-    id: user.id,
-    clerkId: user.clerkId,
-    name: user.name,
-    email: user.email,
-    role: user.role as UserRole,
-    isActive: user.isActive,
-  };
 }
 
 export async function requireRole(allowedRoles: UserRole[]): Promise<SessionUser> {
