@@ -20,9 +20,10 @@ interface ActiveEntry {
 interface ClockCardProps {
   jobs: Job[];
   activeEntry: ActiveEntry | null;
+  usingFallback?: boolean;
 }
 
-export function ClockCard({ jobs, activeEntry }: ClockCardProps) {
+export function ClockCard({ jobs, activeEntry, usingFallback = false }: ClockCardProps) {
   const [selectedJobId, setSelectedJobId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [currentEntry, setCurrentEntry] = useState(activeEntry);
@@ -108,9 +109,14 @@ export function ClockCard({ jobs, activeEntry }: ClockCardProps) {
       </p>
 
       {jobs.length === 0 ? (
-        <p className="text-sm text-slate-500">No jobs scheduled for today.</p>
+        <p className="text-sm text-slate-500">No active jobs available.</p>
       ) : (
         <>
+          {usingFallback && (
+            <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 rounded-lg px-3 py-2">
+              No assignment for today — select a job to clock in manually.
+            </p>
+          )}
           <label htmlFor="clock-job-select" className="sr-only">Select job to clock in</label>
           <select
             id="clock-job-select"
@@ -131,7 +137,7 @@ export function ClockCard({ jobs, activeEntry }: ClockCardProps) {
           <button
             onClick={handleClockIn}
             disabled={isPending || !selectedJobId}
-            className="w-full min-h-[52px] rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-semibold text-base disabled:opacity-40 active:scale-[0.98] transition-transform"
+            className="w-full min-h-[52px] rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-base disabled:opacity-40 active:scale-[0.98] transition-transform"
           >
             {isPending ? "Clocking in…" : "Clock In"}
           </button>

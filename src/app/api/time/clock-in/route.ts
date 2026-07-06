@@ -29,11 +29,17 @@ export async function POST(req: Request) {
     );
   }
 
-  const assignment = await db.assignment.findFirst({
-    where: { userId: user.id, jobId },
-  });
-  if (!assignment) {
-    return NextResponse.json({ error: "Not assigned to this job" }, { status: 403 });
+  // Technicians must be assigned to the job; directors and service managers may clock in freely
+  if (user.role === "technician") {
+    const assignment = await db.assignment.findFirst({
+      where: { userId: user.id, jobId },
+    });
+    if (!assignment) {
+      return NextResponse.json(
+        { error: "Not assigned to this job. Ask your manager to add you to the schedule." },
+        { status: 403 }
+      );
+    }
   }
 
   const entry = await db.timeEntry.create({

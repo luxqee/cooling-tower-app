@@ -28,7 +28,21 @@ export default async function TimeTrackingPage() {
     }),
   ]);
 
-  const jobs = assignments.map((a) => a.job);
+  let jobs = assignments.map((a) => a.job);
+  let usingFallback = false;
+
+  // Fallback: if no assignments today, show all active/scheduled jobs
+  // so technicians who arrive at an unplanned job can still clock in
+  if (jobs.length === 0) {
+    const fallbackJobs = await db.job.findMany({
+      where: { status: { in: ["active", "scheduled"] } },
+      select: { id: true, customerName: true, siteName: true, siteAddress: true },
+      orderBy: { customerName: "asc" },
+    });
+    jobs = fallbackJobs;
+    usingFallback = true;
+  }
+
   const serialisedEntry = activeEntry
     ? {
         ...activeEntry,
@@ -47,7 +61,7 @@ export default async function TimeTrackingPage() {
           </p>
         </div>
 
-        <ClockCard jobs={jobs} activeEntry={serialisedEntry} />
+        <ClockCard jobs={jobs} activeEntry={serialisedEntry} usingFallback={usingFallback} />
       </div>
     </AppShell>
   );
