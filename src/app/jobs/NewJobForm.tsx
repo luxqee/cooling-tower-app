@@ -9,6 +9,8 @@ export function NewJobForm({ onClose }: { onClose: () => void }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [jobTypeOptions, setJobTypeOptions] = useState<string[]>([]);
 
+  const [jobTypeSelect, setJobTypeSelect] = useState("");
+
   const [fields, setFields] = useState({
     customerName: "",
     siteName: "",
@@ -102,19 +104,30 @@ export function NewJobForm({ onClose }: { onClose: () => void }) {
 
       <div className="space-y-1.5">
         <label className="text-sm font-medium">Job type</label>
-        <input
-          type="text"
-          list="new-job-type-options"
-          value={fields.jobType}
-          onChange={(e) => set("jobType", e.target.value)}
-          placeholder="e.g. Installation"
+        <select
+          value={jobTypeSelect}
+          onChange={(e) => {
+            setJobTypeSelect(e.target.value);
+            if (e.target.value !== "other") set("jobType", e.target.value);
+            else set("jobType", "");
+          }}
           className={inputClass}
-        />
-        <datalist id="new-job-type-options">
+        >
+          <option value="">Select a job type…</option>
           {jobTypeOptions.map((t) => (
-            <option key={t} value={t} />
+            <option key={t} value={t}>{t}</option>
           ))}
-        </datalist>
+          <option value="other">Other…</option>
+        </select>
+        {jobTypeSelect === "other" && (
+          <input
+            type="text"
+            value={fields.jobType}
+            onChange={(e) => set("jobType", e.target.value)}
+            placeholder="Enter job type"
+            className={inputClass}
+          />
+        )}
         {errors.jobType && <p className="text-sm text-red-600">{errors.jobType}</p>}
       </div>
 

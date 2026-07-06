@@ -25,10 +25,12 @@ interface QuoteStats {
 }
 
 export function QuotesClient() {
+  const today = new Date().toISOString().slice(0, 10);
+
   const [jobType, setJobType] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [dateTo, setDateTo] = useState(today);
   const [results, setResults] = useState<QuoteRow[]>([]);
   const [stats, setStats] = useState<QuoteStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,7 +40,7 @@ export function QuotesClient() {
     fetch("/api/quotes/job-types")
       .then((r) => (r.ok ? r.json() : { jobTypes: [] }))
       .then((d) => setJobTypes(d.jobTypes ?? []));
-    fetchResults({ jobType: "", customerName: "", dateFrom: "", dateTo: "" });
+    fetchResults({ jobType: "", customerName: "", dateFrom: "", dateTo: today });
   }, []);
 
   async function fetchResults(filters: {
