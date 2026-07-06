@@ -29,6 +29,20 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   const user = await requireRole(["director", "admin"]).catch(() => null);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  await db.job.delete({ where: { id: params.id } });
-  return NextResponse.json({ ok: true });
+  try {
+    await db.job.delete({ where: { id: params.id } });
+    return NextResponse.json({ ok: true });
+  } catch (err: unknown) {
+    const code = (err as { code?: string }).code;
+    if (code === "P2003") {
+      return NextResponse.json(
+        { error: "Cannot delete job with related records (time entries, variations, etc). Mark as cancelled instead." },
+        { status: 409 }
+      );
+    }
+    if (code === "P2025") {
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
+    }
+    throw err;
+  }
 }

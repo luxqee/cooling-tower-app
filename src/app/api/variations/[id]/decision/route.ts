@@ -28,48 +28,55 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const variation = await db.variation.findUnique({ where: { id: params.id } });
   if (!variation) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (variation.status !== "pending") {
-    return NextResponse.json({ error: "Variation already decided" }, { status: 409 });
-  }
 
   const { decision } = parsed.data;
   const decisionReason = "decisionReason" in parsed.data ? parsed.data.decisionReason : null;
 
-  const updated = await db.$transaction(async (tx) => {
-    const updated = await tx.variation.update({
-      where: { id: params.id },
-      data: {
-        status: decision,
-        directorDecision: decision,
-        decisionReason,
-        decidedAt: new Date(),
-      },
-    });
+  let updated;
+  try {
+    updated = await db.$transaction(async (tx) => {
+      // Atomic status check + update: throws P2025 if row no longer matches status='pending'
+      const result = await tx.variation.update({
+        where: { id: params.id, status: "pending" },
+        data: {
+          status: decision,
+          directorDecision: decision,
+          decisionReason,
+          decidedAt: new Date(),
+        },
+      });
 
-    if (decision === "approved") {
-      const existing = await tx.invoice.findFirst({ where: { jobId: variation.jobId } });
-      if (existing) {
-        await tx.invoice.update({
-          where: { id: existing.id },
-          data: {
-            variationsTotal: existing.variationsTotal + variation.costEstimate,
-            totalAmount: existing.totalAmount + variation.costEstimate,
-          },
-        });
-      } else {
-        await tx.invoice.create({
-          data: {
-            jobId: variation.jobId,
-            baseAmount: 0,
-            variationsTotal: variation.costEstimate,
-            totalAmount: variation.costEstimate,
-          },
-        });
+      if (decision === "approved") {
+        const existing = await tx.invoice.findFirst({ where: { jobId: variation.jobId } });
+        if (existing) {
+          await tx.invoice.update({
+            where: { id: existing.id },
+            data: {
+              variationsTotal: Number(existing.variationsTotal) + Number(variation.costEstimate),
+              totalAmount: Number(existing.totalAmount) + Number(variation.costEstimate),
+            },
+          });
+        } else {
+          await tx.invoice.create({
+            data: {
+              jobId: variation.jobId,
+              baseAmount: 0,
+              variationsTotal: Number(variation.costEstimate),
+              totalAmount: Number(variation.costEstimate),
+            },
+          });
+        }
       }
-    }
 
-    return updated;
-  });
+      return result;
+    });
+  } catch (err: unknown) {
+    const code = (err as { code?: string }).code;
+    if (code === "P2025") {
+      return NextResponse.json({ error: "Variation already decided" }, { status: 409 });
+    }
+    throw err;
+  }
 
   const technician = await db.user.findUnique({
     where: { id: variation.technicianId },
@@ -86,7 +93,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       technician.pushSubscriptions.map((sub) =>
         sendPushToUser(sub, {
           title: messages[decision],
-          body: decisionReason ?? `$${variation.costEstimate.toFixed(0)}`,
+          body: decisionReason ?? `$${Number(variation.costEstimate).toFixed(0)}`,
           url: "/variations",
         })
       )
