@@ -48,18 +48,21 @@ export function QuotesClient() {
     dateTo: string;
   }) {
     setLoading(true);
-    const params = new URLSearchParams();
-    if (filters.jobType) params.set("jobType", filters.jobType);
-    if (filters.customerName) params.set("customerName", filters.customerName);
-    if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
-    if (filters.dateTo) params.set("dateTo", filters.dateTo);
-    const res = await fetch(`/api/quotes/search?${params.toString()}`);
-    if (res.ok) {
-      const data = await res.json();
-      setResults(data.jobs ?? []);
-      setStats(data.stats ?? null);
+    try {
+      const params = new URLSearchParams();
+      if (filters.jobType) params.set("jobType", filters.jobType);
+      if (filters.customerName) params.set("customerName", filters.customerName);
+      if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
+      if (filters.dateTo) params.set("dateTo", filters.dateTo);
+      const res = await fetch(`/api/quotes/search?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setResults(data.jobs ?? []);
+        setStats(data.stats ?? null);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   function handleSearch() {

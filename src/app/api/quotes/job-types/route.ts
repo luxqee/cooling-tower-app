@@ -3,7 +3,7 @@ import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
 
 export async function GET() {
-  const user = await requireRole(["sales_engineer", "director", "admin"]).catch(() => null);
+  const user = await requireRole(["sales_engineer", "director", "admin", "service_manager"]).catch(() => null);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const rows = await db.job.groupBy({
