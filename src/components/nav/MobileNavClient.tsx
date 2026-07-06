@@ -17,7 +17,7 @@ export function MobileNavClient({ visibleHrefs, user }: Props) {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="lg:hidden fixed top-3.5 left-4 z-50 flex h-9 w-9 items-center justify-center rounded-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        className="lg:hidden fixed top-3 left-3 z-50 flex h-11 w-11 items-center justify-center rounded-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
         aria-label="Open menu"
       >
         <Menu className="h-5 w-5" />
@@ -45,7 +45,7 @@ export function MobileNavClient({ visibleHrefs, user }: Props) {
                 Field Ops
               </span>
               <span className="text-2xs leading-tight text-slate-500 dark:text-slate-400 font-mono uppercase tracking-wider">
-                Phase 1b
+                CT Field Ops
               </span>
             </div>
           </div>

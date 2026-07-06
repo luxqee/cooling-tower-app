@@ -22,7 +22,7 @@ export async function Sidebar() {
             Field Ops
           </span>
           <span className="text-2xs leading-tight text-slate-500 dark:text-slate-400 font-mono uppercase tracking-wider">
-            Phase 1a
+            CT Field Ops
           </span>
         </div>
       </div>

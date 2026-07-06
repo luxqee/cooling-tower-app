@@ -18,6 +18,7 @@ export function NavLinks({ visibleHrefs, user, onNavigate }: Props) {
   const visibleItems = navItems.filter((item) =>
     visibleHrefs.includes(item.href)
   );
+  const canSeeSettings = user?.role === "admin" || user?.role === "director";
 
   return (
     <>
@@ -40,7 +41,7 @@ export function NavLinks({ visibleHrefs, user, onNavigate }: Props) {
                     "group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
                     isActive
                       ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-50 font-medium"
-                      : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-slate-900 dark:hover:text-slate-100"
+                      : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
                   )}
                 >
                   {isActive && (
@@ -55,9 +56,11 @@ export function NavLinks({ visibleHrefs, user, onNavigate }: Props) {
                     )}
                   />
                   <span className="flex-1">{item.label}</span>
-                  <span className="text-2xs font-mono text-slate-400 dark:text-slate-600">
-                    {item.phase}
-                  </span>
+                  {(user?.role === "admin" || user?.role === "director") && (
+                    <span aria-hidden="true" className="text-2xs font-mono text-slate-400 dark:text-slate-600">
+                      {item.phase}
+                    </span>
+                  )}
                 </Link>
               </li>
             );
@@ -80,16 +83,19 @@ export function NavLinks({ visibleHrefs, user, onNavigate }: Props) {
           </div>
         </div>
         <div className="space-y-0.5">
-          <Link
-            href="#"
-            className="flex items-center gap-3 rounded-md px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-slate-900 dark:hover:text-slate-100"
-          >
-            <Settings className="h-4 w-4" />
-            Settings
-          </Link>
+          {canSeeSettings && (
+            <Link
+              href="/settings"
+              onClick={onNavigate}
+              className="flex items-center gap-3 rounded-md px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
+            >
+              <Settings className="h-4 w-4" />
+              Settings
+            </Link>
+          )}
           {user ? (
             <SignOutButton>
-              <button className="flex w-full items-center gap-3 rounded-md px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-slate-900 dark:hover:text-slate-100">
+              <button className="flex w-full items-center gap-3 rounded-md px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100">
                 <LogOut className="h-4 w-4" />
                 Sign out
               </button>
@@ -97,7 +103,7 @@ export function NavLinks({ visibleHrefs, user, onNavigate }: Props) {
           ) : (
             <Link
               href="/sign-in"
-              className="flex items-center gap-3 rounded-md px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-slate-900 dark:hover:text-slate-100"
+              className="flex items-center gap-3 rounded-md px-3 py-1.5 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
             >
               <LogOut className="h-4 w-4" />
               Sign in
