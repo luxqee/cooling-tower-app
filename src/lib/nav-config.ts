@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   FileText,
   Settings,
+  BarChart2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -27,7 +28,7 @@ export interface NavItem {
   // Which roles can see this nav item once auth is implemented
   visibleTo: UserRole[];
   // Build phase this feature is part of
-  phase: "1a" | "1b" | "1c" | "2" | "3";
+  phase: "1a" | "1b" | "1c" | "2" | "2b" | "3";
 }
 
 export const navItems: NavItem[] = [
@@ -110,5 +111,13 @@ export const navItems: NavItem[] = [
     description: "Business profile and system settings",
     visibleTo: ["director", "admin"],
     phase: "2",
+  },
+  {
+    label: "Quotes",
+    href: "/quotes",
+    icon: BarChart2,
+    description: "Historical job data for quoting",
+    visibleTo: ["sales_engineer", "director", "admin"],
+    phase: "2b",
   },
 ];
