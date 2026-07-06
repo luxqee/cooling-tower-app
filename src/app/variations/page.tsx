@@ -20,7 +20,7 @@ export default async function VariationsPage() {
   const variations = rows.map((v) => ({
     id: v.id,
     description: v.description,
-    costEstimate: v.costEstimate,
+    costEstimate: v.costEstimate.toNumber(),
     photoUrl: v.photoUrl,
     submittedAt: v.submittedAt.toISOString(),
     technician: v.technician,

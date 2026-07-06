@@ -66,7 +66,7 @@ export function VariationCard({ variation, onDecided }: VariationCardProps) {
             </p>
           </div>
           <p className="text-lg font-semibold text-amber-500 shrink-0">
-            ${variation.costEstimate.toFixed(0)}
+            ${Number(variation.costEstimate).toFixed(2)}
           </p>
         </div>
         <p className="text-sm leading-relaxed">{variation.description}</p>

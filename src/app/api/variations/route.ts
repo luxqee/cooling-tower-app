@@ -17,7 +17,12 @@ export async function GET() {
     orderBy: { submittedAt: "desc" },
   });
 
-  return NextResponse.json(variations);
+  return NextResponse.json(
+    variations.map((v) => ({
+      ...v,
+      costEstimate: v.costEstimate.toNumber(),
+    }))
+  );
 }
 
 export async function POST(req: Request) {
@@ -76,5 +81,8 @@ export async function POST(req: Request) {
     )
   );
 
-  return NextResponse.json(variation, { status: 201 });
+  return NextResponse.json(
+    { ...variation, costEstimate: variation.costEstimate.toNumber() },
+    { status: 201 }
+  );
 }

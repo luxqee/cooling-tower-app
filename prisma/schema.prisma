@@ -39,7 +39,7 @@ model User {
   clerkId   String   @unique
   name      String
   email     String   @unique
-  phone     String   @default("")
+  phone     String?
   role      UserRole
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -60,6 +60,7 @@ model Job {
   status       JobStatus @default(scheduled)
   quotedHours  Float
   createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   assignments         Assignment[]
   timeEntries         TimeEntry[]
@@ -80,6 +81,7 @@ model Assignment {
   job  Job  @relation(fields: [jobId], references: [id])
 
   @@unique([userId, jobId, assignedDate])
+  @@index([assignedDate])
 }
 
 model TimeEntry {
@@ -96,6 +98,7 @@ model TimeEntry {
 
   @@index([status])
   @@index([userId, status])
+  @@index([jobId, status])
 }
 
 model Variation {
@@ -103,7 +106,7 @@ model Variation {
   jobId            String
   technicianId     String
   description      String
-  costEstimate     Float
+  costEstimate     Decimal          @db.Decimal(12, 2)
   photoUrl         String?
   status           VariationStatus  @default(pending)
   directorDecision VariationStatus?
@@ -120,13 +123,15 @@ model Variation {
 
 model Invoice {
   id              String   @id @default(uuid())
-  jobId           String
-  baseAmount      Float
-  variationsTotal Float
-  totalAmount     Float
+  jobId           String   @unique
+  baseAmount      Decimal  @db.Decimal(12, 2)
+  variationsTotal Decimal  @db.Decimal(12, 2)
+  totalAmount     Decimal  @db.Decimal(12, 2)
   createdAt       DateTime @default(now())
 
   job Job @relation(fields: [jobId], references: [id])
+
+  @@index([jobId])
 }
 
 model BusinessProfile {
@@ -197,4 +202,5 @@ model ComplianceDocument {
 
   @@index([jobId])
   @@index([createdById])
+  @@index([templateId])
 }

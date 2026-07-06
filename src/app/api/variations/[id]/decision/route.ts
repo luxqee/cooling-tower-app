@@ -100,5 +100,5 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     );
   }
 
-  return NextResponse.json(updated);
+  return NextResponse.json({ ...updated, costEstimate: updated.costEstimate.toNumber() });
 }

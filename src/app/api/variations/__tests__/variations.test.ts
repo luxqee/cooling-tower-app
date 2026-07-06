@@ -76,7 +76,7 @@ describe("POST /api/variations", () => {
     vi.mocked(db.job.findFirst).mockResolvedValue(mockJob as any);
     vi.mocked(db.assignment.findFirst).mockResolvedValue({ id: "a1" } as any);
     vi.mocked(db.variation.create).mockResolvedValue({
-      id: "v1", ...body, status: "pending", submittedAt: new Date(),
+      id: "v1", ...body, costEstimate: { toNumber: () => 450 }, status: "pending", submittedAt: new Date(),
       job: { customerName: "Rio Tinto", siteName: "Weipa" },
     } as any);
     vi.mocked(db.user.findMany).mockResolvedValue([]);
