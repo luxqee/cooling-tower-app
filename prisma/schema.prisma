@@ -74,10 +74,12 @@ model Job {
 }
 
 model Assignment {
-  id           String   @id @default(uuid())
+  id           String    @id @default(uuid())
   userId       String
   jobId        String
-  assignedDate DateTime @default(now())
+  assignedDate DateTime
+  endDate      DateTime?
+  createdAt    DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id])
   job  Job  @relation(fields: [jobId], references: [id])
