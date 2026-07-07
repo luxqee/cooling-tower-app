@@ -21,11 +21,11 @@ export default async function TimeTrackingPage() {
           select: { id: true, customerName: true, siteName: true, siteAddress: true },
         },
       },
-    }),
+    }).catch(() => []),
     db.timeEntry.findFirst({
       where: { userId: user.id, status: "active" },
       include: { job: { select: { customerName: true, siteName: true } } },
-    }),
+    }).catch(() => null),
   ]);
 
   let jobs = assignments.map((a) => a.job);
@@ -39,14 +39,14 @@ export default async function TimeTrackingPage() {
     const historicalAssignments = await db.assignment.findMany({
       where: { userId: user.id },
       select: { jobId: true },
-    });
+    }).catch(() => []);
     const assignedJobIds = historicalAssignments.map((a) => a.jobId);
     const fallbackJobs = assignedJobIds.length > 0
       ? await db.job.findMany({
           where: { id: { in: assignedJobIds }, status: { in: ["active", "scheduled"] } },
           select: { id: true, customerName: true, siteName: true, siteAddress: true },
           orderBy: { customerName: "asc" },
-        })
+        }).catch(() => [])
       : [];
     jobs = fallbackJobs;
     usingFallback = true;
