@@ -77,8 +77,8 @@ export const navItems: NavItem[] = [
     href: "/schedule",
     icon: Calendar,
     description: "Crew assignments and breakdown response",
-    visibleTo: ["service_manager", "director", "admin"],
-    phase: "1b",
+    visibleTo: ["service_manager", "director", "admin", "technician"],
+    phase: "2",
   },
   {
     label: "Team",
