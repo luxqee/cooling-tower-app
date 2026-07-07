@@ -45,11 +45,20 @@ export async function POST(req: Request) {
       : "technician";
     const phone = phone_numbers[0]?.phone_number ?? undefined;
 
-    await db.user.upsert({
-      where: { clerkId: id },
-      update: { name, email, role, phone },
-      create: { clerkId: id, name, email, role, phone, isActive: true },
-    });
+    // Avoid a unique-email constraint violation when a second OAuth provider
+    // (e.g. GitHub) creates a new Clerk user with the same email as an existing
+    // record. Find by clerkId first; fall back to email; then create.
+    const byClerkId = await db.user.findUnique({ where: { clerkId: id } });
+    if (byClerkId) {
+      await db.user.update({ where: { id: byClerkId.id }, data: { name, email, role, phone } });
+    } else {
+      const byEmail = await db.user.findUnique({ where: { email } });
+      if (byEmail) {
+        await db.user.update({ where: { id: byEmail.id }, data: { clerkId: id, name, role, phone } });
+      } else {
+        await db.user.create({ data: { clerkId: id, name, email, role, phone, isActive: true } });
+      }
+    }
   }
 
   if (evt.type === "session.created") {

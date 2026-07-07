@@ -19,9 +19,14 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     let user = await db.user.findUnique({ where: { clerkId: userId } });
 
     if (!user) {
-      // JIT provision: user authenticated in Clerk but not yet in DB
-      // (webhook may have missed the creation event)
-      const clerkUser = await currentUser();
+      // JIT provision: user authenticated in Clerk but not yet in DB.
+      // currentUser() may return null for ~300ms right after a new OAuth
+      // account is created (Clerk propagation race). One retry covers it.
+      let clerkUser = await currentUser();
+      if (!clerkUser) {
+        await new Promise((r) => setTimeout(r, 400));
+        clerkUser = await currentUser();
+      }
       if (!clerkUser) return null;
 
       const email = clerkUser.emailAddresses[0]?.emailAddress ?? "";

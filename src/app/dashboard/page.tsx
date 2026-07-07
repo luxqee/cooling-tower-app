@@ -1,12 +1,18 @@
 import { AppShell } from "@/components/layout/AppShell";
-import { requireRole } from "@/lib/auth/clerk";
+import { getSessionUser } from "@/lib/auth/clerk";
 import { redirect } from "next/navigation";
 import { CrewBoard } from "./CrewBoard";
 import { HoursOverview } from "./HoursOverview";
 
+const DASHBOARD_ROLES = ["director", "service_manager", "admin"] as const;
+type DashboardRole = (typeof DASHBOARD_ROLES)[number];
+
 export default async function DashboardPage() {
-  const user = await requireRole(["director", "service_manager", "admin"]).catch(() => null);
+  const user = await getSessionUser().catch(() => null);
   if (!user) redirect("/sign-in");
+  // Route non-admin roles to their home page rather than /sign-in: Clerk
+  // would immediately redirect back to /dashboard creating an infinite loop.
+  if (!DASHBOARD_ROLES.includes(user.role as DashboardRole)) redirect("/time-tracking");
 
   return (
     <AppShell>
