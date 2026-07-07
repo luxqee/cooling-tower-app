@@ -64,8 +64,8 @@ function AssignmentBlock({
 
   function handleDelete() {
     startTransition(async () => {
-      await fetch(`/api/schedule/assignments/${assignment.id}`, { method: "DELETE" });
-      onDelete();
+      const res = await fetch(`/api/schedule/assignments/${assignment.id}`, { method: "DELETE" });
+      if (res.ok) onDelete();
     });
   }
 
@@ -280,7 +280,7 @@ export function ScheduleGrid({
 
     const oldStart = new Date(assignment.assignedDate);
     const newStart = new Date(targetDateStr);
-    newStart.setHours(0, 0, 0, 0);
+    // new Date("YYYY-MM-DD") is UTC midnight — no adjustment needed
     const delta = newStart.getTime() - oldStart.getTime();
 
     const newEndDate = assignment.endDate
