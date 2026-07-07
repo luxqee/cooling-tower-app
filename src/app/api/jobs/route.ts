@@ -8,6 +8,7 @@ const createJobSchema = z.object({
   siteName:     z.string().min(2, "Site name required"),
   siteAddress:  z.string().min(5, "Site address required"),
   quotedHours:  z.number().positive("Quoted hours must be greater than 0"),
+  quotedCost:   z.number().nonnegative().optional(),
   status:       z.enum(["scheduled", "active"]).default("scheduled"),
   jobType:      z.string().min(1, "Job type required"),
 });

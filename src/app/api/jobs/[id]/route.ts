@@ -8,6 +8,7 @@ const patchSchema = z.object({
   siteName: z.string().min(2).optional(),
   siteAddress: z.string().min(5).optional(),
   quotedHours: z.number().positive().optional(),
+  quotedCost: z.number().nonnegative().nullable().optional(),
   status: z.enum(["scheduled", "active", "complete", "cancelled"]).optional(),
 });
 

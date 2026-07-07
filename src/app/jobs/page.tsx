@@ -16,7 +16,9 @@ export default async function JobsPage() {
       id: true,
       customerName: true,
       siteName: true,
+      siteAddress: true,
       quotedHours: true,
+      quotedCost: true,
       status: true,
       timeEntries: {
         where: { status: "complete" },
@@ -34,7 +36,7 @@ export default async function JobsPage() {
     const loggedHours = Math.round((loggedMinutes / 60) * 10) / 10;
     const isOverQuota = loggedHours > job.quotedHours * 1.1;
     const crew = [...new Set(job.assignments.map((a) => a.user.name))];
-    return { id: job.id, customerName: job.customerName, siteName: job.siteName, quotedHours: job.quotedHours, loggedHours, isOverQuota, crew, status: job.status };
+    return { id: job.id, customerName: job.customerName, siteName: job.siteName, siteAddress: job.siteAddress, quotedHours: job.quotedHours, quotedCost: job.quotedCost ? Number(job.quotedCost) : null, loggedHours, isOverQuota, crew, status: job.status };
   });
 
   return (

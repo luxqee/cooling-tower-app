@@ -9,10 +9,13 @@ interface QuoteRow {
   siteAddress: string;
   jobType: string;
   quotedHours: number;
+  quotedCost: number | null;
   actualHours: number;
   overagePct: number | null;
   variationCount: number;
   variationTotal: number;
+  invoicedTotal: number | null;
+  costOveragePct: number | null;
   createdAt: string;
 }
 
@@ -22,6 +25,7 @@ interface QuoteStats {
   avgActualHours: number;
   avgOveragePct: number | null;
   avgVariationTotal: number;
+  avgQuotedCost: number | null;
 }
 
 export function QuotesClient() {
@@ -73,6 +77,8 @@ export function QuotesClient() {
 
   const inputClass =
     "min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-sm";
+
+  const hasCostData = results.some((r) => r.quotedCost != null);
 
   return (
     <div className="space-y-6">
@@ -141,18 +147,22 @@ export function QuotesClient() {
 
       {/* Stats card */}
       {stats && stats.count > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {[
             { label: "Avg quoted hrs", value: stats.avgQuotedHours.toFixed(1) },
             { label: "Avg actual hrs", value: stats.avgActualHours.toFixed(1) },
             {
-              label: "Avg overage",
+              label: "Avg hr overage",
               value:
                 stats.avgOveragePct != null
                   ? `${stats.avgOveragePct >= 0 ? "+" : ""}${stats.avgOveragePct.toFixed(1)}%`
                   : "—",
             },
-            { label: "Avg variation total", value: `$${stats.avgVariationTotal.toFixed(2)}` },
+            {
+              label: "Avg quoted cost",
+              value: stats.avgQuotedCost != null ? `$${stats.avgQuotedCost.toFixed(0)}` : "—",
+            },
+            { label: "Avg variations", value: `$${stats.avgVariationTotal.toFixed(0)}` },
             { label: "Jobs", value: String(stats.count) },
           ].map(({ label, value }) => (
             <div
@@ -185,8 +195,10 @@ export function QuotesClient() {
                   "Type",
                   "Quoted hrs",
                   "Actual hrs",
-                  "Overage",
-                  "Variation total",
+                  "Hr overage",
+                  ...(hasCostData
+                    ? ["Quoted cost", "Variations", "Cost vs quote"]
+                    : ["Variation total"]),
                 ].map((h) => (
                   <th
                     key={h}
@@ -209,6 +221,14 @@ export function QuotesClient() {
                   row.overagePct === null
                     ? "—"
                     : `${row.overagePct >= 0 ? "+" : ""}${row.overagePct.toFixed(1)}%`;
+
+                const costOverageClass =
+                  row.costOveragePct === null
+                    ? "text-slate-400"
+                    : row.costOveragePct > 0
+                    ? "text-red-600 dark:text-red-400"
+                    : "text-green-600 dark:text-green-400";
+
                 return (
                   <tr key={row.id} className="border-b border-slate-100 dark:border-slate-800">
                     <td className="py-2.5 pr-4">{row.customerName}</td>
@@ -217,17 +237,41 @@ export function QuotesClient() {
                     <td className="py-2.5 pr-4">{row.quotedHours.toFixed(1)}</td>
                     <td className="py-2.5 pr-4">{row.actualHours.toFixed(1)}</td>
                     <td className={`py-2.5 pr-4 font-medium ${overageClass}`}>{overageText}</td>
-                    <td
-                      className={`py-2.5 pr-4 ${row.variationTotal === 0 ? "text-slate-400" : ""}`}
-                    >
-                      ${row.variationTotal.toFixed(2)}
-                    </td>
+                    {hasCostData ? (
+                      <>
+                        <td className={`py-2.5 pr-4 ${row.quotedCost == null ? "text-slate-400" : ""}`}>
+                          {row.quotedCost != null ? `$${row.quotedCost.toFixed(0)}` : "—"}
+                        </td>
+                        <td className={`py-2.5 pr-4 ${row.variationTotal === 0 ? "text-slate-400" : ""}`}>
+                          {row.variationTotal > 0 ? `$${row.variationTotal.toFixed(0)}` : "—"}
+                        </td>
+                        <td className={`py-2.5 pr-4 font-medium ${costOverageClass}`}>
+                          {row.costOveragePct != null
+                            ? `${row.costOveragePct >= 0 ? "+" : ""}${row.costOveragePct.toFixed(1)}%`
+                            : row.quotedCost != null
+                            ? <span className="text-slate-400 font-normal">no invoice</span>
+                            : "—"}
+                        </td>
+                      </>
+                    ) : (
+                      <td
+                        className={`py-2.5 pr-4 ${row.variationTotal === 0 ? "text-slate-400" : ""}`}
+                      >
+                        ${row.variationTotal.toFixed(2)}
+                      </td>
+                    )}
                   </tr>
                 );
               })}
             </tbody>
           </table>
         </div>
+      )}
+
+      {hasCostData && results.length > 0 && (
+        <p className="text-xs text-slate-400 dark:text-slate-500">
+          Cost vs quote compares the invoiced total against the quoted cost. Jobs without an invoice show "no invoice".
+        </p>
       )}
     </div>
   );

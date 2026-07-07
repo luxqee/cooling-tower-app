@@ -11,6 +11,7 @@ interface Job {
   siteName: string;
   siteAddress?: string;
   quotedHours: number;
+  quotedCost: number | null;
   loggedHours: number;
   isOverQuota: boolean;
   crew: string[];
@@ -26,6 +27,7 @@ function EditJobModal({ job, onClose }: { job: Job; onClose: () => void }) {
     siteName: job.siteName,
     siteAddress: job.siteAddress ?? "",
     quotedHours: String(job.quotedHours),
+    quotedCost: job.quotedCost != null ? String(job.quotedCost) : "",
     status: job.status,
   });
   const [error, setError] = useState<string | null>(null);
@@ -37,10 +39,11 @@ function EditJobModal({ job, onClose }: { job: Job; onClose: () => void }) {
 
   function save() {
     startTransition(async () => {
+      const cost = fields.quotedCost ? parseFloat(fields.quotedCost) : null;
       const res = await fetch(`/api/jobs/${job.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...fields, quotedHours: parseFloat(fields.quotedHours) }),
+        body: JSON.stringify({ ...fields, quotedHours: parseFloat(fields.quotedHours), quotedCost: cost }),
       });
       if (!res.ok) { setError((await res.json()).error ?? "Failed."); return; }
       router.refresh();
@@ -74,11 +77,15 @@ function EditJobModal({ job, onClose }: { job: Job; onClose: () => void }) {
               <input type="number" value={fields.quotedHours} onChange={(e) => set("quotedHours", e.target.value)} className={inp} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Status</label>
-              <select value={fields.status} onChange={(e) => set("status", e.target.value)} className={inp}>
-                {STATUS_OPTS.map((s) => <option key={s} value={s}>{s}</option>)}
-              </select>
+              <label className="text-sm font-medium">Quoted cost ($) <span className="font-normal text-slate-400">optional</span></label>
+              <input type="number" inputMode="decimal" value={fields.quotedCost} onChange={(e) => set("quotedCost", e.target.value)} placeholder="1200" className={inp} />
             </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Status</label>
+            <select value={fields.status} onChange={(e) => set("status", e.target.value)} className={inp}>
+              {STATUS_OPTS.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex gap-3 pt-1">

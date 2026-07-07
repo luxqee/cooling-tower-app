@@ -59,6 +59,7 @@ model Job {
   siteAddress  String
   status       JobStatus @default(scheduled)
   quotedHours  Float
+  quotedCost   Decimal?  @db.Decimal(12, 2)
   jobType      String
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt

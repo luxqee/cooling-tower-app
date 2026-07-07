@@ -50,8 +50,10 @@ const baseJob = {
   siteAddress: "1 Main Rd, Weipa QLD 4874",
   jobType: "Installation",
   quotedHours: 10,
+  quotedCost: null,
   status: "complete",
   createdAt: new Date("2026-01-15T00:00:00.000Z"),
+  invoices: [],
 };
 
 function makeSearchReq(params: Record<string, string> = {}) {

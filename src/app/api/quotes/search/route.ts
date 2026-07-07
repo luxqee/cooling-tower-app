@@ -31,6 +31,7 @@ export async function GET(req: Request) {
     include: {
       timeEntries: { where: { status: "complete" }, select: { durationMinutes: true } },
       variations:  { where: { status: "approved" }, select: { costEstimate: true } },
+      invoices:    { select: { totalAmount: true } },
     },
     orderBy: { createdAt: "desc" },
     take: 50,
@@ -50,6 +51,12 @@ export async function GET(req: Request) {
       (sum, v) => sum + Number(v.costEstimate),
       0
     );
+    const quotedCost = job.quotedCost != null ? Number(job.quotedCost) : null;
+    const invoicedTotal = job.invoices[0] ? Number(job.invoices[0].totalAmount) : null;
+    const costOveragePct =
+      quotedCost && quotedCost > 0 && invoicedTotal != null
+        ? Math.round(((invoicedTotal - quotedCost) / quotedCost) * 1000) / 10
+        : null;
     return {
       id:             job.id,
       customerName:   job.customerName,
@@ -57,16 +64,22 @@ export async function GET(req: Request) {
       siteAddress:    job.siteAddress,
       jobType:        job.jobType,
       quotedHours:    job.quotedHours,
+      quotedCost,
       actualHours,
       overagePct,
       variationCount: job.variations.length,
       variationTotal,
+      invoicedTotal,
+      costOveragePct,
       createdAt:      job.createdAt.toISOString(),
     };
   });
 
   const nonNullOverages = rows.filter(
     (r): r is typeof rows[0] & { overagePct: number } => r.overagePct !== null
+  );
+  const rowsWithCost = rows.filter(
+    (r): r is typeof rows[0] & { quotedCost: number } => r.quotedCost != null
   );
 
   const count = rows.length;
@@ -90,6 +103,10 @@ export async function GET(req: Request) {
       count === 0
         ? 0
         : Math.round((rows.reduce((s, r) => s + r.variationTotal, 0) / count) * 100) / 100,
+    avgQuotedCost:
+      rowsWithCost.length === 0
+        ? null
+        : Math.round((rowsWithCost.reduce((s, r) => s + r.quotedCost, 0) / rowsWithCost.length) * 100) / 100,
   };
 
   return NextResponse.json({ jobs: rows, stats });

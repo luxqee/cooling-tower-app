@@ -16,6 +16,7 @@ export function NewJobForm({ onClose }: { onClose: () => void }) {
     siteName: "",
     siteAddress: "",
     quotedHours: "",
+    quotedCost: "",
     jobType: "",
     status: "scheduled" as "scheduled" | "active",
   });
@@ -38,6 +39,9 @@ export function NewJobForm({ onClose }: { onClose: () => void }) {
     const hours = parseFloat(fields.quotedHours);
     if (!fields.quotedHours || isNaN(hours) || hours <= 0)
       newErrors.quotedHours = "Enter hours greater than 0";
+    const cost = fields.quotedCost ? parseFloat(fields.quotedCost) : undefined;
+    if (fields.quotedCost && (isNaN(cost!) || cost! < 0))
+      newErrors.quotedCost = "Enter a valid dollar amount";
     if (!fields.jobType.trim()) newErrors.jobType = "Required";
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -49,7 +53,7 @@ export function NewJobForm({ onClose }: { onClose: () => void }) {
       const res = await fetch("/api/jobs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...fields, quotedHours: hours }),
+        body: JSON.stringify({ ...fields, quotedHours: hours, quotedCost: cost }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -146,16 +150,29 @@ export function NewJobForm({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">Status</label>
-          <select
-            value={fields.status}
-            onChange={(e) => set("status", e.target.value as "scheduled" | "active")}
+          <label className="text-sm font-medium">Quoted cost ($) <span className="font-normal text-slate-400">optional</span></label>
+          <input
+            type="number"
+            inputMode="decimal"
+            value={fields.quotedCost}
+            onChange={(e) => set("quotedCost", e.target.value)}
+            placeholder="1200"
             className={inputClass}
-          >
-            <option value="scheduled">Scheduled</option>
-            <option value="active">Active</option>
-          </select>
+          />
+          {errors.quotedCost && <p className="text-sm text-red-600">{errors.quotedCost}</p>}
         </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium">Status</label>
+        <select
+          value={fields.status}
+          onChange={(e) => set("status", e.target.value as "scheduled" | "active")}
+          className={inputClass}
+        >
+          <option value="scheduled">Scheduled</option>
+          <option value="active">Active</option>
+        </select>
       </div>
 
       {errors.submit && <p className="text-sm text-red-600">{errors.submit}</p>}
