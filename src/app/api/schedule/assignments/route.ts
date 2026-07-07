@@ -65,7 +65,14 @@ export async function POST(req: Request) {
 
   // Conflict detection: existing assignments for this technician
   const existingAssignments = await db.assignment.findMany({
-    where: { userId },
+    where: {
+      userId,
+      assignedDate: { lte: endDateObj },
+      OR: [
+        { endDate: null, assignedDate: { gte: startDate } },
+        { endDate: { gte: startDate } },
+      ],
+    },
     select: { id: true, assignedDate: true, endDate: true },
   });
 
@@ -96,7 +103,7 @@ export async function POST(req: Request) {
         day: "numeric",
         month: "short",
       });
-      await Promise.allSettled(
+      void Promise.allSettled(
         techWithSubs.pushSubscriptions.map((sub) =>
           sendPushToUser(sub, {
             title: "New job assignment",
