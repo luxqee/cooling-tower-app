@@ -12,7 +12,8 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const weekParam = searchParams.get("week");
-  const monday = weekParam ? weekStart(new Date(weekParam)) : weekStart(new Date());
+  const isValidWeek = weekParam && /^\d{4}-\d{2}-\d{2}$/.test(weekParam);
+  const monday = isValidWeek ? weekStart(new Date(weekParam!)) : weekStart(new Date());
   const weekEnd = new Date(monday);
   weekEnd.setDate(weekEnd.getDate() + 7);
 
@@ -39,12 +40,17 @@ export async function GET(req: Request) {
   );
 }
 
-const createSchema = z.object({
-  userId: z.string().uuid(),
-  jobId: z.string().uuid(),
-  assignedDate: z.string().datetime(),
-  endDate: z.string().datetime().optional(),
-});
+const createSchema = z
+  .object({
+    userId: z.string().uuid(),
+    jobId: z.string().uuid(),
+    assignedDate: z.string().datetime(),
+    endDate: z.string().datetime().optional(),
+  })
+  .refine((v) => !v.endDate || v.endDate >= v.assignedDate, {
+    message: "endDate must be on or after assignedDate",
+    path: ["endDate"],
+  });
 
 export async function POST(req: Request) {
   const user = await requireRole(["director", "service_manager", "admin"]).catch(() => null);

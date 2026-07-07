@@ -65,9 +65,14 @@ export default async function SchedulePage({
     );
   }
 
+  if (!["service_manager", "director", "admin"].includes(user.role)) {
+    redirect("/");
+  }
+
   // Manager / admin / director: week grid
-  const monday = searchParams.week
-    ? weekStart(new Date(searchParams.week))
+  const isValidWeek = searchParams.week && /^\d{4}-\d{2}-\d{2}$/.test(searchParams.week);
+  const monday = isValidWeek
+    ? weekStart(new Date(searchParams.week!))
     : weekStart(new Date());
   const weekEnd = new Date(monday);
   weekEnd.setDate(weekEnd.getDate() + 7);
