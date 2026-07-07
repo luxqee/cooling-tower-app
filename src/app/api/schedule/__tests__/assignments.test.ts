@@ -168,3 +168,87 @@ describe("POST /api/schedule/assignments", () => {
     );
   });
 });
+
+// --- PATCH route ---
+import { PATCH, DELETE as DELETE_HANDLER } from "../assignments/[id]/route";
+
+const ASSIGNMENT_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+
+function makePATCH(id: string, body: unknown) {
+  return new Request(`http://localhost/api/schedule/assignments/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+describe("PATCH /api/schedule/assignments/[id]", () => {
+  const existingAssignment = {
+    id: ASSIGNMENT_ID,
+    assignedDate: new Date("2026-07-07T00:00:00.000Z"),
+    endDate: null,
+  };
+
+  it("returns 401 when not a manager", async () => {
+    vi.mocked(requireRole).mockRejectedValue(new Error("Forbidden"));
+    const res = await PATCH(makePATCH(ASSIGNMENT_ID, { assignedDate: "2026-07-08T00:00:00.000Z" }), {
+      params: { id: ASSIGNMENT_ID },
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 404 when assignment not found", async () => {
+    vi.mocked(requireRole).mockResolvedValue(MANAGER as any);
+    vi.mocked(db.assignment.findUnique).mockResolvedValue(null);
+    const res = await PATCH(makePATCH(ASSIGNMENT_ID, { assignedDate: "2026-07-08T00:00:00.000Z" }), {
+      params: { id: ASSIGNMENT_ID },
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it("updates assignedDate correctly", async () => {
+    vi.mocked(requireRole).mockResolvedValue(MANAGER as any);
+    vi.mocked(db.assignment.findUnique).mockResolvedValue(existingAssignment as any);
+    vi.mocked(db.assignment.update).mockResolvedValue({
+      ...mockAssignment,
+      assignedDate: new Date("2026-07-08T00:00:00.000Z"),
+      endDate: null,
+      job: { ...mockAssignment.job, siteAddress: "123 Mine Rd" },
+    } as any);
+
+    const res = await PATCH(makePATCH(ASSIGNMENT_ID, { assignedDate: "2026-07-08T00:00:00.000Z" }), {
+      params: { id: ASSIGNMENT_ID },
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.assignedDate).toContain("2026-07-08");
+  });
+
+  it("preserves multi-day duration when shifting assignedDate", async () => {
+    // Assignment: Mon 7 Jul → Wed 9 Jul (3 days). Move to Tue 8 Jul → Thu 10 Jul.
+    vi.mocked(requireRole).mockResolvedValue(MANAGER as any);
+    vi.mocked(db.assignment.findUnique).mockResolvedValue({
+      ...existingAssignment,
+      assignedDate: new Date("2026-07-07T00:00:00.000Z"),
+      endDate: new Date("2026-07-09T00:00:00.000Z"),
+    } as any);
+
+    const expectedNewEnd = new Date("2026-07-10T00:00:00.000Z");
+    vi.mocked(db.assignment.update).mockResolvedValue({
+      ...mockAssignment,
+      assignedDate: new Date("2026-07-08T00:00:00.000Z"),
+      endDate: expectedNewEnd,
+      job: { ...mockAssignment.job, siteAddress: "123 Mine Rd" },
+    } as any);
+
+    const res = await PATCH(makePATCH(ASSIGNMENT_ID, { assignedDate: "2026-07-08T00:00:00.000Z" }), {
+      params: { id: ASSIGNMENT_ID },
+    });
+    expect(res.status).toBe(200);
+
+    const updateCall = vi.mocked(db.assignment.update).mock.calls[0][0] as any;
+    // endDate should have shifted by 1 day (same delta as assignedDate shift)
+    const updatedEnd: Date = updateCall.data.endDate;
+    expect(updatedEnd.toISOString().slice(0, 10)).toBe("2026-07-10");
+  });
+});
