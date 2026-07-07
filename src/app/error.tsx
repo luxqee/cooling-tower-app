@@ -1,19 +1,21 @@
 "use client";
 
-import { isRedirectError } from "next/dist/client/components/redirect";
-import { isNotFoundError } from "next/dist/client/components/not-found";
 import { SignOutButton } from "@clerk/nextjs";
 
 interface Props {
-  error: Error;
+  error: Error & { digest?: string };
 }
 
 export default function GlobalError({ error }: Props) {
   // Re-throw redirect/notFound errors so Next.js framework handles them.
-  // Must use isRedirectError/isNotFoundError which check error.digest — in
-  // production, error.message is sanitised to a generic string and cannot be
-  // matched, but error.digest is preserved.
-  if (isRedirectError(error) || isNotFoundError(error)) throw error;
+  // In production, error.message is sanitised to a generic string, but
+  // error.digest is preserved. Redirect digests start with "NEXT_REDIRECT";
+  // not-found digests are "NEXT_NOT_FOUND". Avoid internal Next.js imports
+  // (next/dist/…) which may not be available in all build environments.
+  const digest = error?.digest ?? "";
+  if (digest.startsWith("NEXT_REDIRECT") || digest === "NEXT_NOT_FOUND") {
+    throw error;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">

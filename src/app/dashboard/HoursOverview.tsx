@@ -16,7 +16,7 @@ export async function HoursOverview() {
       },
     },
     orderBy: { createdAt: "desc" },
-  });
+  }).catch(() => []);
 
   const rows = jobs.map((job) => {
     const loggedMinutes = job.timeEntries.reduce((sum, e) => sum + (e.durationMinutes ?? 0), 0);

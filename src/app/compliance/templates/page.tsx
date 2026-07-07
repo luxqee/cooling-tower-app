@@ -20,7 +20,7 @@ export default async function TemplatesPage() {
   const templates = await db.complianceTemplate.findMany({
     where: { isActive: true },
     orderBy: { createdAt: "asc" },
-  });
+  }).catch(() => []);
 
   return (
     <AppShell>

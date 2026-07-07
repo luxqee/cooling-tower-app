@@ -10,7 +10,7 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
   if (!user) redirect("/sign-in");
   if (user.role !== "admin") redirect("/compliance");
 
-  const template = await db.complianceTemplate.findUnique({ where: { id: params.id } });
+  const template = await db.complianceTemplate.findUnique({ where: { id: params.id } }).catch(() => null);
   if (!template || !template.isActive) notFound();
 
   return (
