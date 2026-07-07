@@ -28,8 +28,10 @@ interface QuoteStats {
   avgQuotedCost: number | null;
 }
 
+const TODAY = new Date().toISOString().slice(0, 10);
+
 export function QuotesClient() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = TODAY;
 
   const [jobType, setJobType] = useState("");
   const [customerName, setCustomerName] = useState("");
@@ -270,7 +272,7 @@ export function QuotesClient() {
 
       {hasCostData && results.length > 0 && (
         <p className="text-xs text-slate-400 dark:text-slate-500">
-          Cost vs quote compares the invoiced total against the quoted cost. Jobs without an invoice show "no invoice".
+          Cost vs quote compares the invoiced total against the quoted cost. Jobs without an invoice show &ldquo;no invoice&rdquo;.
         </p>
       )}
     </div>
