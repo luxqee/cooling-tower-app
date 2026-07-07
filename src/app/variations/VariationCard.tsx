@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
 
 function photoSrc(url: string) {
@@ -23,6 +24,7 @@ interface VariationCardProps {
 }
 
 export function VariationCard({ variation, onDecided }: VariationCardProps) {
+  const router = useRouter();
   const [action, setAction] = useState<"approved" | "rejected" | "queried" | null>(null);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +54,7 @@ export function VariationCard({ variation, onDecided }: VariationCardProps) {
         return;
       }
       onDecided(variation.id);
+      router.refresh();
     });
   }
 
