@@ -15,7 +15,15 @@ export default async function TimeTrackingPage() {
 
   const [assignments, activeEntry] = await Promise.all([
     db.assignment.findMany({
-      where: { userId: user.id, assignedDate: { gte: today, lt: tomorrow } },
+      where: {
+        userId: user.id,
+        OR: [
+          // Single-day assignment exactly today
+          { assignedDate: { gte: today, lt: tomorrow }, endDate: null },
+          // Multi-day assignment that spans today
+          { assignedDate: { lte: today }, endDate: { gte: today } },
+        ],
+      },
       include: {
         job: {
           select: { id: true, customerName: true, siteName: true, siteAddress: true },
