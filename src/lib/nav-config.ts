@@ -10,6 +10,7 @@ import {
   Settings,
   BarChart2,
   Receipt,
+  Building2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -127,6 +128,14 @@ export const navItems: NavItem[] = [
     icon: Receipt,
     description: "Invoice management and sending",
     visibleTo: ["admin", "director"],
+    phase: "2",
+  },
+  {
+    label: "Customers",
+    href: "/customers",
+    icon: Building2,
+    description: "Customer contacts and linked jobs",
+    visibleTo: ["admin", "director", "sales_engineer"],
     phase: "2",
   },
 ];
