@@ -30,7 +30,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       logoUrl: businessProfile?.logoUrl,
     });
 
-    return new NextResponse(pdfBuffer, {
+    return new Response(new Uint8Array(pdfBuffer), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
