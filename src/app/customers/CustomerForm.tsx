@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 interface CustomerData {
@@ -22,7 +22,7 @@ interface CustomerFormProps {
 
 export function CustomerForm({ initial, onSave, onCancel }: CustomerFormProps) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [fields, setFields] = useState({
     name:          initial?.name          ?? "",
@@ -49,53 +49,58 @@ export function CustomerForm({ initial, onSave, onCancel }: CustomerFormProps) {
     if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
     setErrors({});
 
-    startTransition(async () => {
-      let body: Record<string, unknown>;
-      if (isEdit) {
-        // Send all fields so the user can clear optional fields by blanking them
-        body = {
-          name:          fields.name.trim(),
-          abn:           fields.abn.trim()           || null,
-          contactPerson: fields.contactPerson.trim() || null,
-          email:         fields.email.trim()         || null,
-          phone:         fields.phone.trim()         || null,
-          address:       fields.address.trim()       || null,
-          notes:         fields.notes.trim()         || null,
-        };
-      } else {
-        // Only include non-empty optional fields for creation
-        body = { name: fields.name.trim() };
-        if (fields.abn.trim())           body.abn           = fields.abn.trim();
-        if (fields.contactPerson.trim()) body.contactPerson = fields.contactPerson.trim();
-        if (fields.email.trim())         body.email         = fields.email.trim();
-        if (fields.phone.trim())         body.phone         = fields.phone.trim();
-        if (fields.address.trim())       body.address       = fields.address.trim();
-        if (fields.notes.trim())         body.notes         = fields.notes.trim();
+    setIsPending(true);
+    (async () => {
+      try {
+        let body: Record<string, unknown>;
+        if (isEdit) {
+          // Send all fields so the user can clear optional fields by blanking them
+          body = {
+            name:          fields.name.trim(),
+            abn:           fields.abn.trim()           || null,
+            contactPerson: fields.contactPerson.trim() || null,
+            email:         fields.email.trim()         || null,
+            phone:         fields.phone.trim()         || null,
+            address:       fields.address.trim()       || null,
+            notes:         fields.notes.trim()         || null,
+          };
+        } else {
+          // Only include non-empty optional fields for creation
+          body = { name: fields.name.trim() };
+          if (fields.abn.trim())           body.abn           = fields.abn.trim();
+          if (fields.contactPerson.trim()) body.contactPerson = fields.contactPerson.trim();
+          if (fields.email.trim())         body.email         = fields.email.trim();
+          if (fields.phone.trim())         body.phone         = fields.phone.trim();
+          if (fields.address.trim())       body.address       = fields.address.trim();
+          if (fields.notes.trim())         body.notes         = fields.notes.trim();
+        }
+
+        const url    = isEdit ? `/api/customers/${initial.id}` : "/api/customers";
+        const method = isEdit ? "PATCH" : "POST";
+
+        const res = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          setErrors({ submit: (data as { error?: string }).error ?? "Failed to save customer." });
+          return;
+        }
+
+        if (isEdit) {
+          onSave?.();
+          router.refresh();
+        } else {
+          const created = await res.json();
+          router.push(`/customers/${created.id}`);
+        }
+      } finally {
+        setIsPending(false);
       }
-
-      const url    = isEdit ? `/api/customers/${initial.id}` : "/api/customers";
-      const method = isEdit ? "PATCH" : "POST";
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setErrors({ submit: (data as any).error ?? "Failed to save customer." });
-        return;
-      }
-
-      if (isEdit) {
-        onSave?.();
-        router.refresh();
-      } else {
-        const created = await res.json();
-        router.push(`/customers/${created.id}`);
-      }
-    });
+    })();
   }
 
   const inputClass =
