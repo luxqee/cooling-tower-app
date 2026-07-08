@@ -3,6 +3,11 @@
 import { useState, useTransition } from "react";
 import { X } from "lucide-react";
 
+interface Technician {
+  id: string;
+  name: string;
+}
+
 interface Job {
   id: string;
   customerName: string;
@@ -18,8 +23,9 @@ interface ScheduleAssignment {
 }
 
 interface AssignNewModalProps {
-  prefilledUserId: string;
+  prefilledUserId?: string;
   prefilledDate: string; // YYYY-MM-DD
+  technicians: Technician[];
   jobs: Job[];
   onClose: () => void;
   onCreated: (assignment: ScheduleAssignment) => void;
@@ -32,25 +38,25 @@ const sel =
 export function AssignNewModal({
   prefilledUserId,
   prefilledDate,
+  technicians,
   jobs,
   onClose,
   onCreated,
   onConflict,
 }: AssignNewModalProps) {
+  const [userId, setUserId] = useState(prefilledUserId ?? "");
   const [jobId, setJobId] = useState("");
   const [endDate, setEndDate] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleSubmit() {
-    if (!jobId) {
-      setError("Select a job.");
-      return;
-    }
+    if (!userId) { setError("Select a technician."); return; }
+    if (!jobId) { setError("Select a job."); return; }
     setError(null);
     startTransition(async () => {
       const body: Record<string, string> = {
-        userId: prefilledUserId,
+        userId,
         jobId,
         assignedDate: new Date(prefilledDate).toISOString(),
       };
@@ -67,9 +73,7 @@ export function AssignNewModal({
         setError(data.error ?? "Failed to create assignment.");
         return;
       }
-      if (data.warning) {
-        onConflict(data.warning);
-      }
+      if (data.warning) onConflict(data.warning);
       onCreated(data as ScheduleAssignment);
       onClose();
     });
@@ -80,25 +84,19 @@ export function AssignNewModal({
       <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 space-y-4 shadow-xl">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Assign job</h2>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-          >
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
             <X className="w-5 h-5" />
           </button>
         </div>
         <div className="space-y-3">
           <div className="space-y-1.5">
             <label className="text-sm font-medium">Start date</label>
-            <input
-              type="date"
-              value={prefilledDate}
-              readOnly
-              className={sel + " opacity-60 cursor-default"}
-            />
+            <input type="date" value={prefilledDate} readOnly className={sel + " opacity-60 cursor-default"} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">End date <span className="font-normal text-slate-400">(optional — for multi-day)</span></label>
+            <label className="text-sm font-medium">
+              End date <span className="font-normal text-slate-400">(optional — for multi-day)</span>
+            </label>
             <input
               type="date"
               value={endDate}
@@ -107,13 +105,20 @@ export function AssignNewModal({
               className={sel}
             />
           </div>
+          {!prefilledUserId && (
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Technician</label>
+              <select value={userId} onChange={(e) => setUserId(e.target.value)} className={sel}>
+                <option value="">Select…</option>
+                {technicians.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="space-y-1.5">
             <label className="text-sm font-medium">Job</label>
-            <select
-              value={jobId}
-              onChange={(e) => setJobId(e.target.value)}
-              className={sel}
-            >
+            <select value={jobId} onChange={(e) => setJobId(e.target.value)} className={sel}>
               <option value="">Select…</option>
               {jobs.map((j) => (
                 <option key={j.id} value={j.id}>

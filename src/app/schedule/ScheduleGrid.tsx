@@ -12,7 +12,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
-import { ChevronLeft, ChevronRight, Trash2, AlertTriangle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2, AlertTriangle, Plus } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { weekDays, formatShortDate, toDateString } from "@/lib/schedule/dateUtils";
 import { AssignNewModal } from "./AssignNewModal";
@@ -162,12 +162,84 @@ function GridCell({
   );
 }
 
+function MobileAssignmentCard({
+  assignment,
+  onDelete,
+}: {
+  assignment: ScheduleAssignment;
+  onDelete: () => void;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const isActive = assignment.job.status === "active";
+
+  function handleDelete() {
+    startTransition(async () => {
+      const res = await fetch(`/api/schedule/assignments/${assignment.id}`, { method: "DELETE" });
+      if (res.ok) onDelete();
+    });
+  }
+
+  return (
+    <div
+      className={cn(
+        "rounded-xl border px-4 py-3 space-y-1",
+        isActive
+          ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20"
+          : "border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20"
+      )}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold truncate">{assignment.user.name}</p>
+          <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
+            {assignment.job.customerName} — {assignment.job.siteName}
+          </p>
+          {assignment.endDate && (
+            <p className="text-xs text-slate-400 mt-0.5">
+              until {new Date(assignment.endDate).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}
+            </p>
+          )}
+        </div>
+        {!confirming ? (
+          <button
+            onClick={() => setConfirming(true)}
+            className="shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        ) : (
+          <div className="flex gap-1 shrink-0">
+            <button
+              onClick={() => setConfirming(false)}
+              className="min-h-[32px] px-2 rounded-lg border border-slate-300 dark:border-slate-600 text-xs"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={isPending}
+              className="min-h-[32px] px-2 rounded-lg bg-red-600 text-white text-xs font-medium disabled:opacity-40"
+            >
+              {isPending ? "…" : "Delete"}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function MobileList({
   assignments,
   days,
+  onAddClick,
+  onDelete,
 }: {
   assignments: ScheduleAssignment[];
   days: Date[];
+  onAddClick: (dateStr: string) => void;
+  onDelete: (id: string) => void;
 }) {
   const byDate = new Map<string, ScheduleAssignment[]>();
   for (const day of days) {
@@ -187,30 +259,35 @@ function MobileList({
         const dayAssignments = byDate.get(dateStr) ?? [];
         return (
           <div key={dateStr}>
-            <h3
-              className={cn(
-                "text-sm font-semibold mb-2",
-                dateStr === todayStr
-                  ? "text-amber-600 dark:text-amber-400"
-                  : "text-slate-500 dark:text-slate-400"
-              )}
-            >
-              {dateStr === todayStr ? "Today — " : ""}{formatShortDate(day)}
-            </h3>
+            <div className="flex items-center justify-between mb-2">
+              <h3
+                className={cn(
+                  "text-sm font-semibold",
+                  dateStr === todayStr
+                    ? "text-amber-600 dark:text-amber-400"
+                    : "text-slate-500 dark:text-slate-400"
+                )}
+              >
+                {dateStr === todayStr ? "Today — " : ""}{formatShortDate(day)}
+              </h3>
+              <button
+                onClick={() => onAddClick(dateStr)}
+                className="flex items-center gap-1 min-h-[32px] px-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Assign
+              </button>
+            </div>
             {dayAssignments.length === 0 ? (
               <p className="text-xs text-slate-400">No assignments</p>
             ) : (
               <div className="space-y-2">
                 {dayAssignments.map((a) => (
-                  <div
+                  <MobileAssignmentCard
                     key={a.id}
-                    className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3"
-                  >
-                    <p className="text-sm font-medium">{a.user.name}</p>
-                    <p className="text-xs text-slate-500">
-                      {a.job.customerName} — {a.job.siteName}
-                    </p>
-                  </div>
+                    assignment={a}
+                    onDelete={() => onDelete(a.id)}
+                  />
                 ))}
               </div>
             )}
@@ -229,7 +306,7 @@ export function ScheduleGrid({
 }: ScheduleGridProps) {
   const router = useRouter();
   const [assignments, setAssignments] = useState<ScheduleAssignment[]>(initialAssignments);
-  const [modal, setModal] = useState<{ userId: string; dateStr: string } | null>(null);
+  const [modal, setModal] = useState<{ userId?: string; dateStr: string } | null>(null);
   const [conflictWarning, setConflictWarning] = useState<string | null>(null);
 
   const monday = new Date(weekStartDate);
@@ -381,7 +458,12 @@ export function ScheduleGrid({
 
       {/* Mobile list view */}
       <div className="md:hidden">
-        <MobileList assignments={assignments} days={days} />
+        <MobileList
+          assignments={assignments}
+          days={days}
+          onAddClick={(dateStr) => setModal({ dateStr })}
+          onDelete={handleDelete}
+        />
       </div>
 
       {/* Desktop grid view */}
@@ -425,6 +507,7 @@ export function ScheduleGrid({
                       dateStr={dateStr}
                       assignments={cellAssignments}
                       onCellClick={(uid, ds) => setModal({ userId: uid, dateStr: ds })}
+
                       onDelete={handleDelete}
                     />
                   );
@@ -440,6 +523,7 @@ export function ScheduleGrid({
         <AssignNewModal
           prefilledUserId={modal.userId}
           prefilledDate={modal.dateStr}
+          technicians={technicians}
           jobs={jobs}
           onClose={() => setModal(null)}
           onCreated={handleCreated}
