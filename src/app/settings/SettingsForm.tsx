@@ -8,6 +8,8 @@ interface BusinessProfile {
   phone: string;
   email: string;
   address: string;
+  hourlyRate: number | null;
+  paymentTerms: string;
 }
 
 interface SettingsFormProps {
@@ -16,7 +18,11 @@ interface SettingsFormProps {
 }
 
 export function SettingsForm({ initial, initialLogoUrl }: SettingsFormProps) {
-  const [form, setForm] = useState<BusinessProfile>(initial);
+  const [form, setForm] = useState<BusinessProfile>({
+    ...initial,
+    hourlyRate: initial.hourlyRate ?? null,
+    paymentTerms: initial.paymentTerms ?? "",
+  });
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<"idle" | "saved" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -28,6 +34,12 @@ export function SettingsForm({ initial, initialLogoUrl }: SettingsFormProps) {
 
   const set = (field: keyof BusinessProfile) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm((f) => ({ ...f, [field]: e.target.value }));
+    if (status !== "idle") setStatus("idle");
+  };
+
+  const setNum = (field: "hourlyRate") => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value === "" ? null : Number(e.target.value);
+    setForm((f) => ({ ...f, [field]: val }));
     if (status !== "idle") setStatus("idle");
   };
 
@@ -209,6 +221,39 @@ export function SettingsForm({ initial, initialLogoUrl }: SettingsFormProps) {
             placeholder="123 Industrial Drive, Brisbane QLD 4000"
             className={inputClass + " resize-none"}
           />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Hourly rate ($) <span className="font-normal text-slate-400">optional</span>
+            </label>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={form.hourlyRate ?? ""}
+              onChange={setNum("hourlyRate")}
+              min={0}
+              step={0.01}
+              placeholder="145.00"
+              className={inputClass}
+            />
+            <p className="mt-1 text-xs text-slate-400">Used to pre-fill the labour calculator on invoices.</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Payment terms <span className="font-normal text-slate-400">optional</span>
+            </label>
+            <input
+              type="text"
+              value={form.paymentTerms}
+              onChange={set("paymentTerms")}
+              maxLength={200}
+              placeholder="Payment due 14 days from invoice date"
+              className={inputClass}
+            />
+            <p className="mt-1 text-xs text-slate-400">Shown in the footer of invoice PDFs.</p>
+          </div>
         </div>
 
         <div className="flex items-center gap-3 pt-2">

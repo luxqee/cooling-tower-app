@@ -8,15 +8,20 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const profile = await db.businessProfile.findFirst();
-  return NextResponse.json(profile ?? { name: "CT Field Ops", abn: "", phone: "", email: "", address: "", logoUrl: null });
+  return NextResponse.json(profile ?? {
+    name: "CT Field Ops", abn: "", phone: "", email: "", address: "",
+    logoUrl: null, hourlyRate: null, paymentTerms: null,
+  });
 }
 
 const updateSchema = z.object({
-  name:    z.string().min(1, "Name is required").max(100).optional(),
-  abn:     z.string().max(20).optional(),
-  phone:   z.string().max(30).optional(),
-  email:   z.string().email("Invalid email").or(z.literal("")).optional(),
-  address: z.string().max(200).optional(),
+  name:         z.string().min(1, "Name is required").max(100).optional(),
+  abn:          z.string().max(20).optional(),
+  phone:        z.string().max(30).optional(),
+  email:        z.string().email("Invalid email").or(z.literal("")).optional(),
+  address:      z.string().max(200).optional(),
+  hourlyRate:   z.number().positive().nullable().optional(),
+  paymentTerms: z.string().max(200).optional(),
 });
 
 export async function PATCH(req: Request) {
