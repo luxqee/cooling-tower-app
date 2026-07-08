@@ -58,6 +58,23 @@ model User {
   complianceDocuments ComplianceDocument[] @relation("ComplianceDocuments")
 }
 
+model Customer {
+  id            String   @id @default(uuid())
+  name          String
+  abn           String?
+  contactPerson String?
+  email         String?
+  phone         String?
+  address       String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  jobs Job[]
+
+  @@index([name])
+}
+
 model Job {
   id           String    @id @default(uuid())
   customerName String
@@ -67,6 +84,7 @@ model Job {
   quotedHours  Float
   quotedCost   Decimal?  @db.Decimal(12, 2)
   jobType      String
+  customerId   String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
@@ -75,6 +93,7 @@ model Job {
   variations          Variation[]
   invoices            Invoice[]
   complianceDocuments ComplianceDocument[]
+  customer            Customer? @relation(fields: [customerId], references: [id])
 
   @@index([status])
   @@index([jobType])
