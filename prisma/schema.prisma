@@ -52,6 +52,13 @@ enum MaterialEntryStatus {
   reconciled
 }
 
+enum QuoteStatus {
+  draft
+  sent
+  accepted
+  declined
+}
+
 model User {
   id        String   @id @default(uuid())
   clerkId   String   @unique
@@ -70,6 +77,7 @@ model User {
   complianceDocuments ComplianceDocument[] @relation("ComplianceDocuments")
   jobCommunications   JobCommunication[]
   materialEntries     MaterialEntry[]
+  quotes              Quote[]
 }
 
 model Customer {
@@ -311,6 +319,26 @@ model MaterialEntry {
 
   @@index([jobId])
   @@index([status])
+}
+
+model Quote {
+  id          String      @id @default(uuid())
+  createdById String
+  customerName String
+  siteName    String
+  jobType     String
+  lineItems   Json
+  totalAmount Decimal     @db.Decimal(12, 2)
+  status      QuoteStatus @default(draft)
+  validUntil  DateTime?
+  pdfUrl      String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@index([status])
+  @@index([createdById])
 }
 
 model JobCommunication {
