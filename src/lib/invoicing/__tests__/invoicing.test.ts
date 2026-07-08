@@ -11,9 +11,9 @@ vi.mock("@react-pdf/renderer", () => ({
 }));
 
 vi.mock("resend", () => ({
-  Resend: vi.fn().mockImplementation(() => ({
-    emails: { send: vi.fn().mockResolvedValue({ id: "email-id" }) },
-  })),
+  Resend: vi.fn().mockImplementation(function () {
+    return { emails: { send: vi.fn().mockResolvedValue({ id: "email-id" }) } };
+  }),
 }));
 
 import { generateInvoicePdf } from "../generateInvoicePdf";
