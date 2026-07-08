@@ -31,6 +31,38 @@ export function NewJobForm({ onClose }: { onClose: () => void }) {
     status:      "scheduled" as "scheduled" | "active",
   });
 
+  const [aiFlags, setAiFlags] = useState<{ field: string; severity: string; message: string; suggestion: string | null }[]>([]);
+
+  // AI validation check — debounced, fires after the user pauses typing.
+  useEffect(() => {
+    const hasMinimumFields = fields.siteName.length >= 2 && fields.siteAddress.length >= 5 && fields.quotedHours;
+    const customerName = customerId ? customerQuery : customerQuery.trim();
+    if (!hasMinimumFields || customerName.length < 2) {
+      setAiFlags([]);
+      return;
+    }
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => {
+      fetch("/api/ai/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: ctrl.signal,
+        body: JSON.stringify({
+          customerName,
+          siteName: fields.siteName,
+          siteAddress: fields.siteAddress,
+          jobType: fields.jobType,
+          quotedHours: parseFloat(fields.quotedHours) || 0,
+          quotedCost: fields.quotedCost ? parseFloat(fields.quotedCost) : undefined,
+        }),
+      })
+        .then((r) => (r.ok ? r.json() : { flags: [] }))
+        .then((d) => setAiFlags(d.flags ?? []))
+        .catch(() => {});
+    }, 800);
+    return () => { clearTimeout(timer); ctrl.abort(); };
+  }, [fields.siteName, fields.siteAddress, fields.jobType, fields.quotedHours, fields.quotedCost, customerId, customerQuery]);
+
   useEffect(() => {
     fetch("/api/quotes/job-types")
       .then((r) => (r.ok ? r.json() : { jobTypes: [] }))
@@ -270,6 +302,13 @@ export function NewJobForm({ onClose }: { onClose: () => void }) {
           <option value="active">Active</option>
         </select>
       </div>
+
+      {aiFlags.map((flag, i) => (
+        <div key={i} className="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 px-3 py-2 space-y-0.5">
+          <p className="text-sm text-amber-800 dark:text-amber-300">{flag.message}</p>
+          {flag.suggestion && <p className="text-xs text-amber-600 dark:text-amber-400">{flag.suggestion}</p>}
+        </div>
+      ))}
 
       {errors.submit && <p className="text-sm text-red-600">{errors.submit}</p>}
 
