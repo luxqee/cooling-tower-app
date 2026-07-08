@@ -1,4 +1,10 @@
 {
   "regions": ["syd1"],
-  "installCommand": "pnpm install --no-frozen-lockfile"
+  "installCommand": "pnpm install --no-frozen-lockfile",
+  "crons": [
+    {
+      "path": "/api/cron/cleanup-jobs",
+      "schedule": "0 2 * * *"
+    }
+  ]
 }

@@ -176,11 +176,14 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                     <p className="truncate">{doc.template.name}</p>
                     <p className="text-xs text-slate-500">{new Date(doc.submittedAt).toLocaleDateString("en-AU")}</p>
                   </div>
-                  {doc.pdfUrl && (
-                    <a href={doc.pdfUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-amber-600 dark:text-amber-400 hover:underline shrink-0">
-                      View PDF
-                    </a>
-                  )}
+                  <a
+                    href={`/api/compliance/documents/${doc.id}/pdf`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-amber-600 dark:text-amber-400 hover:underline shrink-0"
+                  >
+                    Preview PDF
+                  </a>
                 </div>
               ))}
             </div>

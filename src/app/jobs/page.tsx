@@ -10,8 +10,16 @@ export default async function JobsPage() {
 
   const canCreate = ["director", "service_manager", "admin"].includes(user.role);
 
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
   const jobs = await db.job.findMany({
-    where: { status: { in: ["active", "scheduled"] } },
+    where: {
+      OR: [
+        { status: { in: ["active", "scheduled"] } },
+        { status: "complete", updatedAt: { gte: thirtyDaysAgo } },
+      ],
+    },
     select: {
       id: true,
       customerName: true,
@@ -46,7 +54,7 @@ export default async function JobsPage() {
           <div>
             <h1 className="text-xl font-semibold">Jobs</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              Active and scheduled jobs
+              Active, scheduled, and recently completed jobs
             </p>
           </div>
         </div>

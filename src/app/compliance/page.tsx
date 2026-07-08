@@ -63,16 +63,14 @@ export default async function CompliancePage() {
                       {doc.createdBy.name} · {new Date(doc.submittedAt).toLocaleDateString("en-AU")}
                     </p>
                   </div>
-                  {doc.pdfUrl && (
-                    <a
-                      href={`/api/photos?url=${encodeURIComponent(doc.pdfUrl)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="shrink-0 text-sm text-amber-600 hover:text-amber-700 underline underline-offset-2"
-                    >
-                      View PDF
-                    </a>
-                  )}
+                  <a
+                    href={`/api/compliance/documents/${doc.id}/pdf`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="shrink-0 text-sm text-amber-600 hover:text-amber-700 underline underline-offset-2"
+                  >
+                    Preview PDF
+                  </a>
                 </div>
               </div>
             ))}

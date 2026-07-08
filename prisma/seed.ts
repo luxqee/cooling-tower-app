@@ -649,6 +649,12 @@ async function main() {
         createdAt: d("2026-06-10T15:45:00Z"),
       },
       {
+        jobId: "seed-job-glencore", createdById: sarahId,
+        description: "Chemical biocide treatment (5L)", supplierName: "ChemTreat Australia",
+        quantity: 1, estimatedCost: 165, actualCost: 172, status: "reconciled",
+        createdAt: d("2026-07-07T08:30:00Z"), reconciledAt: d("2026-07-07T18:00:00Z"),
+      },
+      {
         jobId: "seed-job-glencore", createdById: jakeId,
         description: "Fan belt, Tower 3", supplierName: null,
         quantity: 1, estimatedCost: 85, status: "pending",
@@ -662,7 +668,7 @@ async function main() {
       },
     ],
   });
-  console.log("  ✓ Material entries (4 — one reconciled, one received, two pending)");
+  console.log("  ✓ Material entries (5 — two Glencore, one reconciled/one pending; one Rio Tinto reconciled; one BHP received)");
 
   // ─── Quotes (Phase 3 batch d) ───────────────────────────────────────────────
   const quotes = [
