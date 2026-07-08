@@ -46,6 +46,12 @@ enum CommunicationType {
   field_instruction
 }
 
+enum MaterialEntryStatus {
+  pending
+  received
+  reconciled
+}
+
 model User {
   id        String   @id @default(uuid())
   clerkId   String   @unique
@@ -63,6 +69,7 @@ model User {
   pushSubscriptions   PushSubscription[]
   complianceDocuments ComplianceDocument[] @relation("ComplianceDocuments")
   jobCommunications   JobCommunication[]
+  materialEntries     MaterialEntry[]
 }
 
 model Customer {
@@ -103,6 +110,7 @@ model Job {
   complianceDocuments ComplianceDocument[]
   communications      JobCommunication[]
   assets              JobAsset[]
+  materialEntries     MaterialEntry[]
   customer            Customer? @relation(fields: [customerId], references: [id])
 
   @@index([status])
@@ -170,6 +178,7 @@ model Invoice {
   variationsTotal Decimal       @db.Decimal(12, 2) @default(0)
   totalAmount     Decimal       @db.Decimal(12, 2) @default(0)
   notes           String?
+  materialsTotal  Decimal       @db.Decimal(12, 2) @default(0)
   sentAt          DateTime?
   sentToEmail     String?
   paidAt          DateTime?
@@ -281,6 +290,27 @@ model JobAsset {
 
   @@id([jobId, assetId])
   @@index([assetId])
+}
+
+model MaterialEntry {
+  id            String              @id @default(uuid())
+  jobId         String
+  createdById   String
+  supplierName  String?
+  description   String
+  quantity      Float?
+  estimatedCost Decimal             @db.Decimal(12, 2)
+  actualCost    Decimal?            @db.Decimal(12, 2)
+  receiptUrl    String?
+  status        MaterialEntryStatus @default(pending)
+  createdAt     DateTime            @default(now())
+  reconciledAt  DateTime?
+
+  job       Job  @relation(fields: [jobId], references: [id])
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@index([jobId])
+  @@index([status])
 }
 
 model JobCommunication {

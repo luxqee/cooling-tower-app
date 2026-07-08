@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
-import { Plus, X, Pencil, Trash2, MessageSquare } from "lucide-react";
+import { Plus, X, Pencil, Trash2, MessageSquare, Receipt } from "lucide-react";
 import { NewJobForm } from "./NewJobForm";
 import { useRouter } from "next/navigation";
 
@@ -206,11 +206,146 @@ function CommunicationLogModal({ job, onClose }: { job: Job; onClose: () => void
   );
 }
 
+interface MaterialEntry {
+  id: string;
+  description: string;
+  supplierName: string | null;
+  estimatedCost: number;
+  actualCost: number | null;
+  status: "pending" | "received" | "reconciled";
+}
+
+function MaterialsModal({ job, canReconcile, onClose }: { job: Job; canReconcile: boolean; onClose: () => void }) {
+  const [entries, setEntries] = useState<MaterialEntry[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [description, setDescription] = useState("");
+  const [estimatedCost, setEstimatedCost] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [reconcileValues, setReconcileValues] = useState<Record<string, string>>({});
+  const [isPending, startTransition] = useTransition();
+
+  function load() {
+    setLoadError(null);
+    fetch(`/api/jobs/${job.id}/materials`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error((await res.json()).error ?? "Failed to load materials.");
+        return res.json();
+      })
+      .then(setEntries)
+      .catch((e: Error) => setLoadError(e.message));
+  }
+
+  useEffect(load, [job.id]);
+
+  function submit() {
+    const cost = parseFloat(estimatedCost);
+    if (!description.trim() || Number.isNaN(cost)) return;
+    startTransition(async () => {
+      setError(null);
+      const res = await fetch(`/api/jobs/${job.id}/materials`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description, estimatedCost: cost }),
+      });
+      if (!res.ok) { setError((await res.json()).error ?? "Failed to save."); return; }
+      setDescription("");
+      setEstimatedCost("");
+      load();
+    });
+  }
+
+  function reconcile(entryId: string) {
+    const cost = parseFloat(reconcileValues[entryId] ?? "");
+    if (Number.isNaN(cost)) return;
+    startTransition(async () => {
+      const res = await fetch(`/api/materials/${entryId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actualCost: cost }),
+      });
+      if (res.ok) load();
+    });
+  }
+
+  const totalEstimated = entries?.reduce((sum, e) => sum + e.estimatedCost, 0) ?? 0;
+  const inp = "w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-base";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40">
+      <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 space-y-4 shadow-xl max-h-[85vh] flex flex-col">
+        <div className="flex items-center justify-between shrink-0">
+          <div>
+            <h2 className="text-lg font-semibold">Materials &amp; costs</h2>
+            <p className="text-sm text-slate-500 truncate">{job.siteName} — est. ${totalEstimated.toFixed(0)}</p>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><X className="w-5 h-5" /></button>
+        </div>
+
+        <div className="overflow-y-auto space-y-2 min-h-[80px]">
+          {loadError && <p className="text-sm text-red-600">{loadError}</p>}
+          {!loadError && entries === null && <p className="text-sm text-slate-500">Loading…</p>}
+          {entries?.length === 0 && <p className="text-sm text-slate-500">No materials logged yet.</p>}
+          {entries?.map((e) => (
+            <div key={e.id} className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 space-y-1">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium truncate">{e.description}</p>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${
+                  e.status === "reconciled"
+                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400"
+                    : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
+                }`}>
+                  {e.status}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500">
+                Est. ${e.estimatedCost.toFixed(0)}{e.actualCost != null && ` — actual $${e.actualCost.toFixed(0)}`}
+              </p>
+              {canReconcile && e.status !== "reconciled" && (
+                <div className="flex gap-2 pt-1">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    placeholder="Actual cost"
+                    value={reconcileValues[e.id] ?? ""}
+                    onChange={(ev) => setReconcileValues((p) => ({ ...p, [e.id]: ev.target.value }))}
+                    className="flex-1 min-h-[32px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-2 text-sm"
+                  />
+                  <button
+                    onClick={() => reconcile(e.id)}
+                    disabled={isPending}
+                    className="px-3 min-h-[32px] rounded-lg bg-slate-100 dark:bg-slate-700 text-xs font-medium disabled:opacity-40"
+                  >
+                    Reconcile
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-2 shrink-0 pt-2 border-t border-slate-200 dark:border-slate-700">
+          <input type="text" placeholder="Description (e.g. pump seal)" value={description} onChange={(e) => setDescription(e.target.value)} className={inp} />
+          <input type="number" inputMode="decimal" placeholder="Estimated cost ($)" value={estimatedCost} onChange={(e) => setEstimatedCost(e.target.value)} className={inp} />
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <button
+            onClick={submit}
+            disabled={isPending || !description.trim() || !estimatedCost}
+            className="w-full min-h-[44px] rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm disabled:opacity-40"
+          >
+            {isPending ? "Adding…" : "Add entry"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function JobCard({ job, canEdit }: { job: Job; canEdit: boolean }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [loggingOpen, setLoggingOpen] = useState(false);
+  const [materialsOpen, setMaterialsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function deleteJob() {
@@ -242,6 +377,9 @@ function JobCard({ job, canEdit }: { job: Job; canEdit: boolean }) {
             </span>
             {canEdit && (
               <>
+                <button onClick={() => setMaterialsOpen(true)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
+                  <Receipt className="w-3.5 h-3.5" />
+                </button>
                 <button onClick={() => setLoggingOpen(true)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
                   <MessageSquare className="w-3.5 h-3.5" />
                 </button>
@@ -288,6 +426,7 @@ function JobCard({ job, canEdit }: { job: Job; canEdit: boolean }) {
       </div>
       {editing && <EditJobModal job={job} onClose={() => setEditing(false)} />}
       {loggingOpen && <CommunicationLogModal job={job} onClose={() => setLoggingOpen(false)} />}
+      {materialsOpen && <MaterialsModal job={job} canReconcile={canEdit} onClose={() => setMaterialsOpen(false)} />}
     </>
   );
 }
