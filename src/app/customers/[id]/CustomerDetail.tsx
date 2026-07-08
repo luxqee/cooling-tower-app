@@ -48,6 +48,60 @@ interface CustomerDetailProps {
   contracts:       ContractRow[];
   canEdit:         boolean;
   canManageAssets: boolean;
+  canSharePortal:  boolean;
+}
+
+function PortalLinkSection({ customerId, canShare }: { customerId: string; canShare: boolean }) {
+  const [link, setLink] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  function generate() {
+    startTransition(async () => {
+      setError(null);
+      setCopied(false);
+      const res = await fetch(`/api/customers/${customerId}/portal-link`, { method: "POST" });
+      if (!res.ok) { setError((await res.json()).error ?? "Failed to generate link."); return; }
+      const data = await res.json();
+      setLink(`${window.location.origin}/portal/${data.token}`);
+    });
+  }
+
+  function copy() {
+    if (!link) return;
+    navigator.clipboard.writeText(link).then(() => setCopied(true));
+  }
+
+  if (!canShare) return null;
+
+  return (
+    <div className="space-y-2">
+      <h2 className="text-sm font-medium text-slate-700 dark:text-slate-300">Customer portal</h2>
+      {!link && (
+        <button
+          type="button"
+          onClick={generate}
+          disabled={isPending}
+          className="px-4 min-h-[38px] rounded-lg border border-slate-300 dark:border-slate-600 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40"
+        >
+          {isPending ? "Generating…" : "Generate portal link"}
+        </button>
+      )}
+      {link && (
+        <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 space-y-2">
+          <p className="text-xs text-slate-500">Valid for 30 days. Share this link with the customer:</p>
+          <div className="flex gap-2">
+            <input type="text" readOnly value={link} className="flex-1 min-h-[38px] rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 px-3 text-xs" />
+            <button type="button" onClick={copy} className="px-3 min-h-[38px] rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold shrink-0">
+              {copied ? "Copied" : "Copy"}
+            </button>
+          </div>
+        </div>
+      )}
+      {error && <p className="text-sm text-red-600">{error}</p>}
+    </div>
+  );
 }
 
 function ContractsSection({ customerId, contracts, canManage }: { customerId: string; contracts: ContractRow[]; canManage: boolean }) {
@@ -254,7 +308,7 @@ const STATUS_BADGE: Record<string, string> = {
   cancelled: "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400",
 };
 
-export function CustomerDetail({ customer, jobs, assets, contracts, canEdit, canManageAssets }: CustomerDetailProps) {
+export function CustomerDetail({ customer, jobs, assets, contracts, canEdit, canManageAssets, canSharePortal }: CustomerDetailProps) {
   const [editing, setEditing] = useState(false);
 
   if (editing) {
@@ -320,6 +374,8 @@ export function CustomerDetail({ customer, jobs, assets, contracts, canEdit, can
       <AssetsSection customerId={customer.id} assets={assets} canManage={canManageAssets} />
 
       <ContractsSection customerId={customer.id} contracts={contracts} canManage={canManageAssets} />
+
+      <PortalLinkSection customerId={customer.id} canShare={canSharePortal} />
 
       {/* Linked jobs */}
       <div className="space-y-2">

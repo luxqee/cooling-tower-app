@@ -104,9 +104,10 @@ model Customer {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  jobs      Job[]
-  assets    Asset[]
-  contracts Contract[]
+  jobs         Job[]
+  assets       Asset[]
+  contracts    Contract[]
+  portalTokens CustomerPortalToken[]
 
   @@index([name])
 }
@@ -334,6 +335,18 @@ model MaterialEntry {
 
   @@index([jobId])
   @@index([status])
+}
+
+model CustomerPortalToken {
+  id         String   @id @default(uuid())
+  customerId String
+  token      String   @unique
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([customerId])
 }
 
 model Contract {

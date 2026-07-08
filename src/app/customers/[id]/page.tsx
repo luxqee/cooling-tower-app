@@ -66,6 +66,7 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
           }))}
           canEdit={user.role === "admin"}
           canManageAssets={["admin", "director"].includes(user.role)}
+          canSharePortal={["admin", "director", "sales_engineer"].includes(user.role)}
         />
       </div>
     </AppShell>
