@@ -16,6 +16,7 @@
     "studio": "prisma studio"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.110.0",
     "@clerk/nextjs": "^7.5.2",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/utilities": "^3.2.2",
