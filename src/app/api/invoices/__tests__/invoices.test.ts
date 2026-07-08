@@ -157,12 +157,16 @@ describe("POST /api/invoices/[id]/send", () => {
   it("calls sendInvoiceEmail and returns sentAt for valid request", async () => {
     vi.mocked(requireRole).mockResolvedValue(ADMIN as any);
     const invWithNumber = { ...baseInvoice, invoiceNumber: "INV-2026-0001" };
+    const sentInvoice = { ...invWithNumber, status: "sent", sentAt: new Date("2026-07-08T00:00:00Z"), sentToEmail: "client@example.com" };
     vi.mocked(db.invoice.findUnique).mockResolvedValue(invWithNumber as any);
     vi.mocked(db.job.findUnique).mockResolvedValue(baseJob as any);
     vi.mocked(db.businessProfile.findFirst).mockResolvedValue(baseProfile as any);
+    // Transaction only assigns the invoice number; invoice already has one so fn returns it immediately.
     vi.mocked(db.$transaction).mockImplementation(async (fn: any) => {
-      return fn({ invoice: { count: vi.fn().mockResolvedValue(1), update: vi.fn().mockResolvedValue({ ...invWithNumber, status: "sent", sentAt: new Date(), sentToEmail: "client@example.com" }) } });
+      return fn({ invoice: { count: vi.fn().mockResolvedValue(1), update: vi.fn() } });
     });
+    // The final status/sentAt write happens outside the transaction.
+    vi.mocked(db.invoice.update).mockResolvedValue(sentInvoice as any);
     const res = await POST_SEND(makeReq(`/api/invoices/${INV_ID}/send`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: "client@example.com" }) }), { params: { id: INV_ID } });
     expect(res.status).toBe(200);
     expect(sendInvoiceEmail).toHaveBeenCalledOnce();

@@ -18,6 +18,11 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const invoice = await db.invoice.findUnique({ where: { id: params.id } });
   if (!invoice) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  // Guard: do not re-send a paid invoice
+  if (invoice.status === "paid") {
+    return NextResponse.json({ error: "Cannot send a paid invoice" }, { status: 409 });
+  }
+
   const [job, businessProfile] = await Promise.all([
     db.job.findUnique({
       where: { id: invoice.jobId },
@@ -31,50 +36,55 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   if (!job) return NextResponse.json({ error: "Job not found" }, { status: 404 });
 
-  // Ensure invoice number, generate PDF, send email — all in one transaction for the DB update
-  const updated = await db.$transaction(async (tx) => {
-    let { invoiceNumber } = invoice;
-    if (!invoiceNumber) {
-      const count = await tx.invoice.count();
-      invoiceNumber = `INV-${new Date().getFullYear()}-${String(count + 1).padStart(4, "0")}`;
-    }
+  // Step 1: Ensure invoice number — short transaction, no I/O
+  // Uses already-fetched `invoice` to skip an inner findUnique; count excludes null-number rows
+  // to prevent collisions with pre-created variation-decision drafts.
+  const invoiceNumber = await db.$transaction(async (tx) => {
+    if (invoice.invoiceNumber) return invoice.invoiceNumber;
 
-    const pdfData = {
-      invoice: {
-        invoiceNumber,
-        baseAmount: invoice.baseAmount.toNumber(),
-        variationsTotal: invoice.variationsTotal.toNumber(),
-        totalAmount: invoice.totalAmount.toNumber(),
-        notes: invoice.notes,
-        createdAt: invoice.createdAt.toISOString(),
-      },
-      variations: job.variations.map((v) => ({ description: v.description, costEstimate: v.costEstimate.toNumber() })),
-      job: { customerName: job.customerName, siteName: job.siteName, siteAddress: job.siteAddress, jobType: job.jobType },
-      businessProfile: {
-        name: businessProfile?.name ?? "CT Field Ops",
-        abn: businessProfile?.abn ?? "",
-        address: businessProfile?.address ?? "",
-        logoUrl: businessProfile?.logoUrl ?? null,
-        paymentTerms: businessProfile?.paymentTerms ?? null,
-      },
-    };
+    const count = await tx.invoice.count({ where: { invoiceNumber: { not: null } } });
+    const newNumber = `INV-${new Date().getFullYear()}-${String(count + 1).padStart(4, "0")}`;
+    await tx.invoice.update({ where: { id: params.id }, data: { invoiceNumber: newNumber } });
+    return newNumber;
+  });
 
-    const pdfBuffer = await generateInvoicePdf(pdfData);
-
-    await sendInvoiceEmail({
-      to: parsed.data.email,
-      from: process.env.RESEND_FROM_EMAIL ?? `invoices@resend.dev`,
+  // Step 2: Build PDF data and perform I/O outside any transaction
+  const pdfData = {
+    invoice: {
       invoiceNumber,
-      jobDescription: `${job.jobType} — ${job.siteName}`,
+      baseAmount: invoice.baseAmount.toNumber(),
+      variationsTotal: invoice.variationsTotal.toNumber(),
       totalAmount: invoice.totalAmount.toNumber(),
-      pdfBuffer,
-      businessName: businessProfile?.name ?? "CT Field Ops",
-    });
+      notes: invoice.notes,
+      createdAt: invoice.createdAt.toISOString(),
+    },
+    variations: job.variations.map((v) => ({ description: v.description, costEstimate: v.costEstimate.toNumber() })),
+    job: { customerName: job.customerName, siteName: job.siteName, siteAddress: job.siteAddress, jobType: job.jobType },
+    businessProfile: {
+      name: businessProfile?.name ?? "CT Field Ops",
+      abn: businessProfile?.abn ?? "",
+      address: businessProfile?.address ?? "",
+      logoUrl: businessProfile?.logoUrl ?? null,
+      paymentTerms: businessProfile?.paymentTerms ?? null,
+    },
+  };
 
-    return tx.invoice.update({
-      where: { id: params.id },
-      data: { invoiceNumber, status: "sent", sentAt: new Date(), sentToEmail: parsed.data.email },
-    });
+  const pdfBuffer = await generateInvoicePdf(pdfData);
+
+  await sendInvoiceEmail({
+    to: parsed.data.email,
+    from: process.env.RESEND_FROM_EMAIL ?? `invoices@resend.dev`,
+    invoiceNumber,
+    jobDescription: `${job.jobType} — ${job.siteName}`,
+    totalAmount: invoice.totalAmount.toNumber(),
+    pdfBuffer,
+    businessName: businessProfile?.name ?? "CT Field Ops",
+  });
+
+  // Step 3: Single write to record send — no transaction needed
+  const updated = await db.invoice.update({
+    where: { id: params.id },
+    data: { status: "sent", sentAt: new Date(), sentToEmail: parsed.data.email },
   });
 
   return NextResponse.json({

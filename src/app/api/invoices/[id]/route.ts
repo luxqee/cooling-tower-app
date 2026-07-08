@@ -76,7 +76,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const updated = await db.$transaction(async (tx) => {
     let invoiceNumber = existing.invoiceNumber;
     if (!invoiceNumber) {
-      const count = await tx.invoice.count();
+      const count = await tx.invoice.count({ where: { invoiceNumber: { not: null } } });
       invoiceNumber = `INV-${new Date().getFullYear()}-${String(count + 1).padStart(4, "0")}`;
     }
 
