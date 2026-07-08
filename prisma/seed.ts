@@ -78,23 +78,22 @@ async function main() {
   console.log("  ✓ Business profile");
 
   // ─── Demo users ───────────────────────────────────────────────────────────
-  // Emails use Gmail + aliases so you can sign in as each persona using your
-  // own Gmail account. Gmail delivers all + aliases to your main inbox.
-  // Sign in with email/password (not Google OAuth) for each alias.
+  // Two loginable aliases — sign in with email/password (not Google OAuth):
+  //   lukeherod7+technician@gmail.com  → Jake Morrison (technician)
+  //   lukeherod7+admin@gmail.com       → Tom Wilson   (service_manager)
   //
-  // When you first sign in with e.g. lukeherod7+jake@gmail.com, Clerk creates
-  // a new account and fires user.created. The webhook finds the user record by
-  // email and links the real Clerk ID automatically.
+  // Sarah and Mike have internal emails — their names and data appear
+  // throughout the app but you don't need to sign in as them.
   //
-  // The clerkId below is a placeholder — it gets replaced by the real Clerk ID
-  // on first login and is never used for authentication.
+  // The clerkId below is a placeholder — it gets replaced by the real Clerk
+  // ID on first login via the webhook's email-matching fallback.
 
   const users = [
     {
       id: "seed-user-jake",
       clerkId: "placeholder_jake_morrison",
       name: "Jake Morrison",
-      email: "lukeherod7+jake@gmail.com",
+      email: "lukeherod7+technician@gmail.com",
       phone: "0412 345 678",
       role: "technician" as const,
     },
@@ -102,7 +101,7 @@ async function main() {
       id: "seed-user-sarah",
       clerkId: "placeholder_sarah_chen",
       name: "Sarah Chen",
-      email: "lukeherod7+sarah@gmail.com",
+      email: "sarah.chen@ctfieldops.com.au",
       phone: "0423 456 789",
       role: "technician" as const,
     },
@@ -110,7 +109,7 @@ async function main() {
       id: "seed-user-mike",
       clerkId: "placeholder_mike_davis",
       name: "Mike Davis",
-      email: "lukeherod7+mike@gmail.com",
+      email: "mike.davis@ctfieldops.com.au",
       phone: "0434 567 890",
       role: "technician" as const,
     },
@@ -118,7 +117,7 @@ async function main() {
       id: "seed-user-tom",
       clerkId: "placeholder_tom_wilson",
       name: "Tom Wilson",
-      email: "lukeherod7+tom@gmail.com",
+      email: "lukeherod7+admin@gmail.com",
       phone: "0445 678 901",
       role: "service_manager" as const,
     },
@@ -221,9 +220,9 @@ async function main() {
     return byEmail?.id ?? seedId;
   }
 
-  const jakeId  = await resolveUserId("seed-user-jake",  "lukeherod7+jake@gmail.com");
-  const sarahId = await resolveUserId("seed-user-sarah", "lukeherod7+sarah@gmail.com");
-  const mikeId  = await resolveUserId("seed-user-mike",  "lukeherod7+mike@gmail.com");
+  const jakeId  = await resolveUserId("seed-user-jake",  "lukeherod7+technician@gmail.com");
+  const sarahId = await resolveUserId("seed-user-sarah", "sarah.chen@ctfieldops.com.au");
+  const mikeId  = await resolveUserId("seed-user-mike",  "mike.davis@ctfieldops.com.au");
 
   // ─── Assignments ──────────────────────────────────────────────────────────
   // Delete and recreate so userId references stay correct after real logins.
@@ -451,11 +450,9 @@ async function main() {
   // ─── Summary ──────────────────────────────────────────────────────────────
   console.log("\n✅ Seed complete!\n");
   console.log("👤 Demo logins (use email/password — NOT Google sign-in):");
-  console.log("   lukeherod7+jake@gmail.com  → Jake Morrison  (technician)");
-  console.log("   lukeherod7+sarah@gmail.com → Sarah Chen     (technician)");
-  console.log("   lukeherod7+mike@gmail.com  → Mike Davis     (technician)");
-  console.log("   lukeherod7+tom@gmail.com   → Tom Wilson     (service manager)");
-  console.log("   lukeherod7@gmail.com       → your account   (director/admin)");
+  console.log("   lukeherod7+technician@gmail.com → Jake Morrison  (technician)");
+  console.log("   lukeherod7+admin@gmail.com      → Tom Wilson     (service manager)");
+  console.log("   lukeherod7@gmail.com            → your account   (director/admin)");
   console.log("\n📋 Jobs:");
   console.log("   COMPLETE — Rio Tinto Weipa Annual Service      → INV-2026-0001 PAID  $8,900");
   console.log("   COMPLETE — BHP Hay Point Quarterly Inspection  → INV-2026-0002 SENT  $3,363");
