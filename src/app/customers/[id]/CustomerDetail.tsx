@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CustomerForm } from "../CustomerForm";
 
 interface CustomerProps {
@@ -24,10 +25,103 @@ interface JobRow {
   jobType:      string;
 }
 
+interface AssetRow {
+  id:           string;
+  serialNumber: string;
+  assetType:    string;
+  location:     string | null;
+}
+
 interface CustomerDetailProps {
-  customer: CustomerProps;
-  jobs:     JobRow[];
-  canEdit:  boolean;
+  customer:        CustomerProps;
+  jobs:            JobRow[];
+  assets:          AssetRow[];
+  canEdit:         boolean;
+  canManageAssets: boolean;
+}
+
+function AssetsSection({ customerId, assets, canManage }: { customerId: string; assets: AssetRow[]; canManage: boolean }) {
+  const router = useRouter();
+  const [adding, setAdding] = useState(false);
+  const [serialNumber, setSerialNumber] = useState("");
+  const [assetType, setAssetType] = useState("");
+  const [location, setLocation] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function save() {
+    startTransition(async () => {
+      setError(null);
+      const res = await fetch("/api/assets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customerId, serialNumber, assetType, location: location || undefined }),
+      });
+      if (!res.ok) { setError((await res.json()).error ?? "Failed to add asset."); return; }
+      setSerialNumber("");
+      setAssetType("");
+      setLocation("");
+      setAdding(false);
+      router.refresh();
+    });
+  }
+
+  const inp = "w-full min-h-[40px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-sm";
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          Assets ({assets.length})
+        </h2>
+        {canManage && !adding && (
+          <button
+            type="button"
+            onClick={() => setAdding(true)}
+            className="text-xs font-medium text-amber-600 dark:text-amber-400 hover:underline"
+          >
+            + Add asset
+          </button>
+        )}
+      </div>
+
+      {adding && (
+        <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 space-y-2">
+          <input type="text" placeholder="Serial number" value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} className={inp} />
+          <input type="text" placeholder="Asset type (e.g. BAC VT1-40)" value={assetType} onChange={(e) => setAssetType(e.target.value)} className={inp} />
+          <input type="text" placeholder="Location (optional)" value={location} onChange={(e) => setLocation(e.target.value)} className={inp} />
+          {error && <p className="text-xs text-red-600">{error}</p>}
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setAdding(false)} className="flex-1 min-h-[36px] rounded-lg border border-slate-300 dark:border-slate-600 text-sm">Cancel</button>
+            <button
+              type="button"
+              onClick={save}
+              disabled={isPending || !serialNumber.trim() || !assetType.trim()}
+              className="flex-1 min-h-[36px] rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm disabled:opacity-40"
+            >
+              {isPending ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {assets.length === 0 && !adding && (
+        <p className="text-sm text-slate-500 dark:text-slate-400">No assets recorded for this customer yet.</p>
+      )}
+      {assets.length > 0 && (
+        <div className="rounded-lg border border-slate-200 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700">
+          {assets.map((a) => (
+            <div key={a.id} className="px-4 py-2.5 text-sm flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-medium truncate">{a.serialNumber}</p>
+                <p className="text-xs text-slate-500 truncate">{a.assetType}{a.location ? ` — ${a.location}` : ""}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -37,7 +131,7 @@ const STATUS_BADGE: Record<string, string> = {
   cancelled: "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400",
 };
 
-export function CustomerDetail({ customer, jobs, canEdit }: CustomerDetailProps) {
+export function CustomerDetail({ customer, jobs, assets, canEdit, canManageAssets }: CustomerDetailProps) {
   const [editing, setEditing] = useState(false);
 
   if (editing) {
@@ -99,6 +193,8 @@ export function CustomerDetail({ customer, jobs, canEdit }: CustomerDetailProps)
           </p>
         </div>
       )}
+
+      <AssetsSection customerId={customer.id} assets={assets} canManage={canManageAssets} />
 
       {/* Linked jobs */}
       <div className="space-y-2">

@@ -77,7 +77,8 @@ model Customer {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  jobs Job[]
+  jobs   Job[]
+  assets Asset[]
 
   @@index([name])
 }
@@ -101,6 +102,7 @@ model Job {
   invoices            Invoice[]
   complianceDocuments ComplianceDocument[]
   communications      JobCommunication[]
+  assets              JobAsset[]
   customer            Customer? @relation(fields: [customerId], references: [id])
 
   @@index([status])
@@ -251,6 +253,34 @@ model ComplianceDocument {
   @@index([jobId])
   @@index([createdById])
   @@index([templateId])
+}
+
+model Asset {
+  id           String   @id @default(uuid())
+  customerId   String
+  serialNumber String
+  assetType    String
+  location     String?
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  customer Customer   @relation(fields: [customerId], references: [id])
+  jobs     JobAsset[]
+
+  @@index([customerId])
+}
+
+model JobAsset {
+  jobId     String
+  assetId   String
+  createdAt DateTime @default(now())
+
+  job   Job   @relation(fields: [jobId], references: [id])
+  asset Asset @relation(fields: [assetId], references: [id])
+
+  @@id([jobId, assetId])
+  @@index([assetId])
 }
 
 model JobCommunication {

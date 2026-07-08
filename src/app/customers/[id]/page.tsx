@@ -23,6 +23,11 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
 
   if (!customer) notFound();
 
+  const assets = await db.asset.findMany({
+    where: { customerId: params.id },
+    orderBy: { serialNumber: "asc" },
+  });
+
   return (
     <AppShell>
       <div className="max-w-2xl mx-auto px-4 py-6">
@@ -45,7 +50,14 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
             createdAt:    j.createdAt.toISOString(),
             jobType:      j.jobType,
           }))}
+          assets={assets.map((a) => ({
+            id:           a.id,
+            serialNumber: a.serialNumber,
+            assetType:    a.assetType,
+            location:     a.location,
+          }))}
           canEdit={user.role === "admin"}
+          canManageAssets={["admin", "director"].includes(user.role)}
         />
       </div>
     </AppShell>
