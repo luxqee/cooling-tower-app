@@ -1,24 +1,34 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+
+interface CustomerOption {
+  id:   string;
+  name: string;
+}
 
 export function NewJobForm({ onClose }: { onClose: () => void }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [jobTypeOptions, setJobTypeOptions] = useState<string[]>([]);
-
   const [jobTypeSelect, setJobTypeSelect] = useState("");
 
+  // Customer search-and-select
+  const [customerQuery, setCustomerQuery]   = useState("");
+  const [customerId, setCustomerId]         = useState<string | null>(null);
+  const [suggestions, setSuggestions]       = useState<CustomerOption[]>([]);
+  const [showDropdown, setShowDropdown]     = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const [fields, setFields] = useState({
-    customerName: "",
-    siteName: "",
+    siteName:    "",
     siteAddress: "",
     quotedHours: "",
-    quotedCost: "",
-    jobType: "",
-    status: "scheduled" as "scheduled" | "active",
+    quotedCost:  "",
+    jobType:     "",
+    status:      "scheduled" as "scheduled" | "active",
   });
 
   useEffect(() => {
@@ -27,14 +37,60 @@ export function NewJobForm({ onClose }: { onClose: () => void }) {
       .then((d) => setJobTypeOptions(d.jobTypes ?? []));
   }, []);
 
+  // Debounced customer search
+  useEffect(() => {
+    if (customerId) return;
+    if (customerQuery.trim().length < 2) {
+      setSuggestions([]);
+      setShowDropdown(false);
+      return;
+    }
+    const ctrl  = new AbortController();
+    const timer = setTimeout(() => {
+      fetch(`/api/customers?q=${encodeURIComponent(customerQuery.trim())}`, { signal: ctrl.signal })
+        .then((r) => (r.ok ? r.json() : []))
+        .then((data: CustomerOption[]) => {
+          setSuggestions(data);
+          setShowDropdown(data.length > 0);
+        })
+        .catch(() => {});
+    }, 200);
+    return () => { clearTimeout(timer); ctrl.abort(); };
+  }, [customerQuery, customerId]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  function selectCustomer(option: CustomerOption) {
+    setCustomerId(option.id);
+    setCustomerQuery(option.name);
+    setSuggestions([]);
+    setShowDropdown(false);
+  }
+
+  function clearCustomer() {
+    setCustomerId(null);
+    setCustomerQuery("");
+    setSuggestions([]);
+    setShowDropdown(false);
+  }
+
   function set(key: keyof typeof fields, value: string) {
     setFields((prev) => ({ ...prev, [key]: value }));
   }
 
   function handleSubmit() {
     const newErrors: Record<string, string> = {};
-    if (fields.customerName.length < 2) newErrors.customerName = "Required";
-    if (fields.siteName.length < 2) newErrors.siteName = "Required";
+    if (!customerId && customerQuery.trim().length < 2) newErrors.customer = "Customer name required";
+    if (fields.siteName.length < 2)    newErrors.siteName    = "Required";
     if (fields.siteAddress.length < 5) newErrors.siteAddress = "Required";
     const hours = parseFloat(fields.quotedHours);
     if (!fields.quotedHours || isNaN(hours) || hours <= 0)
@@ -43,21 +99,29 @@ export function NewJobForm({ onClose }: { onClose: () => void }) {
     if (fields.quotedCost && (isNaN(cost!) || cost! < 0))
       newErrors.quotedCost = "Enter a valid dollar amount";
     if (!fields.jobType.trim()) newErrors.jobType = "Required";
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
+    if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
     setErrors({});
 
     startTransition(async () => {
+      const body: Record<string, unknown> = {
+        ...fields,
+        quotedHours: hours,
+        quotedCost:  cost,
+      };
+      if (customerId) {
+        body.customerId = customerId;
+      } else {
+        body.customerName = customerQuery.trim();
+      }
+
       const res = await fetch("/api/jobs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...fields, quotedHours: hours, quotedCost: cost }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
-        const data = await res.json();
-        setErrors({ submit: data.error ?? "Failed to create job." });
+        const data = await res.json().catch(() => ({}));
+        setErrors({ submit: (data as any).error ?? "Failed to create job." });
         return;
       }
       router.refresh();
@@ -70,16 +134,46 @@ export function NewJobForm({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="space-y-4">
-      <div className="space-y-1.5">
+      {/* Customer search-and-select */}
+      <div className="space-y-1.5" ref={dropdownRef}>
         <label className="text-sm font-medium">Customer name</label>
-        <input
-          type="text"
-          value={fields.customerName}
-          onChange={(e) => set("customerName", e.target.value)}
-          placeholder="Acme Corp"
-          className={inputClass}
-        />
-        {errors.customerName && <p className="text-sm text-red-600">{errors.customerName}</p>}
+        <div className="relative">
+          <input
+            type="text"
+            value={customerQuery}
+            onChange={(e) => { if (!customerId) setCustomerQuery(e.target.value); }}
+            onFocus={() => { if (!customerId && suggestions.length > 0) setShowDropdown(true); }}
+            placeholder={customerId ? "" : "Search or type a name…"}
+            readOnly={!!customerId}
+            className={`${inputClass} pr-10 ${customerId ? "bg-slate-50 dark:bg-slate-800 cursor-default" : ""}`}
+          />
+          {customerId && (
+            <button
+              type="button"
+              onClick={clearCustomer}
+              aria-label="Clear customer"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg leading-none"
+            >
+              ✕
+            </button>
+          )}
+          {showDropdown && (
+            <ul className="absolute z-20 mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg max-h-48 overflow-y-auto">
+              {suggestions.map((s) => (
+                <li key={s.id}>
+                  <button
+                    type="button"
+                    onClick={() => selectCustomer(s)}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800"
+                  >
+                    {s.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        {errors.customer && <p className="text-sm text-red-600">{errors.customer}</p>}
       </div>
 
       <div className="space-y-1.5">
@@ -150,7 +244,9 @@ export function NewJobForm({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">Quoted cost ($) <span className="font-normal text-slate-400">optional</span></label>
+          <label className="text-sm font-medium">
+            Quoted cost ($) <span className="font-normal text-slate-400">optional</span>
+          </label>
           <input
             type="number"
             inputMode="decimal"
@@ -179,12 +275,14 @@ export function NewJobForm({ onClose }: { onClose: () => void }) {
 
       <div className="flex gap-3 pt-1">
         <button
+          type="button"
           onClick={onClose}
           className="flex-1 min-h-[48px] rounded-lg border border-slate-300 dark:border-slate-600 text-sm font-medium"
         >
           Cancel
         </button>
         <button
+          type="button"
           onClick={handleSubmit}
           disabled={isPending}
           className="flex-1 min-h-[48px] rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-sm disabled:opacity-40"
