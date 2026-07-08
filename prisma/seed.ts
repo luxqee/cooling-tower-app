@@ -535,6 +535,34 @@ async function main() {
   });
   console.log("  ✓ Compliance templates (JSA, SWMS)");
 
+  // ─── Compliance documents (submitted, not just templates) ─────────────────
+  await db.complianceDocument.deleteMany({ where: { jobId: { in: SEED_JOB_IDS } } });
+
+  await db.complianceDocument.createMany({
+    data: [
+      {
+        jobId: "seed-job-riotinto", templateId: "seed-tmpl-jsa", createdById: jakeId,
+        values: {
+          working_at_height: true, electrical_hazards: false, chemical_exposure: true, confined_space: false,
+          hard_hat: true, safety_glasses: true, gloves: true, harness: true,
+          site_briefing: true, supervisor_name: "Priya Nathan", emergency_contact: "0400 111 222",
+        },
+        submittedAt: d("2026-06-10T06:45:00Z"),
+      },
+      {
+        jobId: "seed-job-bhp", templateId: "seed-tmpl-swms", createdById: mikeId,
+        values: {
+          work_description: "Quarterly inspection and chemical descaling of cooling tower heat exchanger.",
+          location: "Terminal block C, ground level",
+          estimated_duration: "16",
+          permit_obtained: true, isolation_complete: true, lockout_tagout: true,
+        },
+        submittedAt: d("2026-06-22T07:15:00Z"),
+      },
+    ],
+  });
+  console.log("  ✓ Compliance documents (2 submitted — JSA for Rio Tinto, SWMS for BHP)");
+
   // ─── Job communications (Phase 3 batch a) ─────────────────────────────────
   await db.jobCommunication.deleteMany({ where: { jobId: { in: SEED_JOB_IDS } } });
 
