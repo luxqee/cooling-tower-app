@@ -4,7 +4,8 @@ import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
 
 const createJobSchema = z.object({
-  customerName: z.string().min(2, "Customer name required"),
+  customerName: z.string().min(2, "Customer name required").optional(),
+  customerId:   z.string().uuid().optional(),
   siteName:     z.string().min(2, "Site name required"),
   siteAddress:  z.string().min(5, "Site address required"),
   quotedHours:  z.number().positive("Quoted hours must be greater than 0"),
@@ -23,6 +24,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message }, { status: 400 });
   }
 
-  const job = await db.job.create({ data: parsed.data });
+  let { customerName, customerId, ...rest } = parsed.data;
+
+  if (customerId) {
+    const customer = await db.customer.findUnique({ where: { id: customerId } });
+    if (!customer) return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    customerName = customer.name;
+  } else if (!customerName || customerName.trim().length < 2) {
+    return NextResponse.json({ error: "Customer name required" }, { status: 400 });
+  }
+
+  const job = await db.job.create({
+    data: { ...rest, customerName: customerName!, customerId: customerId ?? null },
+  });
   return NextResponse.json(job, { status: 201 });
 }

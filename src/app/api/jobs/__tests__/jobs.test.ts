@@ -3,7 +3,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/lib/auth/clerk", () => ({ requireRole: vi.fn() }));
 vi.mock("@/lib/db/client", () => ({
   db: {
-    job: { update: vi.fn(), delete: vi.fn(), create: vi.fn() },
+    job:      { update: vi.fn(), delete: vi.fn(), create: vi.fn() },
+    customer: { findUnique: vi.fn() },
   },
 }));
 
@@ -100,5 +101,44 @@ describe("POST /api/jobs", () => {
     } as any);
     const res = await POST(makePostReq(validPostBody));
     expect(res.status).toBe(201);
+  });
+
+  it("returns 404 when customerId references unknown customer", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
+    vi.mocked(db.customer.findUnique).mockResolvedValue(null);
+    const { customerName: _cn, ...bodyWithoutName } = validPostBody;
+    const res = await POST(makePostReq({
+      ...bodyWithoutName,
+      customerId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    }));
+    expect(res.status).toBe(404);
+  });
+
+  it("derives customerName from customer when customerId is provided", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
+    vi.mocked(db.customer.findUnique).mockResolvedValue({
+      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      name: "BHP",
+    } as any);
+    vi.mocked(db.job.create).mockResolvedValue({
+      id: "j2",
+      customerName: "BHP",
+      customerId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      siteName: "North Tower",
+      siteAddress: "123 Main St, Sydney NSW 2000",
+      quotedHours: 8,
+      jobType: "Installation",
+      status: "scheduled",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as any);
+    const { customerName: _cn, ...bodyWithoutName } = validPostBody;
+    const res = await POST(makePostReq({
+      ...bodyWithoutName,
+      customerId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    }));
+    expect(res.status).toBe(201);
+    const data = await res.json();
+    expect(data.customerName).toBe("BHP");
   });
 });
