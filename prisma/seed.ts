@@ -22,6 +22,15 @@ const SEED_USER_IDS = [
   "seed-user-tom",
 ];
 
+const SEED_CUSTOMER_IDS = [
+  "seed-customer-riotinto",
+  "seed-customer-bhp",
+  "seed-customer-stanwell",
+  "seed-customer-glencore",
+  "seed-customer-incitec",
+  "seed-customer-qal",
+];
+
 async function main() {
   console.log("🧹 Cleaning up old data...");
 
@@ -32,6 +41,9 @@ async function main() {
   await db.variation.deleteMany({ where: { jobId: { notIn: SEED_JOB_IDS } } });
   await db.assignment.deleteMany({ where: { jobId: { notIn: SEED_JOB_IDS } } });
   await db.invoice.deleteMany({ where: { jobId: { notIn: SEED_JOB_IDS } } });
+  await db.jobCommunication.deleteMany({ where: { jobId: { notIn: SEED_JOB_IDS } } });
+  await db.materialEntry.deleteMany({ where: { jobId: { notIn: SEED_JOB_IDS } } });
+  await db.jobAsset.deleteMany({ where: { jobId: { notIn: SEED_JOB_IDS } } });
   await db.job.deleteMany({ where: { id: { notIn: SEED_JOB_IDS } } });
 
   // Remove test/placeholder user accounts — identified by having a clerkId that
@@ -76,6 +88,75 @@ async function main() {
     },
   });
   console.log("  ✓ Business profile");
+
+  // ─── Customers ────────────────────────────────────────────────────────────
+  const customers = [
+    {
+      id: "seed-customer-riotinto",
+      name: "Rio Tinto",
+      abn: "96 004 458 404",
+      contactPerson: "Priya Nathan",
+      email: "procurement@riotinto.com",
+      phone: "(07) 3625 4100",
+      address: "1 Bauxite Rd, Weipa QLD 4874",
+      notes: "Annual service customer since 2019. Prefers scheduling around wet season (Nov–Apr).",
+    },
+    {
+      id: "seed-customer-bhp",
+      name: "BHP",
+      abn: "49 004 028 077",
+      contactPerson: "Craig Ferris",
+      email: "maintenance.accounts@bhp.com",
+      phone: "(07) 4940 2500",
+      address: "Port Road, Hay Point QLD 4740",
+      notes: "Quarterly inspections. Site induction required 48h before arrival.",
+    },
+    {
+      id: "seed-customer-stanwell",
+      name: "Stanwell Corporation",
+      abn: "78 132 181 792",
+      contactPerson: "Diane Osei",
+      email: "assets@stanwell.com",
+      phone: "(07) 4938 8000",
+      address: "Stanwell Rd, Stanwell QLD 4702",
+      notes: null,
+    },
+    {
+      id: "seed-customer-glencore",
+      name: "Glencore",
+      abn: "31 088 796 969",
+      contactPerson: "Aaron Blake",
+      email: "sitemaintenance@glencore.com.au",
+      phone: "(07) 4744 4100",
+      address: "22 Marian St, Mount Isa QLD 4825",
+      notes: "Long-term maintenance contract customer.",
+    },
+    {
+      id: "seed-customer-incitec",
+      name: "Incitec Pivot",
+      abn: "42 004 080 264",
+      contactPerson: "Helen Marsh",
+      email: "engineering@incitecpivot.com.au",
+      phone: "(07) 3909 3333",
+      address: "Gibson Island, Murarrie QLD 4172",
+      notes: null,
+    },
+    {
+      id: "seed-customer-qal",
+      name: "Queensland Alumina Ltd",
+      abn: "37 009 660 872",
+      contactPerson: "Rowan Kelly",
+      email: "reliability@qal.com.au",
+      phone: "(07) 4976 3111",
+      address: "1 Parsons Rd, Gladstone QLD 4680",
+      notes: null,
+    },
+  ];
+
+  for (const c of customers) {
+    await db.customer.upsert({ where: { id: c.id }, update: c, create: c });
+  }
+  console.log("  ✓ Customers (6, matching the seed jobs' companies)");
 
   // ─── Demo users ───────────────────────────────────────────────────────────
   // Two loginable aliases — sign in with email/password (not Google OAuth):
@@ -149,6 +230,7 @@ async function main() {
     {
       id: "seed-job-riotinto",
       customerName: "Rio Tinto",
+      customerId: "seed-customer-riotinto",
       siteName: "Weipa Processing Plant",
       siteAddress: "1 Bauxite Rd, Weipa QLD 4874",
       status: "complete" as const,
@@ -159,6 +241,7 @@ async function main() {
     {
       id: "seed-job-bhp",
       customerName: "BHP",
+      customerId: "seed-customer-bhp",
       siteName: "Hay Point Coal Terminal",
       siteAddress: "Port Road, Hay Point QLD 4740",
       status: "complete" as const,
@@ -169,6 +252,7 @@ async function main() {
     {
       id: "seed-job-stanwell",
       customerName: "Stanwell Corporation",
+      customerId: "seed-customer-stanwell",
       siteName: "Stanwell Power Station",
       siteAddress: "Stanwell Rd, Stanwell QLD 4702",
       status: "complete" as const,
@@ -179,6 +263,7 @@ async function main() {
     {
       id: "seed-job-glencore",
       customerName: "Glencore",
+      customerId: "seed-customer-glencore",
       siteName: "Mt Isa Copper Operations",
       siteAddress: "22 Marian St, Mount Isa QLD 4825",
       status: "active" as const,
@@ -189,6 +274,7 @@ async function main() {
     {
       id: "seed-job-incitec",
       customerName: "Incitec Pivot",
+      customerId: "seed-customer-incitec",
       siteName: "Gibson Island Fertiliser Plant",
       siteAddress: "Gibson Island, Murarrie QLD 4172",
       status: "scheduled" as const,
@@ -199,6 +285,7 @@ async function main() {
     {
       id: "seed-job-qal",
       customerName: "Queensland Alumina Ltd",
+      customerId: "seed-customer-qal",
       siteName: "Gladstone Refinery",
       siteAddress: "1 Parsons Rd, Gladstone QLD 4680",
       status: "scheduled" as const,
@@ -223,6 +310,7 @@ async function main() {
   const jakeId  = await resolveUserId("seed-user-jake",  "lukeherod7+technician@gmail.com");
   const sarahId = await resolveUserId("seed-user-sarah", "sarah.chen@ctfieldops.com.au");
   const mikeId  = await resolveUserId("seed-user-mike",  "mike.davis@ctfieldops.com.au");
+  const tomId   = await resolveUserId("seed-user-tom",   "lukeherod7+admin@gmail.com");
 
   // ─── Assignments ──────────────────────────────────────────────────────────
   // Delete and recreate so userId references stay correct after real logins.
@@ -447,6 +535,188 @@ async function main() {
   });
   console.log("  ✓ Compliance templates (JSA, SWMS)");
 
+  // ─── Job communications (Phase 3 batch a) ─────────────────────────────────
+  await db.jobCommunication.deleteMany({ where: { jobId: { in: SEED_JOB_IDS } } });
+
+  await db.jobCommunication.createMany({
+    data: [
+      {
+        jobId: "seed-job-riotinto", authorId: tomId, type: "client_call",
+        body: "Called Priya Nathan to confirm access arrangements for the annual service. Site induction booked for 7am arrival.",
+        createdAt: d("2026-06-09T23:00:00Z"),
+      },
+      {
+        jobId: "seed-job-riotinto", authorId: tomId, type: "internal_note",
+        body: "Customer mentioned budget is tight this year — get variation sign-off in writing before ordering parts.",
+        createdAt: d("2026-06-10T00:00:00Z"),
+      },
+      {
+        jobId: "seed-job-glencore", authorId: tomId, type: "field_instruction",
+        body: "Tower 3 fan belt is on order, ETA Wednesday. Don't run Tower 3 above 60% load until it's replaced.",
+        createdAt: d("2026-07-07T22:00:00Z"),
+      },
+      {
+        jobId: "seed-job-glencore", authorId: tomId, type: "internal_note",
+        body: "Site contact Aaron Blake is on leave until the 14th — escalate anything urgent to the site duty manager instead.",
+        createdAt: d("2026-07-08T01:00:00Z"),
+      },
+      {
+        jobId: "seed-job-bhp", authorId: tomId, type: "client_call",
+        body: "Craig Ferris confirmed invoice INV-2026-0002 is in this week's payment run.",
+        createdAt: d("2026-06-26T03:00:00Z"),
+      },
+    ],
+  });
+  console.log("  ✓ Job communications (5 across 3 jobs — client calls, internal notes, a field instruction)");
+
+  // ─── Assets (Phase 3 batch b) ──────────────────────────────────────────────
+  const assets = [
+    {
+      id: "seed-asset-riotinto-1", customerId: "seed-customer-riotinto",
+      serialNumber: "BAC-VT1-40-2891", assetType: "BAC VT1-40 Cooling Tower", location: "Roof level 3, north",
+    },
+    {
+      id: "seed-asset-riotinto-2", customerId: "seed-customer-riotinto",
+      serialNumber: "BAC-VT1-40-2892", assetType: "BAC VT1-40 Cooling Tower", location: "Roof level 3, south",
+    },
+    {
+      id: "seed-asset-glencore-1", customerId: "seed-customer-glencore",
+      serialNumber: "EVAPCO-AT-112", assetType: "Evapco AT Series Cooling Tower", location: "Processing building, west wing",
+    },
+    {
+      id: "seed-asset-bhp-1", customerId: "seed-customer-bhp",
+      serialNumber: "MARLEY-NC-8408", assetType: "Marley NC Cooling Tower", location: "Terminal block C",
+    },
+  ];
+  for (const a of assets) {
+    await db.asset.upsert({ where: { id: a.id }, update: a, create: a });
+  }
+
+  await db.jobAsset.deleteMany({ where: { jobId: { in: SEED_JOB_IDS } } });
+  await db.jobAsset.createMany({
+    data: [
+      { jobId: "seed-job-riotinto", assetId: "seed-asset-riotinto-1" },
+      { jobId: "seed-job-riotinto", assetId: "seed-asset-riotinto-2" },
+      { jobId: "seed-job-glencore", assetId: "seed-asset-glencore-1" },
+      { jobId: "seed-job-bhp", assetId: "seed-asset-bhp-1" },
+    ],
+  });
+  console.log("  ✓ Assets (4, linked to jobs for service history)");
+
+  // ─── Material entries / job costing (Phase 3 batch c) ─────────────────────
+  await db.materialEntry.deleteMany({ where: { jobId: { in: SEED_JOB_IDS } } });
+
+  await db.materialEntry.createMany({
+    data: [
+      {
+        jobId: "seed-job-riotinto", createdById: jakeId,
+        description: "Replacement fill pack set (Level 2)", supplierName: "CoolTower Parts Co",
+        quantity: 1, estimatedCost: 980, actualCost: 1015, status: "reconciled",
+        createdAt: d("2026-06-10T14:30:00Z"), reconciledAt: d("2026-06-13T02:00:00Z"),
+      },
+      {
+        jobId: "seed-job-riotinto", createdById: sarahId,
+        description: "Water distribution nozzles x6", supplierName: "CoolTower Parts Co",
+        quantity: 6, estimatedCost: 210, status: "pending",
+        createdAt: d("2026-06-10T15:45:00Z"),
+      },
+      {
+        jobId: "seed-job-glencore", createdById: jakeId,
+        description: "Fan belt, Tower 3", supplierName: null,
+        quantity: 1, estimatedCost: 85, status: "pending",
+        createdAt: d("2026-07-07T15:10:00Z"),
+      },
+      {
+        jobId: "seed-job-bhp", createdById: mikeId,
+        description: "Descaling chemical treatment kit", supplierName: "ChemTreat Australia",
+        quantity: 1, estimatedCost: 420, actualCost: 445, status: "received",
+        createdAt: d("2026-06-22T13:15:00Z"),
+      },
+    ],
+  });
+  console.log("  ✓ Material entries (4 — one reconciled, one received, two pending)");
+
+  // ─── Quotes (Phase 3 batch d) ───────────────────────────────────────────────
+  const quotes = [
+    {
+      id: "seed-quote-1", createdById: tomId,
+      customerName: "Rio Tinto", siteName: "Weipa Processing Plant", jobType: "Annual Service",
+      lineItems: [
+        { description: "Labour — 32 hrs", qty: 32, unitPrice: 145 },
+        { description: "Callout fee", qty: 1, unitPrice: 250 },
+      ],
+      totalAmount: 4890, status: "accepted" as const, validUntil: d("2026-07-31T00:00:00Z"),
+    },
+    {
+      id: "seed-quote-2", createdById: tomId,
+      customerName: "Newcrest Mining", siteName: "Cadia Valley Operations", jobType: "Initial Site Assessment",
+      lineItems: [
+        { description: "Site assessment — 6 hrs", qty: 6, unitPrice: 145 },
+        { description: "Travel", qty: 1, unitPrice: 380 },
+      ],
+      totalAmount: 1250, status: "sent" as const, validUntil: d("2026-08-15T00:00:00Z"),
+    },
+    {
+      id: "seed-quote-3", createdById: tomId,
+      customerName: "Glencore", siteName: "Mt Isa Copper Operations", jobType: "Quarterly Inspection",
+      lineItems: [{ description: "Labour — 16 hrs", qty: 16, unitPrice: 145 }],
+      totalAmount: 2320, status: "draft" as const, validUntil: null,
+    },
+    {
+      id: "seed-quote-4", createdById: tomId,
+      customerName: "BHP", siteName: "Hay Point Coal Terminal", jobType: "Emergency Repair",
+      lineItems: [
+        { description: "Labour — 8 hrs", qty: 8, unitPrice: 145 },
+        { description: "Emergency callout surcharge", qty: 1, unitPrice: 300 },
+      ],
+      totalAmount: 1460, status: "declined" as const, validUntil: d("2026-06-30T00:00:00Z"),
+    },
+  ];
+  for (const q of quotes) {
+    await db.quote.upsert({ where: { id: q.id }, update: q, create: q });
+  }
+  console.log("  ✓ Quotes (4 — draft, sent, accepted, declined)");
+
+  // ─── Maintenance contracts (Phase 3 batch e) ───────────────────────────────
+  const contracts = [
+    {
+      id: "seed-contract-riotinto", customerId: "seed-customer-riotinto",
+      siteName: "Weipa Processing Plant", value: 28000, billingCadence: "quarterly" as const,
+      serviceIntervalDays: 90, startDate: d("2026-04-08T00:00:00Z"), renewalDate: d("2026-07-15T00:00:00Z"),
+      status: "active" as const,
+    },
+    {
+      id: "seed-contract-glencore", customerId: "seed-customer-glencore",
+      siteName: "Mt Isa Copper Operations", value: 34000, billingCadence: "quarterly" as const,
+      serviceIntervalDays: 90, startDate: d("2026-05-01T00:00:00Z"), renewalDate: d("2026-08-01T00:00:00Z"),
+      status: "active" as const,
+    },
+    {
+      id: "seed-contract-bhp", customerId: "seed-customer-bhp",
+      siteName: "Hay Point Coal Terminal", value: 14000, billingCadence: "monthly" as const,
+      serviceIntervalDays: 30, startDate: d("2026-01-01T00:00:00Z"), renewalDate: d("2026-02-01T00:00:00Z"),
+      status: "lapsed" as const,
+    },
+  ];
+  for (const c of contracts) {
+    await db.contract.upsert({ where: { id: c.id }, update: c, create: c });
+  }
+  await db.job.update({ where: { id: "seed-job-glencore" }, data: { contractId: "seed-contract-glencore" } });
+  console.log("  ✓ Maintenance contracts (3 — one renewing soon, one lapsed, one linked to a job)");
+
+  // ─── Customer portal token (Phase 3 batch f) ───────────────────────────────
+  await db.customerPortalToken.upsert({
+    where: { id: "seed-portal-token-riotinto" },
+    update: { expiresAt: d("2026-08-07T00:00:00Z") },
+    create: {
+      id: "seed-portal-token-riotinto",
+      customerId: "seed-customer-riotinto",
+      token: "demo-portal-token-riotinto",
+      expiresAt: d("2026-08-07T00:00:00Z"),
+    },
+  });
+  console.log("  ✓ Customer portal token (Rio Tinto — /portal/demo-portal-token-riotinto)");
+
   // ─── Summary ──────────────────────────────────────────────────────────────
   console.log("\n✅ Seed complete!\n");
   console.log("👤 Demo logins (use email/password — NOT Google sign-in):");
@@ -460,6 +730,13 @@ async function main() {
   console.log("   ACTIVE   — Glencore Mt Isa Annual Service      → Jake clocked in now");
   console.log("   SCHEDULED — Incitec Pivot Gibson Island        → Thu 10 Jul");
   console.log("   SCHEDULED — Queensland Alumina Gladstone       → Mon 14 Jul");
+  console.log("\n🆕 Phase 3 data:");
+  console.log("   Communication log  — 5 entries across Rio Tinto, Glencore, BHP jobs");
+  console.log("   Assets             — 4 cooling towers, linked to service history");
+  console.log("   Job costing        — 4 material entries (1 reconciled, 1 received, 2 pending)");
+  console.log("   Quotes             — 4 (draft, sent, accepted, declined) at /quotes");
+  console.log("   Contracts          — 3 (Rio Tinto renews ~1 week out, BHP lapsed, Glencore linked to its active job)");
+  console.log("   Customer portal    — http://localhost:3000/portal/demo-portal-token-riotinto");
 }
 
 main()
