@@ -9,6 +9,7 @@ import {
   FileText,
   Settings,
   BarChart2,
+  Receipt,
   type LucideIcon,
 } from "lucide-react";
 
@@ -119,5 +120,13 @@ export const navItems: NavItem[] = [
     description: "Historical job data for quoting",
     visibleTo: ["sales_engineer", "director", "admin"],
     phase: "2b",
+  },
+  {
+    label: "Invoices",
+    href: "/invoices",
+    icon: Receipt,
+    description: "Invoice management and sending",
+    visibleTo: ["admin", "director"],
+    phase: "2",
   },
 ];
