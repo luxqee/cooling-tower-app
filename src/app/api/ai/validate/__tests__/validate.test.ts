@@ -4,16 +4,12 @@ vi.mock("@/lib/auth/clerk", () => ({ requireRole: vi.fn() }));
 vi.mock("@/lib/db/client", () => ({
   db: {
     job: { findFirst: vi.fn() },
-    aiAuditLog: { create: vi.fn() },
+    businessProfile: { findFirst: vi.fn() },
   },
-}));
-vi.mock("@/lib/ai/client", () => ({
-  getAnthropicClient: vi.fn(),
 }));
 
 import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
-import { getAnthropicClient } from "@/lib/ai/client";
 import { POST } from "../route";
 
 const mockDirector = { id: "u1", role: "director" as const, name: "Dana", clerkId: "c1", email: "d@t.com", isActive: true };
@@ -50,7 +46,7 @@ describe("POST /api/ai/validate", () => {
     expect(res.status).toBe(400);
   });
 
-  it("returns a rule-layer duplicate flag WITHOUT calling Claude", async () => {
+  it("returns a rule-layer duplicate flag WITHOUT checking the business profile", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
     vi.mocked(db.job.findFirst).mockResolvedValue({ id: "existing-job" } as any);
     const res = await POST(makeReq(validBody));
@@ -58,43 +54,55 @@ describe("POST /api/ai/validate", () => {
     expect(res.status).toBe(200);
     expect(data.flags).toHaveLength(1);
     expect(data.flags[0].field).toBe("siteName");
-    expect(getAnthropicClient).not.toHaveBeenCalled();
+    expect(db.businessProfile.findFirst).not.toHaveBeenCalled();
   });
 
-  it("calls Claude and returns its flags when no duplicate is found", async () => {
+  it("returns no flags for a plausible job when no duplicate is found", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
     vi.mocked(db.job.findFirst).mockResolvedValue(null);
-    const mockCreate = vi.fn().mockResolvedValue({
-      content: [{ type: "text", text: JSON.stringify({ flags: [{ field: "quotedHours", severity: "info", message: "32 hours is high for a routine inspection", suggestion: "Confirm scope with the customer" }] }) }],
-      usage: { input_tokens: 200, output_tokens: 50 },
-    });
-    vi.mocked(getAnthropicClient).mockReturnValue({ messages: { create: mockCreate } } as any);
-    vi.mocked(db.aiAuditLog.create).mockResolvedValue({} as any);
-
-    const res = await POST(makeReq(validBody));
-    const data = await res.json();
-
-    expect(res.status).toBe(200);
-    expect(data.flags).toHaveLength(1);
-    expect(data.flags[0].field).toBe("quotedHours");
-    expect(db.aiAuditLog.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ userId: mockDirector.id, feature: "validation", promptTokens: 200, outputTokens: 50 }),
-      })
-    );
-  });
-
-  it("returns an empty flags array (not an error) when the Claude call throws", async () => {
-    vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
-    vi.mocked(db.job.findFirst).mockResolvedValue(null);
-    const mockCreate = vi.fn().mockRejectedValue(new Error("network error"));
-    vi.mocked(getAnthropicClient).mockReturnValue({ messages: { create: mockCreate } } as any);
+    vi.mocked(db.businessProfile.findFirst).mockResolvedValue({ hourlyRate: 220 } as any);
 
     const res = await POST(makeReq(validBody));
     const data = await res.json();
 
     expect(res.status).toBe(200);
     expect(data.flags).toEqual([]);
-    expect(db.aiAuditLog.create).not.toHaveBeenCalled();
+  });
+
+  it("flags implausible quotedHours using the rule layer, with no duplicate present", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
+    vi.mocked(db.job.findFirst).mockResolvedValue(null);
+    vi.mocked(db.businessProfile.findFirst).mockResolvedValue({ hourlyRate: null } as any);
+
+    const res = await POST(makeReq({ ...validBody, quotedHours: 400 }));
+    const data = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(data.flags).toHaveLength(1);
+    expect(data.flags[0].field).toBe("quotedHours");
+  });
+
+  it("flags a quotedCost that deviates from the business's configured hourly rate", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
+    vi.mocked(db.job.findFirst).mockResolvedValue(null);
+    vi.mocked(db.businessProfile.findFirst).mockResolvedValue({ hourlyRate: 145 } as any);
+
+    const res = await POST(makeReq({ ...validBody, quotedHours: 8, quotedCost: 50 }));
+    const data = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(data.flags.some((f: { field: string }) => f.field === "quotedCost")).toBe(true);
+  });
+
+  it("returns no flags (not an error) when businessProfile is missing entirely", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
+    vi.mocked(db.job.findFirst).mockResolvedValue(null);
+    vi.mocked(db.businessProfile.findFirst).mockResolvedValue(null);
+
+    const res = await POST(makeReq(validBody));
+    const data = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(data.flags).toEqual([]);
   });
 });
