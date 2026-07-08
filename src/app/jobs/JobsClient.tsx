@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { Plus, X, Pencil, Trash2 } from "lucide-react";
+import { useState, useTransition, useEffect } from "react";
+import { Plus, X, Pencil, Trash2, MessageSquare } from "lucide-react";
 import { NewJobForm } from "./NewJobForm";
 import { useRouter } from "next/navigation";
 
@@ -100,10 +100,117 @@ function EditJobModal({ job, onClose }: { job: Job; onClose: () => void }) {
   );
 }
 
+interface Communication {
+  id: string;
+  type: "client_call" | "internal_note" | "field_instruction";
+  body: string;
+  createdAt: string;
+  author?: { name: string };
+}
+
+const COMMUNICATION_TYPE_LABELS: Record<Communication["type"], string> = {
+  client_call: "Client call",
+  internal_note: "Internal note",
+  field_instruction: "Field instruction",
+};
+
+function CommunicationLogModal({ job, onClose }: { job: Job; onClose: () => void }) {
+  const [entries, setEntries] = useState<Communication[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [type, setType] = useState<Communication["type"]>("internal_note");
+  const [body, setBody] = useState("");
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function load() {
+    setLoadError(null);
+    fetch(`/api/jobs/${job.id}/communications`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error((await res.json()).error ?? "Failed to load log.");
+        return res.json();
+      })
+      .then(setEntries)
+      .catch((e: Error) => setLoadError(e.message));
+  }
+
+  useEffect(load, [job.id]);
+
+  function submit() {
+    if (!body.trim()) return;
+    startTransition(async () => {
+      setSubmitError(null);
+      const res = await fetch(`/api/jobs/${job.id}/communications`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, body }),
+      });
+      if (!res.ok) { setSubmitError((await res.json()).error ?? "Failed to save."); return; }
+      setBody("");
+      load();
+    });
+  }
+
+  const inp = "w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-base";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40">
+      <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 space-y-4 shadow-xl max-h-[85vh] flex flex-col">
+        <div className="flex items-center justify-between shrink-0">
+          <div>
+            <h2 className="text-lg font-semibold">Communication log</h2>
+            <p className="text-sm text-slate-500 truncate">{job.siteName}</p>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><X className="w-5 h-5" /></button>
+        </div>
+
+        <div className="overflow-y-auto space-y-2 min-h-[80px]">
+          {loadError && <p className="text-sm text-red-600">{loadError}</p>}
+          {!loadError && entries === null && <p className="text-sm text-slate-500">Loading…</p>}
+          {entries?.length === 0 && <p className="text-sm text-slate-500">No entries yet.</p>}
+          {entries?.map((e) => (
+            <div key={e.id} className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 space-y-0.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-medium text-amber-600 dark:text-amber-400">{COMMUNICATION_TYPE_LABELS[e.type]}</span>
+                <span className="text-xs text-slate-400 shrink-0">{new Date(e.createdAt).toLocaleString()}</span>
+              </div>
+              <p className="text-sm whitespace-pre-wrap">{e.body}</p>
+              {e.author?.name && <p className="text-xs text-slate-400">— {e.author.name}</p>}
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-2 shrink-0 pt-2 border-t border-slate-200 dark:border-slate-700">
+          <select value={type} onChange={(e) => setType(e.target.value as Communication["type"])} className={inp}>
+            {(Object.keys(COMMUNICATION_TYPE_LABELS) as Communication["type"][]).map((t) => (
+              <option key={t} value={t}>{COMMUNICATION_TYPE_LABELS[t]}</option>
+            ))}
+          </select>
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            placeholder="Note details…"
+            rows={2}
+            className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-base"
+          />
+          {submitError && <p className="text-sm text-red-600">{submitError}</p>}
+          <button
+            onClick={submit}
+            disabled={isPending || !body.trim()}
+            className="w-full min-h-[44px] rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm disabled:opacity-40"
+          >
+            {isPending ? "Adding…" : "Add entry"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function JobCard({ job, canEdit }: { job: Job; canEdit: boolean }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [loggingOpen, setLoggingOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function deleteJob() {
@@ -135,6 +242,9 @@ function JobCard({ job, canEdit }: { job: Job; canEdit: boolean }) {
             </span>
             {canEdit && (
               <>
+                <button onClick={() => setLoggingOpen(true)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
+                  <MessageSquare className="w-3.5 h-3.5" />
+                </button>
                 <button onClick={() => setEditing(true)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
@@ -177,6 +287,7 @@ function JobCard({ job, canEdit }: { job: Job; canEdit: boolean }) {
         )}
       </div>
       {editing && <EditJobModal job={job} onClose={() => setEditing(false)} />}
+      {loggingOpen && <CommunicationLogModal job={job} onClose={() => setLoggingOpen(false)} />}
     </>
   );
 }
