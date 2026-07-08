@@ -71,6 +71,12 @@ enum ContractStatus {
   cancelled
 }
 
+enum AiFeature {
+  validation
+  voice_note
+  company_assistant
+}
+
 model User {
   id        String   @id @default(uuid())
   clerkId   String   @unique
@@ -90,6 +96,7 @@ model User {
   jobCommunications   JobCommunication[]
   materialEntries     MaterialEntry[]
   quotes              Quote[]
+  aiAuditLogs         AiAuditLog[]
 }
 
 model Customer {
@@ -347,6 +354,23 @@ model CustomerPortalToken {
   customer Customer @relation(fields: [customerId], references: [id])
 
   @@index([customerId])
+}
+
+model AiAuditLog {
+  id            String    @id @default(uuid())
+  userId        String
+  feature       AiFeature
+  toolCalls     Json?
+  promptTokens  Int
+  outputTokens  Int
+  costUsd       Decimal   @db.Decimal(10, 6)
+  createdAt     DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([feature])
+  @@index([createdAt])
 }
 
 model Contract {
