@@ -1,4 +1,6 @@
--- AlterTable
+-- AlterTable: corrects drift from hand-written invoice_v2 migration which used TIMESTAMPTZ
+-- and DEFAULT NOW() instead of Prisma's expected TIMESTAMP(3) and @updatedAt.
+-- Safe on UTC-timezone Neon instances: stored UTC values are preserved by the cast.
 ALTER TABLE "Invoice" ALTER COLUMN "baseAmount" SET DEFAULT 0,
 ALTER COLUMN "variationsTotal" SET DEFAULT 0,
 ALTER COLUMN "totalAmount" SET DEFAULT 0,
