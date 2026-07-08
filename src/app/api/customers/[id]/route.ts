@@ -53,16 +53,22 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const existing = await db.customer.findUnique({ where: { id: params.id } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const updated = await db.$transaction(async (tx) => {
-    const customer = await tx.customer.update({ where: { id: params.id }, data: parsed.data });
-    if (parsed.data.name !== undefined) {
-      await tx.job.updateMany({
-        where: { customerId: params.id },
-        data: { customerName: parsed.data.name },
-      });
-    }
-    return customer;
-  });
+  let updated;
+  try {
+    updated = await db.$transaction(async (tx) => {
+      const customer = await tx.customer.update({ where: { id: params.id }, data: parsed.data });
+      if (parsed.data.name !== undefined) {
+        await tx.job.updateMany({
+          where: { customerId: params.id },
+          data: { customerName: parsed.data.name },
+        });
+      }
+      return customer;
+    });
+  } catch (e: any) {
+    if (e?.code === "P2025") return NextResponse.json({ error: "Not found" }, { status: 404 });
+    throw e;
+  }
 
   return NextResponse.json({
     ...updated,
@@ -78,10 +84,15 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   const existing = await db.customer.findUnique({ where: { id: params.id } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  await db.$transaction(async (tx) => {
-    await tx.job.updateMany({ where: { customerId: params.id }, data: { customerId: null } });
-    await tx.customer.delete({ where: { id: params.id } });
-  });
+  try {
+    await db.$transaction(async (tx) => {
+      await tx.job.updateMany({ where: { customerId: params.id }, data: { customerId: null } });
+      await tx.customer.delete({ where: { id: params.id } });
+    });
+  } catch (e: any) {
+    if (e?.code === "P2025") return NextResponse.json({ error: "Not found" }, { status: 404 });
+    throw e;
+  }
 
   return new NextResponse(null, { status: 204 });
 }

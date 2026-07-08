@@ -121,7 +121,7 @@ export function NewJobForm({ onClose }: { onClose: () => void }) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setErrors({ submit: (data as any).error ?? "Failed to create job." });
+        setErrors({ submit: (data as { error?: string }).error ?? "Failed to create job." });
         return;
       }
       router.refresh();
