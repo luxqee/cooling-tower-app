@@ -23,10 +23,10 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
 
   if (!customer) notFound();
 
-  const assets = await db.asset.findMany({
-    where: { customerId: params.id },
-    orderBy: { serialNumber: "asc" },
-  });
+  const [assets, contracts] = await Promise.all([
+    db.asset.findMany({ where: { customerId: params.id }, orderBy: { serialNumber: "asc" } }),
+    db.contract.findMany({ where: { customerId: params.id }, orderBy: { renewalDate: "asc" } }),
+  ]);
 
   return (
     <AppShell>
@@ -55,6 +55,14 @@ export default async function CustomerDetailPage({ params }: { params: { id: str
             serialNumber: a.serialNumber,
             assetType:    a.assetType,
             location:     a.location,
+          }))}
+          contracts={contracts.map((c) => ({
+            id:             c.id,
+            siteName:       c.siteName,
+            value:          c.value.toNumber(),
+            billingCadence: c.billingCadence,
+            renewalDate:    c.renewalDate.toISOString(),
+            status:         c.status,
           }))}
           canEdit={user.role === "admin"}
           canManageAssets={["admin", "director"].includes(user.role)}

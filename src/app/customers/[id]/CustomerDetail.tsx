@@ -32,12 +32,135 @@ interface AssetRow {
   location:     string | null;
 }
 
+interface ContractRow {
+  id:                  string;
+  siteName:            string;
+  value:               number;
+  billingCadence:      "monthly" | "quarterly" | "annually";
+  renewalDate:         string;
+  status:              "active" | "lapsed" | "cancelled";
+}
+
 interface CustomerDetailProps {
   customer:        CustomerProps;
   jobs:            JobRow[];
   assets:          AssetRow[];
+  contracts:       ContractRow[];
   canEdit:         boolean;
   canManageAssets: boolean;
+}
+
+function ContractsSection({ customerId, contracts, canManage }: { customerId: string; contracts: ContractRow[]; canManage: boolean }) {
+  const router = useRouter();
+  const [adding, setAdding] = useState(false);
+  const [siteName, setSiteName] = useState("");
+  const [value, setValue] = useState("");
+  const [billingCadence, setBillingCadence] = useState<"monthly" | "quarterly" | "annually">("quarterly");
+  const [serviceIntervalDays, setServiceIntervalDays] = useState("90");
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  function save() {
+    startTransition(async () => {
+      setError(null);
+      const res = await fetch("/api/contracts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerId,
+          siteName,
+          value: parseFloat(value),
+          billingCadence,
+          serviceIntervalDays: parseInt(serviceIntervalDays, 10),
+          startDate: new Date().toISOString(),
+        }),
+      });
+      if (!res.ok) { setError((await res.json()).error ?? "Failed to add contract."); return; }
+      setSiteName("");
+      setValue("");
+      setAdding(false);
+      router.refresh();
+    });
+  }
+
+  function generateJob(contractId: string) {
+    startTransition(async () => {
+      const res = await fetch(`/api/contracts/${contractId}/generate-job`, { method: "POST" });
+      if (res.ok) router.refresh();
+    });
+  }
+
+  const inp = "w-full min-h-[40px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-sm";
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          Maintenance contracts ({contracts.length})
+        </h2>
+        {canManage && !adding && (
+          <button type="button" onClick={() => setAdding(true)} className="text-xs font-medium text-amber-600 dark:text-amber-400 hover:underline">
+            + Add contract
+          </button>
+        )}
+      </div>
+
+      {adding && (
+        <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 space-y-2">
+          <input type="text" placeholder="Site name" value={siteName} onChange={(e) => setSiteName(e.target.value)} className={inp} />
+          <div className="grid grid-cols-2 gap-2">
+            <input type="number" inputMode="decimal" placeholder="Value ($)" value={value} onChange={(e) => setValue(e.target.value)} className={inp} />
+            <select value={billingCadence} onChange={(e) => setBillingCadence(e.target.value as typeof billingCadence)} className={inp}>
+              <option value="monthly">Monthly</option>
+              <option value="quarterly">Quarterly</option>
+              <option value="annually">Annually</option>
+            </select>
+          </div>
+          <input type="number" placeholder="Service interval (days)" value={serviceIntervalDays} onChange={(e) => setServiceIntervalDays(e.target.value)} className={inp} />
+          {error && <p className="text-xs text-red-600">{error}</p>}
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setAdding(false)} className="flex-1 min-h-[36px] rounded-lg border border-slate-300 dark:border-slate-600 text-sm">Cancel</button>
+            <button
+              type="button"
+              onClick={save}
+              disabled={isPending || !siteName.trim() || !value}
+              className="flex-1 min-h-[36px] rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm disabled:opacity-40"
+            >
+              {isPending ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {contracts.length === 0 && !adding && (
+        <p className="text-sm text-slate-500 dark:text-slate-400">No maintenance contracts for this customer yet.</p>
+      )}
+      {contracts.length > 0 && (
+        <div className="rounded-lg border border-slate-200 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700">
+          {contracts.map((c) => (
+            <div key={c.id} className="px-4 py-2.5 text-sm flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-medium truncate">{c.siteName} — ${c.value.toFixed(0)}/{c.billingCadence}</p>
+                <p className="text-xs text-slate-500">
+                  Renews {new Date(c.renewalDate).toLocaleDateString("en-AU")} · {c.status}
+                </p>
+              </div>
+              {canManage && c.status === "active" && (
+                <button
+                  type="button"
+                  onClick={() => generateJob(c.id)}
+                  disabled={isPending}
+                  className="text-xs font-medium px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 disabled:opacity-40 shrink-0"
+                >
+                  Generate job
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function AssetsSection({ customerId, assets, canManage }: { customerId: string; assets: AssetRow[]; canManage: boolean }) {
@@ -131,7 +254,7 @@ const STATUS_BADGE: Record<string, string> = {
   cancelled: "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400",
 };
 
-export function CustomerDetail({ customer, jobs, assets, canEdit, canManageAssets }: CustomerDetailProps) {
+export function CustomerDetail({ customer, jobs, assets, contracts, canEdit, canManageAssets }: CustomerDetailProps) {
   const [editing, setEditing] = useState(false);
 
   if (editing) {
@@ -195,6 +318,8 @@ export function CustomerDetail({ customer, jobs, assets, canEdit, canManageAsset
       )}
 
       <AssetsSection customerId={customer.id} assets={assets} canManage={canManageAssets} />
+
+      <ContractsSection customerId={customer.id} contracts={contracts} canManage={canManageAssets} />
 
       {/* Linked jobs */}
       <div className="space-y-2">

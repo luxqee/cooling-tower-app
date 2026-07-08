@@ -59,6 +59,18 @@ enum QuoteStatus {
   declined
 }
 
+enum ContractBillingCadence {
+  monthly
+  quarterly
+  annually
+}
+
+enum ContractStatus {
+  active
+  lapsed
+  cancelled
+}
+
 model User {
   id        String   @id @default(uuid())
   clerkId   String   @unique
@@ -92,8 +104,9 @@ model Customer {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  jobs   Job[]
-  assets Asset[]
+  jobs      Job[]
+  assets    Asset[]
+  contracts Contract[]
 
   @@index([name])
 }
@@ -120,6 +133,8 @@ model Job {
   assets              JobAsset[]
   materialEntries     MaterialEntry[]
   customer            Customer? @relation(fields: [customerId], references: [id])
+  contractId          String?
+  contract            Contract? @relation(fields: [contractId], references: [id])
 
   @@index([status])
   @@index([jobType])
@@ -318,6 +333,25 @@ model MaterialEntry {
   createdBy User @relation(fields: [createdById], references: [id])
 
   @@index([jobId])
+  @@index([status])
+}
+
+model Contract {
+  id                  String                 @id @default(uuid())
+  customerId          String
+  siteName            String
+  value               Decimal                @db.Decimal(12, 2)
+  billingCadence      ContractBillingCadence
+  serviceIntervalDays Int
+  startDate           DateTime
+  renewalDate         DateTime
+  status              ContractStatus         @default(active)
+  createdAt           DateTime               @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  jobs     Job[]
+
+  @@index([customerId])
   @@index([status])
 }
 
