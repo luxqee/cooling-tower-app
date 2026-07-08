@@ -274,7 +274,7 @@ async function main() {
       { userId: sarahId, jobId: "seed-job-glencore", clockInTime: d("2026-07-07T07:00:00Z"), clockOutTime: d("2026-07-07T16:30:00Z"), durationMinutes: 570, status: "complete" },
       // Glencore day 2 — Sarah done (8.5h), Jake still clocked in (active)
       { userId: sarahId, jobId: "seed-job-glencore", clockInTime: d("2026-07-08T07:00:00Z"), clockOutTime: d("2026-07-08T15:30:00Z"), durationMinutes: 510, status: "complete" },
-      { userId: jakeId,  jobId: "seed-job-glencore", clockInTime: d("2026-07-08T07:00:00Z"), clockOutTime: null, durationMinutes: null, status: "active" },
+      { userId: jakeId,  jobId: "seed-job-glencore", clockInTime: d("2026-07-07T21:00:00Z"), clockOutTime: null, durationMinutes: null, status: "active" },
     ],
   });
   console.log("  ✓ Time entries (12 — Jake active on Glencore)");
