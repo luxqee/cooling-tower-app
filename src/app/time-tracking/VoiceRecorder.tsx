@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Mic, Video, Square } from "lucide-react";
 
 interface VoiceRecorderProps {
@@ -21,11 +21,13 @@ export function VoiceRecorder({ jobId }: VoiceRecorderProps) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isStoppingRef = useRef(false);
   const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   async function startRecording() {
     setError(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: mode === "video" });
+      streamRef.current = stream;
       const candidateType = mode === "video" ? "video/webm" : "audio/webm";
       const fallbackType = mode === "video" ? "video/mp4" : "audio/mp4";
       const mimeType = MediaRecorder.isTypeSupported(candidateType) ? candidateType : fallbackType;
@@ -44,14 +46,17 @@ export function VoiceRecorder({ jobId }: VoiceRecorderProps) {
         setElapsedSeconds(Math.floor((Date.now() - startTimeRef.current) / 1000));
       }, 1000);
       setState("recording");
-      if (mode === "video" && videoPreviewRef.current) {
-        videoPreviewRef.current.srcObject = stream;
-      }
     } catch {
       setError("Microphone/camera access denied or unavailable.");
       setState("error");
     }
   }
+
+  useEffect(() => {
+    if (state === "recording" && mode === "video" && videoPreviewRef.current && streamRef.current) {
+      videoPreviewRef.current.srcObject = streamRef.current;
+    }
+  }, [state, mode]);
 
   async function stopAndUpload() {
     if (isStoppingRef.current) return;
@@ -64,6 +69,7 @@ export function VoiceRecorder({ jobId }: VoiceRecorderProps) {
     await new Promise<void>((resolve) => {
       recorder.onstop = () => {
         recorder.stream.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
         resolve();
       };
       recorder.stop();
