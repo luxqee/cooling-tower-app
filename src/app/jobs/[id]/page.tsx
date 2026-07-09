@@ -180,9 +180,11 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                         ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400"
                         : note.status === "failed"
                           ? "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400"
-                          : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
+                          : note.status === "awaiting_review"
+                            ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
+                            : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
                     }`}>
-                      {note.status}
+                      {note.status.replace("_", " ")}
                     </span>
                   </div>
                   {note.summary && <p>{note.summary}</p>}
@@ -193,6 +195,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                   )}
                   {note.status === "pending" && <p className="text-xs text-slate-400">Transcribing…</p>}
                   {note.status === "failed" && <p className="text-xs text-red-500">Transcription failed for this recording.</p>}
+                  {note.status === "awaiting_review" && <p className="text-xs text-amber-600 dark:text-amber-400">Waiting for the technician to review and send.</p>}
                 </div>
               ))}
             </div>
