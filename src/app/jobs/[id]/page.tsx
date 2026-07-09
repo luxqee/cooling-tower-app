@@ -26,7 +26,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
       communications: { include: { author: { select: { name: true } } }, orderBy: { createdAt: "desc" } },
       assets: { include: { asset: { select: { id: true, serialNumber: true, assetType: true } } } },
       materialEntries: { orderBy: { createdAt: "desc" } },
-      voiceNotes: { include: { technician: { select: { name: true } } }, orderBy: { createdAt: "desc" } },
+      voiceNotes: { include: { technician: { select: { name: true } }, photos: true }, orderBy: { createdAt: "desc" } },
       contract: { select: { id: true, siteName: true, billingCadence: true } },
     },
   });
@@ -187,8 +187,24 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                       {note.status.replace("_", " ")}
                     </span>
                   </div>
+                  {note.mediaType === "video" && (
+                    <video controls className="w-full rounded-lg" src={`/api/photos?url=${encodeURIComponent(note.audioUrl)}`} />
+                  )}
                   {note.transcript && <p className="text-slate-700 dark:text-slate-300">&ldquo;{note.transcript}&rdquo;</p>}
                   {note.summary && <p className="text-xs text-slate-500 dark:text-slate-400">{note.summary}</p>}
+                  {note.photos.length > 0 && (
+                    <div className="flex gap-2 flex-wrap">
+                      {note.photos.map((photo) => (
+                        <a key={photo.id} href={`/api/photos?url=${encodeURIComponent(photo.photoUrl)}`} target="_blank" rel="noopener noreferrer">
+                          <img
+                            src={`/api/photos?url=${encodeURIComponent(photo.photoUrl)}`}
+                            alt="Attached"
+                            className="w-16 h-16 object-cover rounded-lg border border-slate-200 dark:border-slate-700"
+                          />
+                        </a>
+                      ))}
+                    </div>
+                  )}
                   {Array.isArray(note.actionItems) && note.actionItems.length > 0 && (
                     <ul className="list-disc list-inside text-xs text-slate-500 dark:text-slate-400">
                       {(note.actionItems as string[]).map((item, i) => <li key={i}>{item}</li>)}
