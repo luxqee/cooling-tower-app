@@ -29,7 +29,7 @@ async function dispatchTool(name: string, input: Record<string, unknown>, callin
     case "findAssignments":
       return findAssignments(input as never);
     case "semanticSearchTool":
-      return semanticSearchTool(input as never);
+      return semanticSearchTool(input as never, callingUser);
     case "draftVariation":
       return draftVariation(input as never, callingUser);
     case "draftQuote":

@@ -100,7 +100,16 @@ export async function findAssignments(args: { technicianName?: string; siteId?: 
   }));
 }
 
-export async function semanticSearchTool(args: { query: string; jobId?: string }) {
+// sales_engineer can't read JobCommunication via the direct API
+// (jobs/[id]/communications restricts it to admin/director/service_manager +
+// the assigned technician), so the assistant must not surface that content
+// to them either — only VoiceNote transcript matches are safe to return.
+const JOB_COMMUNICATION_BLOCKED_ROLES = ["sales_engineer"];
+
+export async function semanticSearchTool(args: { query: string; jobId?: string }, callingUser: { role: string }) {
   const results = await semanticSearch(args.query, args.jobId);
-  return results.map((r) => ({ sourceType: r.sourceType, jobId: r.jobId, chunkText: r.chunkText, relevance: 1 - r.distance }));
+  const filtered = JOB_COMMUNICATION_BLOCKED_ROLES.includes(callingUser.role)
+    ? results.filter((r) => r.sourceType !== "JobCommunication")
+    : results;
+  return filtered.map((r) => ({ sourceType: r.sourceType, jobId: r.jobId, chunkText: r.chunkText, relevance: 1 - r.distance }));
 }

@@ -104,9 +104,31 @@ describe("semanticSearchTool", () => {
       { id: "c1", sourceType: "VoiceNote", sourceId: "vn1", jobId: "job1", chunkText: "corrosion noted", distance: 0.1 },
     ]);
 
-    const result = await semanticSearchTool({ query: "corrosion", jobId: "job1" });
+    const result = await semanticSearchTool({ query: "corrosion", jobId: "job1" }, { role: "director" });
 
     expect(semanticSearch).toHaveBeenCalledWith("corrosion", "job1");
     expect(result).toHaveLength(1);
+  });
+
+  it("includes JobCommunication results for a director", async () => {
+    vi.mocked(semanticSearch).mockResolvedValue([
+      { id: "c1", sourceType: "JobCommunication", sourceId: "jc1", jobId: "job1", chunkText: "customer asked for Friday", distance: 0.1 },
+    ]);
+
+    const result = await semanticSearchTool({ query: "friday" }, { role: "director" });
+
+    expect(result).toHaveLength(1);
+  });
+
+  it("excludes JobCommunication results for a sales_engineer", async () => {
+    vi.mocked(semanticSearch).mockResolvedValue([
+      { id: "c1", sourceType: "JobCommunication", sourceId: "jc1", jobId: "job1", chunkText: "customer asked for Friday", distance: 0.1 },
+      { id: "c2", sourceType: "VoiceNote", sourceId: "vn1", jobId: "job1", chunkText: "fan belt replaced", distance: 0.2 },
+    ]);
+
+    const result = await semanticSearchTool({ query: "friday" }, { role: "sales_engineer" });
+
+    expect(result).toHaveLength(1);
+    expect(result[0].sourceType).toBe("VoiceNote");
   });
 });
