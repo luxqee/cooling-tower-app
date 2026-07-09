@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { navItems } from "@/lib/nav-config";
-import { Bell, Search, X } from "lucide-react";
+import { Search, X } from "lucide-react";
+import { NotificationBell } from "./NotificationBell";
 
 interface SearchResults {
   jobs: { id: string; customerName: string; siteName: string; status: string }[];
@@ -161,12 +162,7 @@ export function TopBar({ showSearch = false }: TopBarProps) {
             )}
           </div>
         )}
-        <button
-          className="flex h-9 w-9 items-center justify-center rounded-md text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
-          aria-label="Notifications"
-        >
-          <Bell className="h-4 w-4" />
-        </button>
+        <NotificationBell />
       </div>
     </header>
   );

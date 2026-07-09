@@ -16,6 +16,7 @@ vi.mock("@/lib/db/client", () => ({
     assignment: { findFirst: vi.fn() },
     variation:  { create: vi.fn(), findMany: vi.fn() },
     user:       { findMany: vi.fn() },
+    notification: { createMany: vi.fn() },
   },
 }));
 

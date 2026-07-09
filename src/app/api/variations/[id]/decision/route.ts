@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
 import { sendPushToUser } from "@/lib/push/vapid";
+import { notifyUsers } from "@/lib/notifications/create";
 
 const decisionSchema = z.discriminatedUnion("decision", [
   z.object({ decision: z.literal("approved") }),
@@ -89,14 +90,16 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       rejected: "Variation rejected",
       queried: "Director has a query on your variation",
     };
+    const decisionNotification = {
+      title: messages[decision],
+      body: decisionReason ?? `$${Number(variation.costEstimate).toFixed(0)}`,
+      url: "/variations",
+    };
+
+    await notifyUsers([technician.id], decisionNotification);
+
     await Promise.allSettled(
-      technician.pushSubscriptions.map((sub) =>
-        sendPushToUser(sub, {
-          title: messages[decision],
-          body: decisionReason ?? `$${Number(variation.costEstimate).toFixed(0)}`,
-          url: "/variations",
-        })
-      )
+      technician.pushSubscriptions.map((sub) => sendPushToUser(sub, decisionNotification))
     );
   }
 

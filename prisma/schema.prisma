@@ -111,6 +111,22 @@ model User {
   aiAuditLogs         AiAuditLog[]
   voiceNotes          VoiceNote[]
   chatSessions        ChatSession[]
+  notifications       Notification[]
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  body      String
+  url       String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
 }
 
 model Customer {

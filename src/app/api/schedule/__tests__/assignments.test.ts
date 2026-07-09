@@ -15,6 +15,7 @@ vi.mock("@/lib/db/client", () => ({
     },
     user: { findUnique: vi.fn() },
     job:  { findUnique: vi.fn() },
+    notification: { createMany: vi.fn() },
   },
 }));
 

@@ -3,6 +3,7 @@ import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
 import { validateVariationInput } from "@/lib/variations/validate";
 import { sendPushToUser } from "@/lib/push/vapid";
+import { notifyUsers } from "@/lib/notifications/create";
 
 export async function GET() {
   const user = await requireRole(["director", "admin"]).catch(() => null);
@@ -69,15 +70,17 @@ export async function POST(req: Request) {
     include: { pushSubscriptions: true },
   });
 
+  const variationNotification = {
+    title: "New Variation",
+    body: `${user.name} — ${variation.job.siteName}: $${costEstimate.toFixed(0)}`,
+    url: "/variations",
+  };
+
+  await notifyUsers(directors.map((d) => d.id), variationNotification);
+
   await Promise.allSettled(
     directors.flatMap((d) =>
-      d.pushSubscriptions.map((sub) =>
-        sendPushToUser(sub, {
-          title: "New Variation",
-          body: `${user.name} — ${variation.job.siteName}: $${costEstimate.toFixed(0)}`,
-          url: "/variations",
-        })
-      )
+      d.pushSubscriptions.map((sub) => sendPushToUser(sub, variationNotification))
     )
   );
 

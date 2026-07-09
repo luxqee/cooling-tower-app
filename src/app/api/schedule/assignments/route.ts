@@ -5,6 +5,7 @@ import { db } from "@/lib/db/client";
 import { weekStart } from "@/lib/schedule/dateUtils";
 import { detectConflict } from "@/lib/schedule/conflictDetection";
 import { sendPushToUser } from "@/lib/push/vapid";
+import { notifyUsers } from "@/lib/notifications/create";
 
 export async function GET(req: Request) {
   const user = await getSessionUser();
@@ -98,25 +99,27 @@ export async function POST(req: Request) {
       },
     });
 
-    // Push notification to technician (fire-and-forget)
+    // Notify the technician: in-app always, push (fire-and-forget) if subscribed
+    const dateLabel = startDate.toLocaleDateString("en-AU", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    });
+    const assignmentNotification = {
+      title: "New job assignment",
+      body: `${assignment.job.customerName} — ${assignment.job.siteName}, ${dateLabel}`,
+      url: "/schedule",
+    };
+
+    await notifyUsers([userId], assignmentNotification);
+
     const techWithSubs = await db.user.findUnique({
       where: { id: userId },
       include: { pushSubscriptions: true },
     });
     if (techWithSubs?.pushSubscriptions?.length) {
-      const dateLabel = startDate.toLocaleDateString("en-AU", {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-      });
       void Promise.allSettled(
-        techWithSubs.pushSubscriptions.map((sub) =>
-          sendPushToUser(sub, {
-            title: "New job assignment",
-            body: `${assignment.job.customerName} — ${assignment.job.siteName}, ${dateLabel}`,
-            url: "/schedule",
-          })
-        )
+        techWithSubs.pushSubscriptions.map((sub) => sendPushToUser(sub, assignmentNotification))
       );
     }
 
