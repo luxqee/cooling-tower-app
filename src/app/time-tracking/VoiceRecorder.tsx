@@ -17,6 +17,7 @@ export function VoiceRecorder({ jobId }: VoiceRecorderProps) {
   const chunksRef = useRef<Blob[]>([]);
   const startTimeRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isStoppingRef = useRef(false);
 
   async function startRecording() {
     setError(null);
@@ -25,6 +26,7 @@ export function VoiceRecorder({ jobId }: VoiceRecorderProps) {
       const mimeType = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4";
       const recorder = new MediaRecorder(stream, { mimeType });
       chunksRef.current = [];
+      isStoppingRef.current = false;
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
@@ -44,6 +46,8 @@ export function VoiceRecorder({ jobId }: VoiceRecorderProps) {
   }
 
   async function stopAndUpload() {
+    if (isStoppingRef.current) return;
+    isStoppingRef.current = true;
     const recorder = mediaRecorderRef.current;
     if (!recorder) return;
     if (timerRef.current) clearInterval(timerRef.current);
