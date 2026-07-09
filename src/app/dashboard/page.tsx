@@ -13,7 +13,9 @@ export default async function DashboardPage() {
   if (!user) redirect("/sign-in");
   // Route non-admin roles to their home page rather than /sign-in: Clerk
   // would immediately redirect back to /dashboard creating an infinite loop.
-  if (!DASHBOARD_ROLES.includes(user.role as DashboardRole)) redirect("/time-tracking");
+  if (!DASHBOARD_ROLES.includes(user.role as DashboardRole)) {
+    redirect(user.role === "sales_engineer" ? "/jobs" : "/time-tracking");
+  }
 
   return (
     <AppShell>

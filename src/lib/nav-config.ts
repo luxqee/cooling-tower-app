@@ -51,7 +51,7 @@ export const navItems: NavItem[] = [
     href: "/time-tracking",
     icon: Clock,
     description: "Clock-in records and live crew status",
-    visibleTo: ["director", "service_manager", "admin", "technician"],
+    visibleTo: ["director", "service_manager", "technician"],
   },
   {
     label: "Variations",
