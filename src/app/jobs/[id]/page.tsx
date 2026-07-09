@@ -3,6 +3,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
 import { redirect, notFound } from "next/navigation";
+import { DeleteVoiceNoteButton } from "./DeleteVoiceNoteButton";
 
 const STATUS_BADGE: Record<string, string> = {
   scheduled: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
@@ -175,17 +176,22 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                 <div key={note.id} className="px-4 py-3 text-sm space-y-1">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs text-slate-500">{note.technician.name} · {new Date(note.createdAt).toLocaleDateString("en-AU")}</span>
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${
-                      note.status === "transcribed"
-                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400"
-                        : note.status === "failed"
-                          ? "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400"
-                          : note.status === "awaiting_review"
-                            ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
-                            : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
-                    }`}>
-                      {note.status.replace("_", " ")}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${
+                        note.status === "transcribed"
+                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400"
+                          : note.status === "failed"
+                            ? "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400"
+                            : note.status === "awaiting_review"
+                              ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
+                              : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
+                      }`}>
+                        {note.status.replace("_", " ")}
+                      </span>
+                      {(user.role === "director" || user.role === "admin") && (
+                        <DeleteVoiceNoteButton jobId={job.id} noteId={note.id} />
+                      )}
+                    </div>
                   </div>
                   {note.mediaType === "video" && (
                     <video controls className="w-full rounded-lg" src={`/api/photos?url=${encodeURIComponent(note.audioUrl)}`} />
