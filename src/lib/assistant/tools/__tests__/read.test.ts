@@ -35,11 +35,34 @@ describe("findJobs", () => {
   });
 
   it("filters overdue jobs (active, logged hours exceed quoted) when overdueOnly is true", async () => {
-    vi.mocked(db.job.findMany).mockResolvedValue([]);
-    await findJobs({ overdueOnly: true });
+    vi.mocked(db.job.findMany).mockResolvedValue([
+      {
+        id: "over1",
+        customerName: "Rio Tinto",
+        siteName: "Weipa",
+        status: "active",
+        quotedHours: 10,
+        jobType: "service",
+        timeEntries: [{ durationMinutes: 400 }, { durationMinutes: 300 }], // 700 min = 11.67h > 10h quoted
+      },
+      {
+        id: "notover1",
+        customerName: "BHP",
+        siteName: "Olympic Dam",
+        status: "active",
+        quotedHours: 20,
+        jobType: "service",
+        timeEntries: [{ durationMinutes: 300 }], // 5h <= 20h quoted
+      },
+    ] as any);
+
+    const result = await findJobs({ overdueOnly: true });
+
     expect(db.job.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: expect.objectContaining({ status: "active" }) })
     );
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ id: "over1" });
   });
 
   it("returns all jobs (capped) when no filters are given", async () => {

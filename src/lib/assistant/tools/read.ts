@@ -11,7 +11,38 @@ export async function findJobs(args: {
   if (args.status) where.status = args.status;
   if (args.siteName) where.siteName = { contains: args.siteName, mode: "insensitive" };
   if (args.customerName) where.customerName = { contains: args.customerName, mode: "insensitive" };
-  if (args.overdueOnly) where.status = "active";
+  if (args.overdueOnly) {
+    where.status = "active";
+
+    // Overdue = active job whose logged hours (sum of TimeEntry.durationMinutes / 60)
+    // exceed Job.quotedHours. This can't be expressed as a Prisma `where` filter
+    // (it's an aggregate comparison), so fetch a generous batch of active jobs
+    // matching the other filters, compute logged hours in app code, filter, then
+    // cap at 20 so filtering doesn't truncate before we know which are overdue.
+    const candidates = await db.job.findMany({
+      where,
+      select: {
+        id: true,
+        customerName: true,
+        siteName: true,
+        status: true,
+        quotedHours: true,
+        jobType: true,
+        timeEntries: { select: { durationMinutes: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+
+    return candidates
+      .filter((job) => {
+        const loggedMinutes = job.timeEntries.reduce((sum, te) => sum + (te.durationMinutes ?? 0), 0);
+        const loggedHours = loggedMinutes / 60;
+        return loggedHours > job.quotedHours;
+      })
+      .slice(0, 20)
+      .map(({ timeEntries: _timeEntries, ...job }) => job);
+  }
 
   const jobs = await db.job.findMany({
     where,
