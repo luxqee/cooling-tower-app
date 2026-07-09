@@ -3,10 +3,14 @@ import { MobileNav } from "@/components/nav/MobileNav";
 import { BottomTabBar } from "@/components/nav/BottomTabBar";
 import { TopBar } from "@/components/nav/TopBar";
 import { getSessionUser } from "@/lib/auth/clerk";
+import { ChatWidget } from "@/components/assistant/ChatWidget";
+
+const ASSISTANT_ROLES = ["director", "service_manager", "admin", "sales_engineer"];
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser();
   const hasTabs = user?.role === "technician";
+  const showAssistant = !!user && ASSISTANT_ROLES.includes(user.role);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
@@ -20,6 +24,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+      {showAssistant && <ChatWidget />}
     </div>
   );
 }
