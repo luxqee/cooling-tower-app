@@ -81,6 +81,7 @@ enum VoiceNoteStatus {
   pending
   transcribed
   failed
+  awaiting_review
 }
 
 model User {
