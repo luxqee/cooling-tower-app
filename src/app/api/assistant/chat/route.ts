@@ -5,6 +5,7 @@ import { getAnthropicClient } from "@/lib/ai/client";
 import { AI_MODELS } from "@/lib/ai/models";
 import { buildAiAuditLogData } from "@/lib/ai/audit";
 import { validateChatInput } from "@/lib/assistant/validate";
+import { describeDraftAction } from "@/lib/assistant/describeDraftAction";
 import { ASSISTANT_TOOLS } from "@/lib/assistant/toolDefinitions";
 import { findJobs, findComplianceDocuments, findAssignments, semanticSearchTool } from "@/lib/assistant/tools/read";
 import { draftVariation, draftQuote } from "@/lib/assistant/tools/draft";
@@ -14,6 +15,12 @@ import type { Prisma } from "@prisma/client";
 const MODEL = AI_MODELS.COMPANY_ASSISTANT;
 const MAX_ROUNDS = 5;
 const FALLBACK_MESSAGE = "I'm having trouble right now — please try again in a moment.";
+
+// draftVariation/draftQuote create real records, so they're never executed
+// automatically inside the model's own tool-calling loop — the loop pauses
+// and asks the human to confirm first (see the confirmAction request path
+// below). Read-only tools carry no such risk and run immediately.
+const DRAFT_TOOLS = new Set(["draftVariation", "draftQuote"]);
 
 interface CallingUser {
   id: string;
@@ -49,7 +56,44 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message }, { status: 400 });
   }
-  const { message } = parsed.data;
+
+  // Confirming a previously-proposed draft action skips the model entirely —
+  // the human already decided; we just execute the exact tool call that was
+  // shown to them and report the result.
+  if (parsed.data.confirmAction) {
+    const session = await db.chatSession.findFirst({
+      where: { id: parsed.data.sessionId, userId: user.id },
+    });
+    if (!session) {
+      return NextResponse.json({ error: "Chat session not found" }, { status: 404 });
+    }
+
+    const { tool, input } = parsed.data.confirmAction;
+    const result = await dispatchTool(tool, input, user);
+    const success = !(result && typeof result === "object" && "ok" in result && result.ok === false);
+    const reply = success
+      ? "Done — created and sent for review."
+      : `Couldn't complete that: ${(result as { error?: string }).error ?? "unknown error"}`;
+
+    const toolCallsJson = [{ tool, input, confirmed: true }] as unknown as Prisma.InputJsonValue;
+    await db.aiAuditLog.create({
+      data: buildAiAuditLogData({
+        userId: user.id,
+        feature: "company_assistant",
+        model: MODEL,
+        promptTokens: 0,
+        outputTokens: 0,
+        toolCalls: toolCallsJson,
+      }),
+    });
+    await db.chatMessage.create({
+      data: { sessionId: session.id, role: "assistant", content: reply, toolCalls: toolCallsJson },
+    });
+
+    return NextResponse.json({ sessionId: session.id, reply, pendingAction: null });
+  }
+
+  const message = parsed.data.message!;
 
   const session = parsed.data.sessionId
     ? await db.chatSession.findFirst({ where: { id: parsed.data.sessionId, userId: user.id } })
@@ -80,6 +124,7 @@ export async function POST(req: Request) {
   let totalOutputTokens = 0;
   const toolCallLog: { tool: string; input: unknown }[] = [];
   let finalText = FALLBACK_MESSAGE;
+  let pendingAction: { tool: string; input: Record<string, unknown> } | null = null;
 
   try {
     const client = getAnthropicClient();
@@ -97,17 +142,26 @@ export async function POST(req: Request) {
       totalOutputTokens += response.usage.output_tokens;
 
       const textBlock = response.content.find((b) => b.type === "text");
-      if (textBlock && "text" in textBlock) finalText = textBlock.text;
+      const claudeText = textBlock && "text" in textBlock ? textBlock.text : null;
+      if (claudeText) finalText = claudeText;
 
       if (response.stop_reason !== "tool_use") {
         break;
       }
 
+      const toolUseBlocks = response.content.filter((b) => b.type === "tool_use");
+      const draftCall = toolUseBlocks.find((b) => b.type === "tool_use" && DRAFT_TOOLS.has(b.name));
+
+      if (draftCall && draftCall.type === "tool_use") {
+        const input = draftCall.input as Record<string, unknown>;
+        pendingAction = { tool: draftCall.name, input };
+        finalText = claudeText ?? describeDraftAction(draftCall.name, input);
+        break;
+      }
+
       messages.push({ role: "assistant", content: response.content });
 
-      const toolUseBlocks = response.content.filter((b) => b.type === "tool_use");
       const toolResults: Anthropic.ToolResultBlockParam[] = [];
-
       for (const toolUse of toolUseBlocks) {
         if (toolUse.type !== "tool_use") continue;
         toolCallLog.push({ tool: toolUse.name, input: toolUse.input });
@@ -122,7 +176,10 @@ export async function POST(req: Request) {
       messages.push({ role: "user", content: toolResults });
     }
 
-    const toolCallsJson = toolCallLog as unknown as Prisma.InputJsonValue;
+    const toolCallsJson = (
+      pendingAction ? [{ tool: pendingAction.tool, input: pendingAction.input, proposed: true }] : toolCallLog
+    ) as unknown as Prisma.InputJsonValue;
+
     await db.aiAuditLog.create({
       data: buildAiAuditLogData({
         userId: user.id,
@@ -140,7 +197,8 @@ export async function POST(req: Request) {
   } catch (err) {
     console.error("Assistant chat turn failed:", err);
     finalText = FALLBACK_MESSAGE;
+    pendingAction = null;
   }
 
-  return NextResponse.json({ sessionId: session.id, reply: finalText });
+  return NextResponse.json({ sessionId: session.id, reply: finalText, pendingAction });
 }

@@ -25,4 +25,27 @@ describe("validateChatInput", () => {
   it("accepts a message at exactly 4000 characters", () => {
     expect(validateChatInput({ message: "a".repeat(4000) }).success).toBe(true);
   });
+
+  it("accepts a confirmAction with a sessionId and no message", () => {
+    const result = validateChatInput({
+      sessionId: "sess-1",
+      confirmAction: { tool: "draftVariation", input: { jobId: "j1", technicianName: "Jake", description: "x", costEstimate: 50 } },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a confirmAction with no sessionId", () => {
+    const result = validateChatInput({
+      confirmAction: { tool: "draftQuote", input: {} },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a confirmAction with an unknown tool name", () => {
+    const result = validateChatInput({
+      sessionId: "sess-1",
+      confirmAction: { tool: "deleteEverything", input: {} },
+    });
+    expect(result.success).toBe(false);
+  });
 });

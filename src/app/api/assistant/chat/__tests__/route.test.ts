@@ -25,6 +25,7 @@ import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
 import { getAnthropicClient } from "@/lib/ai/client";
 import { findJobs } from "@/lib/assistant/tools/read";
+import { draftVariation, draftQuote } from "@/lib/assistant/tools/draft";
 import { POST } from "../route";
 
 const mockDirector = { id: "u1", role: "director" as const, name: "Dana", clerkId: "c1", email: "d@t.com", isActive: true };
@@ -166,6 +167,96 @@ describe("POST /api/assistant/chat", () => {
     expect(res.status).toBe(404);
     expect(db.chatSession.findFirst).toHaveBeenCalledWith({
       where: { id: "someone-elses-session", userId: mockDirector.id },
+    });
+  });
+
+  it("pauses on a draftVariation tool call instead of executing it, returning a pendingAction for confirmation", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
+    const mockCreate = vi.fn().mockResolvedValue({
+      content: [{
+        type: "tool_use", id: "tool1", name: "draftVariation",
+        input: { jobId: "job1", technicianName: "Jake Morrison", description: "Replace fan belt", costEstimate: 450 },
+      }],
+      stop_reason: "tool_use",
+      usage: { input_tokens: 100, output_tokens: 20 },
+    });
+    vi.mocked(getAnthropicClient).mockReturnValue({ messages: { create: mockCreate } } as any);
+
+    const res = await POST(makeReq({ message: "Draft a variation for Jake for the fan belt, $450" }));
+    const data = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(draftVariation).not.toHaveBeenCalled();
+    expect(mockCreate).toHaveBeenCalledTimes(1);
+    expect(data.pendingAction).toEqual({
+      tool: "draftVariation",
+      input: { jobId: "job1", technicianName: "Jake Morrison", description: "Replace fan belt", costEstimate: 450 },
+    });
+    expect(data.reply).toContain("Jake Morrison");
+    expect(db.aiAuditLog.create).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not pause for a read-only tool call, and returns pendingAction: null", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
+    vi.mocked(findJobs).mockResolvedValue([]);
+    const mockCreate = vi.fn()
+      .mockResolvedValueOnce({
+        content: [{ type: "tool_use", id: "tool1", name: "findJobs", input: {} }],
+        stop_reason: "tool_use",
+        usage: { input_tokens: 100, output_tokens: 20 },
+      })
+      .mockResolvedValueOnce({
+        content: [{ type: "text", text: "No jobs found." }],
+        stop_reason: "end_turn",
+        usage: { input_tokens: 50, output_tokens: 10 },
+      });
+    vi.mocked(getAnthropicClient).mockReturnValue({ messages: { create: mockCreate } } as any);
+
+    const res = await POST(makeReq({ message: "Any jobs?" }));
+    const data = await res.json();
+
+    expect(data.pendingAction).toBeNull();
+  });
+
+  describe("confirmAction", () => {
+    it("returns 404 when the session doesn't belong to the caller", async () => {
+      vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
+      vi.mocked(db.chatSession.findFirst).mockResolvedValue(null);
+
+      const res = await POST(makeReq({ sessionId: "sess1", confirmAction: { tool: "draftVariation", input: {} } }));
+
+      expect(res.status).toBe(404);
+    });
+
+    it("executes the confirmed draftVariation call directly, without invoking Claude", async () => {
+      vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
+      vi.mocked(db.chatSession.findFirst).mockResolvedValue({ id: "sess1", userId: "u1" } as any);
+      vi.mocked(draftVariation).mockResolvedValue({ ok: true, variationId: "var1" });
+
+      const input = { jobId: "job1", technicianName: "Jake Morrison", description: "Replace fan belt", costEstimate: 450 };
+      const res = await POST(makeReq({ sessionId: "sess1", confirmAction: { tool: "draftVariation", input } }));
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(draftVariation).toHaveBeenCalledWith(input, mockDirector);
+      expect(getAnthropicClient).not.toHaveBeenCalled();
+      expect(data.reply).toMatch(/created/i);
+      expect(data.pendingAction).toBeNull();
+      expect(db.chatMessage.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ role: "assistant" }) })
+      );
+    });
+
+    it("reports the tool's own error message when the confirmed action fails", async () => {
+      vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
+      vi.mocked(db.chatSession.findFirst).mockResolvedValue({ id: "sess1", userId: "u1" } as any);
+      vi.mocked(draftQuote).mockResolvedValue({ ok: false, error: "Your role isn't permitted to draft a quote." });
+
+      const res = await POST(makeReq({ sessionId: "sess1", confirmAction: { tool: "draftQuote", input: {} } }));
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.reply).toContain("Your role isn't permitted to draft a quote.");
     });
   });
 });
