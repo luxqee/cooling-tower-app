@@ -6,8 +6,14 @@ import { getSessionUser } from "@/lib/auth/clerk";
 import { GET } from "../route";
 
 const mockUser = { id: "u1", role: "technician" as const, name: "Jake", clerkId: "c1", email: "j@t.com", isActive: true };
+const BLOB_URL = "https://x.blob.vercel-storage.com/voice-notes/u1/1.webm";
 
-beforeEach(() => vi.clearAllMocks());
+const originalFetch = global.fetch;
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  global.fetch = originalFetch;
+});
 
 describe("GET /api/photos", () => {
   it("returns 401 when not authenticated", async () => {
@@ -34,5 +40,48 @@ describe("GET /api/photos", () => {
     vi.mocked(getSessionUser).mockResolvedValue(mockUser as any);
     const res = await GET(new Request("http://localhost/api/photos?url=https://evil.com/photo.jpg"));
     expect(res.status).toBe(400);
+  });
+
+  it("forwards the client's Range header to the upstream blob fetch", async () => {
+    vi.mocked(getSessionUser).mockResolvedValue(mockUser as any);
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 206,
+      headers: new Headers({ "Content-Type": "video/webm", "Content-Range": "bytes 0-99/1000", "Content-Length": "100" }),
+      body: new ReadableStream(),
+    });
+    global.fetch = mockFetch as unknown as typeof fetch;
+
+    const req = new Request(`http://localhost/api/photos?url=${encodeURIComponent(BLOB_URL)}`, {
+      headers: { Range: "bytes=0-99" },
+    });
+    const res = await GET(req);
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      BLOB_URL,
+      expect.objectContaining({ headers: expect.objectContaining({ Range: "bytes=0-99" }) })
+    );
+    expect(res.status).toBe(206);
+    expect(res.headers.get("Content-Range")).toBe("bytes 0-99/1000");
+    expect(res.headers.get("Accept-Ranges")).toBe("bytes");
+  });
+
+  it("does not forward a Range header when the client didn't send one, and returns 200", async () => {
+    vi.mocked(getSessionUser).mockResolvedValue(mockUser as any);
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "Content-Type": "video/webm" }),
+      body: new ReadableStream(),
+    });
+    global.fetch = mockFetch as unknown as typeof fetch;
+
+    const req = new Request(`http://localhost/api/photos?url=${encodeURIComponent(BLOB_URL)}`);
+    const res = await GET(req);
+
+    const [, options] = mockFetch.mock.calls[0];
+    expect(options.headers.Range).toBeUndefined();
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Accept-Ranges")).toBe("bytes");
   });
 });

@@ -19,16 +19,28 @@ export async function GET(req: Request) {
     return new Response("Invalid url", { status: 400 });
   }
 
+  // Forward the browser's Range header so <video>/<audio> elements can seek —
+  // without this, playback fails for larger recordings that need partial fetches.
+  const range = req.headers.get("range");
+
   const res = await fetch(blobUrl, {
-    headers: { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` },
-  });
-
-  if (!res.ok) return new Response("Not found", { status: 404 });
-
-  return new Response(res.body, {
     headers: {
-      "Content-Type": res.headers.get("Content-Type") ?? "application/octet-stream",
-      "Cache-Control": "private, max-age=3600",
+      Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`,
+      ...(range ? { Range: range } : {}),
     },
   });
+
+  if (!res.ok && res.status !== 206) return new Response("Not found", { status: 404 });
+
+  const headers: Record<string, string> = {
+    "Content-Type": res.headers.get("Content-Type") ?? "application/octet-stream",
+    "Cache-Control": "private, max-age=3600",
+    "Accept-Ranges": "bytes",
+  };
+  const contentRange = res.headers.get("Content-Range");
+  const contentLength = res.headers.get("Content-Length");
+  if (contentRange) headers["Content-Range"] = contentRange;
+  if (contentLength) headers["Content-Length"] = contentLength;
+
+  return new Response(res.body, { status: res.status, headers });
 }
