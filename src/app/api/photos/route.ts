@@ -1,4 +1,8 @@
 import { getSessionUser } from "@/lib/auth/clerk";
+import { db } from "@/lib/db/client";
+import { isOwnedBlobUrl } from "@/lib/blob/ownership";
+
+const OFFICE_ROLES = ["director", "service_manager", "admin", "sales_engineer"];
 
 export async function GET(req: Request) {
   const user = await getSessionUser();
@@ -17,6 +21,27 @@ export async function GET(req: Request) {
   }
   if (!parsed.hostname.endsWith(".blob.vercel-storage.com")) {
     return new Response("Invalid url", { status: 400 });
+  }
+
+  // A caller can always view their own uploads (covers a technician's
+  // just-uploaded, not-yet-attached photo before it's sent). Anything else
+  // must be a real, DB-attached voice-note/photo/variation image — and only
+  // office roles get to view media uploaded by someone else.
+  const ownsUpload =
+    isOwnedBlobUrl(blobUrl, user.id, "voice-notes") || isOwnedBlobUrl(blobUrl, user.id, "variations");
+
+  if (!ownsUpload) {
+    if (!OFFICE_ROLES.includes(user.role)) {
+      return new Response("Forbidden", { status: 403 });
+    }
+    const [voiceNote, voiceNotePhoto, variation] = await Promise.all([
+      db.voiceNote.findFirst({ where: { audioUrl: blobUrl } }),
+      db.voiceNotePhoto.findFirst({ where: { photoUrl: blobUrl } }),
+      db.variation.findFirst({ where: { photoUrl: blobUrl } }),
+    ]);
+    if (!voiceNote && !voiceNotePhoto && !variation) {
+      return new Response("Not found", { status: 404 });
+    }
   }
 
   // Forward the browser's Range header so <video>/<audio> elements can seek —
