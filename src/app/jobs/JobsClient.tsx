@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { Plus, X, Pencil, Trash2, MessageSquare, Receipt } from "lucide-react";
+import Link from "next/link";
 import { NewJobForm } from "./NewJobForm";
 import { useRouter } from "next/navigation";
 
@@ -359,10 +360,10 @@ function JobCard({ job, canEdit }: { job: Job; canEdit: boolean }) {
     <>
       <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-4 space-y-3">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
+          <Link href={`/jobs/${job.id}`} className="min-w-0 block hover:underline">
             <p className="font-semibold truncate">{job.customerName}</p>
             <p className="text-sm text-slate-500 truncate">{job.siteName}</p>
-          </div>
+          </Link>
           <div className="flex items-center gap-2 shrink-0">
             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
               job.status === "active"
