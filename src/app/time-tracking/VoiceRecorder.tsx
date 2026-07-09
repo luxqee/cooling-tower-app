@@ -88,7 +88,18 @@ export function VoiceRecorder({ jobId }: VoiceRecorderProps) {
   }
 
   if (state === "done") {
-    return <p className="text-sm text-emerald-600 dark:text-emerald-400">Voice note saved — transcribing now.</p>;
+    return (
+      <div className="space-y-1">
+        <p className="text-sm text-emerald-600 dark:text-emerald-400">Voice note saved — transcribing now.</p>
+        <button
+          type="button"
+          onClick={() => setState("idle")}
+          className="text-xs text-amber-600 dark:text-amber-400 hover:underline"
+        >
+          Record another note
+        </button>
+      </div>
+    );
   }
 
   return (

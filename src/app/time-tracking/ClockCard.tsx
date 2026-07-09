@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { LiveTimer } from "./LiveTimer";
 import { VoiceRecorder } from "./VoiceRecorder";
+import { PendingVoiceNoteReview } from "./PendingVoiceNoteReview";
 
 interface Job {
   id: string;
@@ -91,6 +92,8 @@ export function ClockCard({ jobs, activeEntry, usingFallback = false }: ClockCar
         </div>
 
         <VoiceRecorder jobId={currentEntry.jobId} />
+
+        <PendingVoiceNoteReview jobId={currentEntry.jobId} />
 
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
