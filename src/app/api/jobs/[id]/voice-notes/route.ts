@@ -4,6 +4,22 @@ import { db } from "@/lib/db/client";
 import { validateVoiceNoteInput } from "@/lib/voice-notes/validate";
 import { uploadAudioToAssemblyAI, submitTranscription } from "@/lib/ai/assemblyai";
 
+// Prevents SSRF via substring bypass and ensures technicians can only reference
+// blobs stored under their own voice-notes folder — the server fetches this URL
+// with the BLOB_READ_WRITE_TOKEN attached, so a spoofed URL would leak that
+// credential (and other technicians' audio) to an attacker-controlled host.
+function isOwnedBlobUrl(audioUrl: string, userId: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(audioUrl);
+  } catch {
+    return false;
+  }
+  if (!parsed.hostname.endsWith(".blob.vercel-storage.com")) return false;
+  if (!parsed.pathname.startsWith(`/voice-notes/${userId}/`)) return false;
+  return true;
+}
+
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const user = await requireRole(["technician"]).catch(() => null);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -20,6 +36,10 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   const assignment = await db.assignment.findFirst({ where: { userId: user.id, jobId: params.id } });
   if (!assignment) return NextResponse.json({ error: "Not assigned to this job" }, { status: 403 });
+
+  if (!isOwnedBlobUrl(audioUrl, user.id)) {
+    return NextResponse.json({ error: "Invalid audio URL" }, { status: 400 });
+  }
 
   const voiceNote = await db.voiceNote.create({
     data: { jobId: params.id, technicianId: user.id, audioUrl, durationSeconds, status: "pending" },

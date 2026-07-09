@@ -65,6 +65,37 @@ describe("POST /api/jobs/[id]/voice-notes", () => {
     expect(res.status).toBe(403);
   });
 
+  it("returns 400 and never creates a voice note when audioUrl hostname isn't blob storage", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
+    vi.mocked(db.job.findFirst).mockResolvedValue({ id: "job1" } as any);
+    vi.mocked(db.assignment.findFirst).mockResolvedValue({ id: "a1" } as any);
+
+    const res = await POST(
+      makeReq({ audioUrl: "https://attacker.example/collect", durationSeconds: 60 }),
+      { params: { id: "job1" } }
+    );
+
+    expect(res.status).toBe(400);
+    expect(db.voiceNote.create).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 and never creates a voice note when audioUrl path belongs to a different technician", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
+    vi.mocked(db.job.findFirst).mockResolvedValue({ id: "job1" } as any);
+    vi.mocked(db.assignment.findFirst).mockResolvedValue({ id: "a1" } as any);
+
+    const res = await POST(
+      makeReq({
+        audioUrl: "https://example.blob.vercel-storage.com/voice-notes/other-tech/123.webm",
+        durationSeconds: 60,
+      }),
+      { params: { id: "job1" } }
+    );
+
+    expect(res.status).toBe(400);
+    expect(db.voiceNote.create).not.toHaveBeenCalled();
+  });
+
   it("creates the voice note and submits it to AssemblyAI on success", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
     vi.mocked(db.job.findFirst).mockResolvedValue({ id: "job1" } as any);
