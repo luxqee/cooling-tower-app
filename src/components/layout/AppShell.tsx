@@ -18,7 +18,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       <MobileNav />
       <BottomTabBar />
       <div className="lg:pl-64">
-        <TopBar />
+        <TopBar showSearch={showAssistant} />
         {/* Extra bottom padding on mobile so content clears the bottom tab bar */}
         <main className={`px-4 py-6 lg:px-8 lg:py-8 ${hasTabs ? "pb-20 lg:pb-8" : ""}`}>
           {children}

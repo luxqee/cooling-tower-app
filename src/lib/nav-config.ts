@@ -29,8 +29,6 @@ export interface NavItem {
   description: string;
   // Which roles can see this nav item once auth is implemented
   visibleTo: UserRole[];
-  // Build phase this feature is part of
-  phase: "1a" | "1b" | "1c" | "2" | "2b" | "3";
 }
 
 export const navItems: NavItem[] = [
@@ -40,7 +38,6 @@ export const navItems: NavItem[] = [
     icon: LayoutDashboard,
     description: "Live overview of jobs, crew, and pending approvals",
     visibleTo: ["director", "service_manager", "admin"],
-    phase: "1a",
   },
   {
     label: "Jobs",
@@ -48,7 +45,6 @@ export const navItems: NavItem[] = [
     icon: Briefcase,
     description: "Active jobs with hours logged vs quoted",
     visibleTo: ["director", "service_manager", "admin", "sales_engineer"],
-    phase: "1b",
   },
   {
     label: "Time tracking",
@@ -56,7 +52,6 @@ export const navItems: NavItem[] = [
     icon: Clock,
     description: "Clock-in records and live crew status",
     visibleTo: ["director", "service_manager", "admin", "technician"],
-    phase: "1b",
   },
   {
     label: "Variations",
@@ -64,7 +59,6 @@ export const navItems: NavItem[] = [
     icon: FileEdit,
     description: "Pending approvals and approved variation history",
     visibleTo: ["director", "admin"],
-    phase: "1c",
   },
   {
     label: "Log Variation",
@@ -72,7 +66,6 @@ export const navItems: NavItem[] = [
     icon: FileEdit,
     description: "Submit extra work found on site",
     visibleTo: ["technician"],
-    phase: "1c",
   },
   {
     label: "Schedule",
@@ -80,7 +73,6 @@ export const navItems: NavItem[] = [
     icon: Calendar,
     description: "Crew assignments and breakdown response",
     visibleTo: ["service_manager", "director", "admin", "technician"],
-    phase: "2",
   },
   {
     label: "Team",
@@ -88,7 +80,6 @@ export const navItems: NavItem[] = [
     icon: Users,
     description: "Technicians, roles, and assignments",
     visibleTo: ["director", "service_manager"],
-    phase: "1a",
   },
   {
     label: "Compliance",
@@ -96,7 +87,6 @@ export const navItems: NavItem[] = [
     icon: ShieldCheck,
     description: "SWMS, JSA, and WHS compliance documents",
     visibleTo: ["technician", "director", "service_manager", "admin", "sales_engineer", "draftsman"],
-    phase: "2",
   },
   {
     label: "Templates",
@@ -104,7 +94,6 @@ export const navItems: NavItem[] = [
     icon: FileText,
     description: "Manage compliance document templates",
     visibleTo: ["admin"],
-    phase: "2",
   },
   {
     label: "Settings",
@@ -112,7 +101,6 @@ export const navItems: NavItem[] = [
     icon: Settings,
     description: "Business profile and system settings",
     visibleTo: ["director", "admin"],
-    phase: "2",
   },
   {
     label: "Quotes",
@@ -120,7 +108,6 @@ export const navItems: NavItem[] = [
     icon: BarChart2,
     description: "Historical job data for quoting",
     visibleTo: ["sales_engineer", "director", "admin"],
-    phase: "2b",
   },
   {
     label: "Invoices",
@@ -128,7 +115,6 @@ export const navItems: NavItem[] = [
     icon: Receipt,
     description: "Invoice management and sending",
     visibleTo: ["admin", "director"],
-    phase: "2",
   },
   {
     label: "Customers",
@@ -136,6 +122,5 @@ export const navItems: NavItem[] = [
     icon: Building2,
     description: "Customer contacts and linked jobs",
     visibleTo: ["admin", "director", "sales_engineer"],
-    phase: "2",
   },
 ];

@@ -56,11 +56,6 @@ export function NavLinks({ visibleHrefs, user, onNavigate }: Props) {
                     )}
                   />
                   <span className="flex-1">{item.label}</span>
-                  {(user?.role === "admin" || user?.role === "director") && (
-                    <span aria-hidden="true" className="text-2xs font-mono text-slate-400 dark:text-slate-600">
-                      {item.phase}
-                    </span>
-                  )}
                 </Link>
               </li>
             );
