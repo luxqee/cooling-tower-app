@@ -77,6 +77,12 @@ enum AiFeature {
   company_assistant
 }
 
+enum VoiceNoteStatus {
+  pending
+  transcribed
+  failed
+}
+
 model User {
   id        String   @id @default(uuid())
   clerkId   String   @unique
@@ -97,6 +103,7 @@ model User {
   materialEntries     MaterialEntry[]
   quotes              Quote[]
   aiAuditLogs         AiAuditLog[]
+  voiceNotes          VoiceNote[]
 }
 
 model Customer {
@@ -140,6 +147,7 @@ model Job {
   communications      JobCommunication[]
   assets              JobAsset[]
   materialEntries     MaterialEntry[]
+  voiceNotes          VoiceNote[]
   customer            Customer? @relation(fields: [customerId], references: [id])
   contractId          String?
   contract            Contract? @relation(fields: [contractId], references: [id])
@@ -371,6 +379,26 @@ model AiAuditLog {
   @@index([userId])
   @@index([feature])
   @@index([createdAt])
+}
+
+model VoiceNote {
+  id              String          @id @default(uuid())
+  jobId           String
+  technicianId    String
+  audioUrl        String
+  durationSeconds Int
+  transcript      String?
+  summary         String?
+  actionItems     Json?
+  status          VoiceNoteStatus @default(pending)
+  assemblyaiId    String?         @unique
+  createdAt       DateTime        @default(now())
+
+  job        Job  @relation(fields: [jobId], references: [id])
+  technician User @relation(fields: [technicianId], references: [id])
+
+  @@index([jobId])
+  @@index([status])
 }
 
 model Contract {
