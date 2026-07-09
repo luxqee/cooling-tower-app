@@ -58,4 +58,24 @@ describe("POST /api/upload/voice-note", () => {
       { access: "private" }
     );
   });
+
+  it("accepts a MIME type with codec parameters (real browser MediaRecorder output) and strips them from the stored extension", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
+    vi.mocked(put).mockResolvedValue({ url: "https://example.blob.vercel-storage.com/voice-notes/t1/123.webm" } as any);
+
+    const res = await POST(makeReq(new Blob(["audio"], { type: "audio/webm;codecs=opus" })));
+
+    expect(res.status).toBe(201);
+    expect(put).toHaveBeenCalledWith(
+      expect.stringMatching(/^voice-notes\/t1\/\d+\.webm$/),
+      expect.anything(),
+      { access: "private" }
+    );
+  });
+
+  it("rejects a genuinely unsupported type even with codec parameters", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
+    const res = await POST(makeReq(new Blob(["audio"], { type: "audio/x-unsupported;codecs=foo" })));
+    expect(res.status).toBe(422);
+  });
 });

@@ -16,7 +16,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  if (!ALLOWED_TYPES.includes(file.type)) {
+  // Browsers report MediaRecorder's negotiated MIME type with codec
+  // parameters attached (e.g. "audio/webm;codecs=opus"), not the bare
+  // type — strip them before validating/deriving a file extension.
+  const baseType = file.type.split(";")[0]?.trim() ?? file.type;
+
+  if (!ALLOWED_TYPES.includes(baseType)) {
     return NextResponse.json(
       { error: "Unsupported format. Record using your device's default microphone format." },
       { status: 422 }
@@ -27,7 +32,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Recording too large. Maximum 25 MB (roughly 30 minutes)." }, { status: 413 });
   }
 
-  const extension = file.type.split("/")[1] ?? "webm";
+  const extension = baseType.split("/")[1] ?? "webm";
   const filename = `voice-notes/${user.id}/${Date.now()}.${extension}`;
 
   try {
