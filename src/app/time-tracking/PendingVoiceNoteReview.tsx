@@ -154,10 +154,10 @@ export function PendingVoiceNoteReview({ jobId }: PendingVoiceNoteReviewProps) {
           <button
             type="button"
             onClick={() => send(note.id)}
-            disabled={sendingId === note.id}
+            disabled={sendingId === note.id || uploadingPhotoFor === note.id}
             className="w-full min-h-[40px] rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-sm disabled:opacity-40"
           >
-            {sendingId === note.id ? "Sending…" : "Send"}
+            {sendingId === note.id ? "Sending…" : uploadingPhotoFor === note.id ? "Waiting for photo…" : "Send"}
           </button>
         </div>
       ))}
