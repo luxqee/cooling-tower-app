@@ -178,6 +178,8 @@ model Job {
 
   @@index([status])
   @@index([jobType])
+  @@index([customerId])
+  @@index([contractId])
 }
 
 model Assignment {
@@ -230,6 +232,7 @@ model Variation {
 
   @@index([status])
   @@index([jobId])
+  @@index([technicianId])
 }
 
 model Invoice {
@@ -250,7 +253,6 @@ model Invoice {
 
   job Job @relation(fields: [jobId], references: [id])
 
-  @@index([jobId])
   @@index([status])
 }
 
@@ -374,6 +376,7 @@ model MaterialEntry {
 
   @@index([jobId])
   @@index([status])
+  @@index([createdById])
 }
 
 model CustomerPortalToken {
@@ -442,8 +445,8 @@ model DocumentChunk {
 
   job Job @relation(fields: [jobId], references: [id])
 
+  @@unique([sourceType, sourceId])
   @@index([jobId])
-  @@index([sourceType, sourceId])
 }
 
 model VoiceNote {
@@ -466,6 +469,7 @@ model VoiceNote {
 
   @@index([jobId])
   @@index([status])
+  @@index([technicianId])
 }
 
 model VoiceNotePhoto {
@@ -529,6 +533,6 @@ model JobCommunication {
   job    Job  @relation(fields: [jobId], references: [id])
   author User @relation(fields: [authorId], references: [id])
 
-  @@index([jobId])
   @@index([jobId, type])
+  @@index([authorId])
 }

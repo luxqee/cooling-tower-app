@@ -13,9 +13,14 @@ export async function indexDocument(
   const embedding = await embedText(text);
   const vectorLiteral = `[${embedding.join(",")}]`;
   const id = crypto.randomUUID();
+  // Re-indexing the same source (e.g. a voice note sent again after edits)
+  // replaces its prior chunk rather than accumulating stale duplicates —
+  // (sourceType, sourceId) is unique.
   await db.$executeRawUnsafe(
     `INSERT INTO "DocumentChunk" (id, "sourceType", "sourceId", "jobId", "chunkText", embedding, "createdAt")
-     VALUES ($1, $2, $3, $4, $5, $6::vector, now())`,
+     VALUES ($1, $2, $3, $4, $5, $6::vector, now())
+     ON CONFLICT ("sourceType", "sourceId")
+     DO UPDATE SET "jobId" = EXCLUDED."jobId", "chunkText" = EXCLUDED."chunkText", embedding = EXCLUDED.embedding, "createdAt" = now()`,
     id,
     sourceType,
     sourceId,

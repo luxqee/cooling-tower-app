@@ -29,6 +29,18 @@ describe("indexDocument", () => {
       "[0.1,0.2,0.3]"
     );
   });
+
+  it("upserts on conflict so re-indexing the same source replaces its chunk instead of erroring", async () => {
+    vi.mocked(embedText).mockResolvedValue([0.4, 0.5]);
+    vi.mocked(db.$executeRawUnsafe).mockResolvedValue(1);
+
+    await indexDocument("VoiceNote", "vn1", "job1", "Updated transcript text.");
+
+    const [sql] = vi.mocked(db.$executeRawUnsafe).mock.calls[0];
+    expect(sql).toContain("ON CONFLICT");
+    expect(sql).toContain('"sourceType", "sourceId"');
+    expect(sql).toContain("DO UPDATE SET");
+  });
 });
 
 describe("semanticSearch", () => {
