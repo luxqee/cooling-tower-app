@@ -1,0 +1,88 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+vi.mock("@/lib/auth/clerk", () => ({ requireRole: vi.fn() }));
+vi.mock("@/lib/db/client", () => ({
+  db: {
+    voiceNote: { findFirst: vi.fn(), update: vi.fn() },
+    aiAuditLog: { create: vi.fn() },
+    $transaction: vi.fn(),
+  },
+}));
+vi.mock("@/lib/ai/voice-note", () => ({ summarizeTranscript: vi.fn() }));
+
+import { requireRole } from "@/lib/auth/clerk";
+import { db } from "@/lib/db/client";
+import { summarizeTranscript } from "@/lib/ai/voice-note";
+import { POST } from "../route";
+
+const mockTechnician = { id: "t1", role: "technician" as const, name: "Jake", clerkId: "c1", email: "j@t.com", isActive: true };
+
+function makeReq(body: unknown) {
+  return new Request("http://localhost/api/jobs/job1/voice-notes/vn1/send", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+beforeEach(() => vi.clearAllMocks());
+
+describe("POST /api/jobs/[id]/voice-notes/[voiceNoteId]/send", () => {
+  it("returns 401 when not authenticated", async () => {
+    vi.mocked(requireRole).mockRejectedValue(new Error("Unauthorized"));
+    const res = await POST(makeReq({ transcript: "x" }), { params: { id: "job1", voiceNoteId: "vn1" } });
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 400 for an empty transcript", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
+    const res = await POST(makeReq({ transcript: "" }), { params: { id: "job1", voiceNoteId: "vn1" } });
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 404 when no matching awaiting_review note exists for this technician/job", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
+    vi.mocked(db.voiceNote.findFirst).mockResolvedValue(null);
+
+    const res = await POST(makeReq({ transcript: "Replaced fan belt." }), { params: { id: "job1", voiceNoteId: "vn1" } });
+
+    expect(res.status).toBe(404);
+    expect(db.voiceNote.findFirst).toHaveBeenCalledWith({
+      where: { id: "vn1", jobId: "job1", technicianId: "t1", status: "awaiting_review" },
+    });
+  });
+
+  it("summarizes the EDITED transcript (not any original) and writes VoiceNote + AiAuditLog together on success", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
+    vi.mocked(db.voiceNote.findFirst).mockResolvedValue({ id: "vn1", technicianId: "t1" } as any);
+    vi.mocked(summarizeTranscript).mockResolvedValue({
+      summary: { summary: "Replaced fan belt on Tower 3, corrected from technician edit.", actionItems: ["Order spare belt"] },
+      promptTokens: 120,
+      outputTokens: 35,
+    });
+    vi.mocked(db.$transaction).mockResolvedValue([{}, {}]);
+
+    const res = await POST(makeReq({ transcript: "Replaced fan belt on Tower 3 (technician-corrected text)." }), { params: { id: "job1", voiceNoteId: "vn1" } });
+    const data = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(data).toEqual({ ok: true });
+    expect(summarizeTranscript).toHaveBeenCalledWith("Replaced fan belt on Tower 3 (technician-corrected text).");
+    expect(db.$transaction).toHaveBeenCalled();
+  });
+
+  it("degrades gracefully when Claude throws: saves the edited transcript, marks transcribed, no audit log", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
+    vi.mocked(db.voiceNote.findFirst).mockResolvedValue({ id: "vn1", technicianId: "t1" } as any);
+    vi.mocked(summarizeTranscript).mockRejectedValue(new Error("Claude API error"));
+
+    const res = await POST(makeReq({ transcript: "Replaced fan belt on Tower 3." }), { params: { id: "job1", voiceNoteId: "vn1" } });
+
+    expect(res.status).toBe(200);
+    expect(db.voiceNote.update).toHaveBeenCalledWith({
+      where: { id: "vn1" },
+      data: { transcript: "Replaced fan belt on Tower 3.", status: "transcribed" },
+    });
+    expect(db.aiAuditLog.create).not.toHaveBeenCalled();
+  });
+});
