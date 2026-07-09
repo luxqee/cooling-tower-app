@@ -3,6 +3,7 @@ import { z } from "zod";
 export const voiceNoteInputSchema = z.object({
   audioUrl: z.string().url(),
   durationSeconds: z.number().positive(),
+  mediaType: z.enum(["audio", "video"]),
 });
 
 export function validateVoiceNoteInput(input: unknown) {

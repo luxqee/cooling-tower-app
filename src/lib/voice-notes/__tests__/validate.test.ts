@@ -5,10 +5,19 @@ describe("validateVoiceNoteInput", () => {
   const valid = {
     audioUrl: "https://example.blob.vercel-storage.com/voice-notes/u1/123.webm",
     durationSeconds: 42,
+    mediaType: "audio",
   };
 
   it("accepts a valid payload", () => {
     expect(validateVoiceNoteInput(valid).success).toBe(true);
+  });
+
+  it("accepts mediaType: video", () => {
+    expect(validateVoiceNoteInput({ ...valid, mediaType: "video" }).success).toBe(true);
+  });
+
+  it("rejects an invalid mediaType value", () => {
+    expect(validateVoiceNoteInput({ ...valid, mediaType: "photo" }).success).toBe(false);
   });
 
   it("rejects a non-URL audioUrl", () => {

@@ -38,7 +38,7 @@ describe("POST /api/upload/voice-note", () => {
 
   it("returns 413 when the file exceeds the size limit", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
-    const bigChunk = new Uint8Array(26 * 1024 * 1024);
+    const bigChunk = new Uint8Array(101 * 1024 * 1024);
     const res = await POST(makeReq(new Blob([bigChunk], { type: "audio/webm" })));
     expect(res.status).toBe(413);
   });
@@ -77,5 +77,24 @@ describe("POST /api/upload/voice-note", () => {
     vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
     const res = await POST(makeReq(new Blob(["audio"], { type: "audio/x-unsupported;codecs=foo" })));
     expect(res.status).toBe(422);
+  });
+
+  it("accepts a video/webm file (video recordings share the same upload route)", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
+    vi.mocked(put).mockResolvedValue({ url: "https://example.blob.vercel-storage.com/voice-notes/t1/123.webm" } as any);
+
+    const res = await POST(makeReq(new Blob(["video bytes"], { type: "video/webm" })));
+
+    expect(res.status).toBe(201);
+  });
+
+  it("accepts a file just under the new 100 MB limit", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
+    vi.mocked(put).mockResolvedValue({ url: "https://example.blob.vercel-storage.com/voice-notes/t1/123.webm" } as any);
+
+    const okChunk = new Uint8Array(99 * 1024 * 1024);
+    const res = await POST(makeReq(new Blob([okChunk], { type: "video/webm" })));
+
+    expect(res.status).toBe(201);
   });
 });

@@ -14,7 +14,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message }, { status: 400 });
   }
-  const { audioUrl, durationSeconds } = parsed.data;
+  const { audioUrl, durationSeconds, mediaType } = parsed.data;
 
   const job = await db.job.findFirst({ where: { id: params.id, status: { in: ["active", "scheduled"] } } });
   if (!job) return NextResponse.json({ error: "Job not found or not active" }, { status: 404 });
@@ -27,7 +27,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   }
 
   const voiceNote = await db.voiceNote.create({
-    data: { jobId: params.id, technicianId: user.id, audioUrl, durationSeconds, status: "pending" },
+    data: { jobId: params.id, technicianId: user.id, audioUrl, durationSeconds, mediaType, status: "pending" },
   });
 
   try {

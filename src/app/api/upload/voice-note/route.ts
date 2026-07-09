@@ -2,8 +2,11 @@ import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/clerk";
 
-const ALLOWED_TYPES = ["audio/webm", "audio/mp4", "audio/wav", "audio/mpeg", "audio/ogg"];
-const MAX_BYTES = 25 * 1024 * 1024;
+const ALLOWED_TYPES = [
+  "audio/webm", "audio/mp4", "audio/wav", "audio/mpeg", "audio/ogg",
+  "video/webm", "video/mp4",
+];
+const MAX_BYTES = 100 * 1024 * 1024;
 
 export async function POST(req: Request) {
   const user = await requireRole(["technician"]).catch(() => null);
@@ -29,7 +32,7 @@ export async function POST(req: Request) {
   }
 
   if (file.size > MAX_BYTES) {
-    return NextResponse.json({ error: "Recording too large. Maximum 25 MB (roughly 30 minutes)." }, { status: 413 });
+    return NextResponse.json({ error: "Recording too large. Maximum 100 MB." }, { status: 413 });
   }
 
   const extension = baseType.split("/")[1] ?? "webm";

@@ -19,7 +19,7 @@ import { uploadAudioToAssemblyAI, submitTranscription } from "@/lib/ai/assemblya
 import { POST } from "../route";
 
 const mockTechnician = { id: "t1", role: "technician" as const, name: "Jake", clerkId: "c1", email: "j@t.com", isActive: true };
-const validBody = { audioUrl: "https://example.blob.vercel-storage.com/voice-notes/t1/123.webm", durationSeconds: 60 };
+const validBody = { audioUrl: "https://example.blob.vercel-storage.com/voice-notes/t1/123.webm", durationSeconds: 60, mediaType: "audio" };
 
 function makeReq(body: unknown) {
   return new Request("http://localhost/api/jobs/job1/voice-notes", {
@@ -112,7 +112,7 @@ describe("POST /api/jobs/[id]/voice-notes", () => {
     expect(data.id).toBe("vn1");
     expect(db.voiceNote.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ jobId: "job1", technicianId: "t1", status: "pending" }),
+        data: expect.objectContaining({ jobId: "job1", technicianId: "t1", status: "pending", mediaType: "audio" }),
       })
     );
     expect(uploadAudioToAssemblyAI).toHaveBeenCalled();
@@ -135,5 +135,21 @@ describe("POST /api/jobs/[id]/voice-notes", () => {
 
     expect(res.status).toBe(201);
     expect(db.voiceNote.update).toHaveBeenCalledWith({ where: { id: "vn1" }, data: { status: "failed" } });
+  });
+
+  it("stores mediaType: video when a video recording is submitted", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
+    vi.mocked(db.job.findFirst).mockResolvedValue({ id: "job1" } as any);
+    vi.mocked(db.assignment.findFirst).mockResolvedValue({ id: "a1" } as any);
+    vi.mocked(db.voiceNote.create).mockResolvedValue({ id: "vn1", jobId: "job1", technicianId: "t1", status: "pending" } as any);
+    vi.mocked(uploadAudioToAssemblyAI).mockResolvedValue("https://cdn.assemblyai.com/upload/xyz");
+    vi.mocked(submitTranscription).mockResolvedValue({ id: "transcript-abc" });
+    vi.mocked(db.voiceNote.update).mockResolvedValue({} as any);
+
+    await POST(makeReq({ ...validBody, mediaType: "video" }), { params: { id: "job1" } });
+
+    expect(db.voiceNote.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ mediaType: "video" }) })
+    );
   });
 });
