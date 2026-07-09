@@ -10,6 +10,7 @@ interface BusinessProfile {
   address: string;
   hourlyRate: number | null;
   paymentTerms: string;
+  industryDescription: string;
 }
 
 interface SettingsFormProps {
@@ -22,6 +23,7 @@ export function SettingsForm({ initial, initialLogoUrl }: SettingsFormProps) {
     ...initial,
     hourlyRate: initial.hourlyRate ?? null,
     paymentTerms: initial.paymentTerms ?? "",
+    industryDescription: initial.industryDescription ?? "field service maintenance",
   });
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<"idle" | "saved" | "error">("idle");
@@ -221,6 +223,21 @@ export function SettingsForm({ initial, initialLogoUrl }: SettingsFormProps) {
             placeholder="123 Industrial Drive, Brisbane QLD 4000"
             className={inputClass + " resize-none"}
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            What does your business do?
+          </label>
+          <input
+            type="text"
+            value={form.industryDescription}
+            onChange={set("industryDescription")}
+            maxLength={100}
+            placeholder="e.g. cooling tower maintenance, HVAC servicing, electrical contracting"
+            className={inputClass}
+          />
+          <p className="mt-1 text-xs text-slate-400">Used by the AI assistant and voice-note summaries to understand your work — not shown on customer documents.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

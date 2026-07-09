@@ -3,7 +3,8 @@ import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
 import { validateSendVoiceNoteInput } from "@/lib/voice-notes/validate";
 import { summarizeTranscript } from "@/lib/ai/voice-note";
-import { calculateCostUsd } from "@/lib/ai/cost";
+import { AI_MODELS } from "@/lib/ai/models";
+import { buildAiAuditLogData } from "@/lib/ai/audit";
 import { isOwnedBlobUrl } from "@/lib/blob/ownership";
 import { indexDocument } from "@/lib/ai/semanticSearch";
 
@@ -39,8 +40,11 @@ export async function POST(
   const photoData = photoUrls.map((photoUrl) => ({ voiceNoteId: voiceNote.id, photoUrl }));
 
   try {
-    const { summary, promptTokens, outputTokens } = await summarizeTranscript(transcript);
-    const costUsd = calculateCostUsd("claude-haiku-4-5", promptTokens, outputTokens);
+    const businessProfile = await db.businessProfile.findFirst();
+    const { summary, promptTokens, outputTokens } = await summarizeTranscript(
+      transcript,
+      businessProfile?.industryDescription
+    );
 
     await db.$transaction([
       db.voiceNote.update({
@@ -53,7 +57,13 @@ export async function POST(
         },
       }),
       db.aiAuditLog.create({
-        data: { userId: user.id, feature: "voice_note", promptTokens, outputTokens, costUsd },
+        data: buildAiAuditLogData({
+          userId: user.id,
+          feature: "voice_note",
+          model: AI_MODELS.VOICE_NOTE_SUMMARY,
+          promptTokens,
+          outputTokens,
+        }),
       }),
     ]);
   } catch (err) {

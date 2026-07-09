@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
 import { summarizeTranscript } from "@/lib/ai/voice-note";
-import { calculateCostUsd } from "@/lib/ai/cost";
+import { AI_MODELS } from "@/lib/ai/models";
+import { buildAiAuditLogData } from "@/lib/ai/audit";
 
 // Called hourly by Vercel Cron (see vercel.json). Safety net: if a technician
 // never reviews/sends a transcript within 24h of recording it, finalize it
@@ -19,12 +20,15 @@ export async function GET(req: Request) {
   const staleNotes = await db.voiceNote.findMany({
     where: { status: "awaiting_review", createdAt: { lt: cutoff } },
   });
+  const businessProfile = await db.businessProfile.findFirst();
 
   let finalized = 0;
   for (const note of staleNotes) {
     try {
-      const { summary, promptTokens, outputTokens } = await summarizeTranscript(note.transcript!);
-      const costUsd = calculateCostUsd("claude-haiku-4-5", promptTokens, outputTokens);
+      const { summary, promptTokens, outputTokens } = await summarizeTranscript(
+        note.transcript!,
+        businessProfile?.industryDescription
+      );
 
       await db.$transaction([
         db.voiceNote.update({
@@ -32,7 +36,13 @@ export async function GET(req: Request) {
           data: { summary: summary.summary, actionItems: summary.actionItems, status: "transcribed" },
         }),
         db.aiAuditLog.create({
-          data: { userId: note.technicianId, feature: "voice_note", promptTokens, outputTokens, costUsd },
+          data: buildAiAuditLogData({
+            userId: note.technicianId,
+            feature: "voice_note",
+            model: AI_MODELS.VOICE_NOTE_SUMMARY,
+            promptTokens,
+            outputTokens,
+          }),
         }),
       ]);
     } catch (err) {

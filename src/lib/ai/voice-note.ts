@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { getAnthropicClient } from "./client";
+import { AI_MODELS } from "./models";
 
 export const voiceNoteSummarySchema = z.object({
   summary: z.string(),
@@ -8,9 +9,12 @@ export const voiceNoteSummarySchema = z.object({
 
 export type VoiceNoteSummary = z.infer<typeof voiceNoteSummarySchema>;
 
-const MODEL = "claude-haiku-4-5";
+const MODEL = AI_MODELS.VOICE_NOTE_SUMMARY;
 
-export async function summarizeTranscript(transcript: string): Promise<{
+export async function summarizeTranscript(
+  transcript: string,
+  industryDescription = "field service maintenance"
+): Promise<{
   summary: VoiceNoteSummary;
   promptTokens: number;
   outputTokens: number;
@@ -20,7 +24,7 @@ export async function summarizeTranscript(transcript: string): Promise<{
     model: MODEL,
     max_tokens: 1024,
     system:
-      "You summarize field technician voice notes from cooling tower maintenance visits. Write a concise summary (2-4 sentences) and extract concrete action items as a plain list. If there are no action items, return an empty array. Respond with JSON matching the schema exactly.",
+      `You summarize field technician voice notes from ${industryDescription} visits. Write a concise summary (2-4 sentences) and extract concrete action items as a plain list. If there are no action items, return an empty array. Respond with JSON matching the schema exactly.`,
     messages: [{ role: "user", content: `Summarize this voice note transcript:\n${transcript}` }],
     output_config: {
       format: {

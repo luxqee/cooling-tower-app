@@ -6,6 +6,7 @@ vi.mock("@/lib/db/client", () => ({
     voiceNote: { findFirst: vi.fn(), update: vi.fn() },
     voiceNotePhoto: { createMany: vi.fn() },
     aiAuditLog: { create: vi.fn() },
+    businessProfile: { findFirst: vi.fn() },
     $transaction: vi.fn(),
   },
 }));
@@ -70,8 +71,27 @@ describe("POST /api/jobs/[id]/voice-notes/[voiceNoteId]/send", () => {
 
     expect(res.status).toBe(200);
     expect(data).toEqual({ ok: true });
-    expect(summarizeTranscript).toHaveBeenCalledWith("Replaced fan belt on Tower 3 (technician-corrected text).");
+    expect(summarizeTranscript).toHaveBeenCalledWith(
+      "Replaced fan belt on Tower 3 (technician-corrected text).",
+      undefined
+    );
     expect(db.$transaction).toHaveBeenCalled();
+  });
+
+  it("passes the business profile's industryDescription through to summarizeTranscript", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
+    vi.mocked(db.voiceNote.findFirst).mockResolvedValue({ id: "vn1", technicianId: "t1" } as any);
+    vi.mocked(db.businessProfile.findFirst).mockResolvedValue({ industryDescription: "HVAC servicing" } as any);
+    vi.mocked(summarizeTranscript).mockResolvedValue({
+      summary: { summary: "x", actionItems: [] },
+      promptTokens: 10,
+      outputTokens: 5,
+    });
+    vi.mocked(db.$transaction).mockResolvedValue([{}, {}]);
+
+    await POST(makeReq({ transcript: "Replaced fan belt." }), { params: { id: "job1", voiceNoteId: "vn1" } });
+
+    expect(summarizeTranscript).toHaveBeenCalledWith("Replaced fan belt.", "HVAC servicing");
   });
 
   it("degrades gracefully when Claude throws: saves the edited transcript, marks transcribed, no audit log", async () => {

@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
 import { getAnthropicClient } from "@/lib/ai/client";
-import { calculateCostUsd } from "@/lib/ai/cost";
+import { AI_MODELS } from "@/lib/ai/models";
+import { buildAiAuditLogData } from "@/lib/ai/audit";
 import { validateChatInput } from "@/lib/assistant/validate";
 import { ASSISTANT_TOOLS } from "@/lib/assistant/toolDefinitions";
 import { findJobs, findComplianceDocuments, findAssignments, semanticSearchTool } from "@/lib/assistant/tools/read";
@@ -10,7 +11,7 @@ import { draftVariation, draftQuote } from "@/lib/assistant/tools/draft";
 import type Anthropic from "@anthropic-ai/sdk";
 import type { Prisma } from "@prisma/client";
 
-const MODEL = "claude-sonnet-5";
+const MODEL = AI_MODELS.COMPANY_ASSISTANT;
 const MAX_ROUNDS = 5;
 const FALLBACK_MESSAGE = "I'm having trouble right now — please try again in a moment.";
 
@@ -71,6 +72,10 @@ export async function POST(req: Request) {
 
   await db.chatMessage.create({ data: { sessionId: session.id, role: "user", content: message } });
 
+  const businessProfile = await db.businessProfile.findFirst();
+  const industryDescription = businessProfile?.industryDescription ?? "field service maintenance";
+  const systemPrompt = `You are an assistant for a ${industryDescription} field-ops company. Answer questions using the tools available to you. For semantic search, use it when the user asks to find or search notes/communications by topic rather than exact match.`;
+
   let totalPromptTokens = 0;
   let totalOutputTokens = 0;
   const toolCallLog: { tool: string; input: unknown }[] = [];
@@ -83,8 +88,7 @@ export async function POST(req: Request) {
       const response = await client.messages.create({
         model: MODEL,
         max_tokens: 2048,
-        system:
-          "You are an assistant for a cooling tower maintenance field-ops company. Answer questions using the tools available to you. For semantic search, use it when the user asks to find or search notes/communications by topic rather than exact match.",
+        system: systemPrompt,
         tools: ASSISTANT_TOOLS,
         messages,
       });
@@ -118,17 +122,16 @@ export async function POST(req: Request) {
       messages.push({ role: "user", content: toolResults });
     }
 
-    const costUsd = calculateCostUsd(MODEL, totalPromptTokens, totalOutputTokens);
     const toolCallsJson = toolCallLog as unknown as Prisma.InputJsonValue;
     await db.aiAuditLog.create({
-      data: {
+      data: buildAiAuditLogData({
         userId: user.id,
         feature: "company_assistant",
-        toolCalls: toolCallsJson,
+        model: MODEL,
         promptTokens: totalPromptTokens,
         outputTokens: totalOutputTokens,
-        costUsd,
-      },
+        toolCalls: toolCallsJson,
+      }),
     });
 
     await db.chatMessage.create({

@@ -4,6 +4,7 @@ vi.mock("@/lib/db/client", () => ({
   db: {
     voiceNote: { findMany: vi.fn(), update: vi.fn() },
     aiAuditLog: { create: vi.fn() },
+    businessProfile: { findFirst: vi.fn() },
     $transaction: vi.fn(),
   },
 }));
@@ -60,7 +61,7 @@ describe("GET /api/cron/finalize-voice-notes", () => {
 
     expect(res.status).toBe(200);
     expect(data).toEqual({ finalized: 1, checked: 1 });
-    expect(summarizeTranscript).toHaveBeenCalledWith("Replaced fan belt.");
+    expect(summarizeTranscript).toHaveBeenCalledWith("Replaced fan belt.", undefined);
     expect(db.$transaction).toHaveBeenCalled();
   });
 

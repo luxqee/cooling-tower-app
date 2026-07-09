@@ -46,4 +46,31 @@ describe("summarizeTranscript", () => {
       expect.objectContaining({ model: "claude-haiku-4-5" })
     );
   });
+
+  it("defaults to a generic system prompt when no industry description is given", async () => {
+    const mockCreate = vi.fn().mockResolvedValue({
+      content: [{ type: "text", text: JSON.stringify({ summary: "x", actionItems: [] }) }],
+      usage: { input_tokens: 10, output_tokens: 5 },
+    });
+    vi.mocked(getAnthropicClient).mockReturnValue({ messages: { create: mockCreate } } as any);
+
+    await summarizeTranscript("some transcript");
+
+    const [callArg] = mockCreate.mock.calls[0];
+    expect(callArg.system).toContain("field service maintenance");
+  });
+
+  it("interpolates a custom industry description into the system prompt", async () => {
+    const mockCreate = vi.fn().mockResolvedValue({
+      content: [{ type: "text", text: JSON.stringify({ summary: "x", actionItems: [] }) }],
+      usage: { input_tokens: 10, output_tokens: 5 },
+    });
+    vi.mocked(getAnthropicClient).mockReturnValue({ messages: { create: mockCreate } } as any);
+
+    await summarizeTranscript("some transcript", "HVAC servicing");
+
+    const [callArg] = mockCreate.mock.calls[0];
+    expect(callArg.system).toContain("HVAC servicing");
+    expect(callArg.system).not.toContain("cooling tower");
+  });
 });

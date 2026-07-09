@@ -6,6 +6,7 @@ vi.mock("@/lib/db/client", () => ({
     chatSession: { create: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn() },
     chatMessage: { create: vi.fn(), findMany: vi.fn() },
     aiAuditLog: { create: vi.fn() },
+    businessProfile: { findFirst: vi.fn() },
   },
 }));
 vi.mock("@/lib/ai/client", () => ({ getAnthropicClient: vi.fn() }));
@@ -76,6 +77,39 @@ describe("POST /api/assistant/chat", () => {
         data: expect.objectContaining({ feature: "company_assistant", promptTokens: 50, outputTokens: 10 }),
       })
     );
+  });
+
+  it("uses the business profile's industry description in the system prompt instead of a hardcoded trade", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
+    vi.mocked(db.businessProfile.findFirst).mockResolvedValue({ industryDescription: "HVAC servicing" } as any);
+    const mockCreate = vi.fn().mockResolvedValue({
+      content: [{ type: "text", text: "Hi" }],
+      stop_reason: "end_turn",
+      usage: { input_tokens: 10, output_tokens: 5 },
+    });
+    vi.mocked(getAnthropicClient).mockReturnValue({ messages: { create: mockCreate } } as any);
+
+    await POST(makeReq({ message: "hi" }));
+
+    const [callArg] = mockCreate.mock.calls[0];
+    expect(callArg.system).toContain("HVAC servicing");
+    expect(callArg.system).not.toContain("cooling tower");
+  });
+
+  it("falls back to a generic system prompt when no business profile exists", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
+    vi.mocked(db.businessProfile.findFirst).mockResolvedValue(null);
+    const mockCreate = vi.fn().mockResolvedValue({
+      content: [{ type: "text", text: "Hi" }],
+      stop_reason: "end_turn",
+      usage: { input_tokens: 10, output_tokens: 5 },
+    });
+    vi.mocked(getAnthropicClient).mockReturnValue({ messages: { create: mockCreate } } as any);
+
+    await POST(makeReq({ message: "hi" }));
+
+    const [callArg] = mockCreate.mock.calls[0];
+    expect(callArg.system).toContain("field service maintenance");
   });
 
   it("executes a tool call, feeds the result back, and returns the follow-up text — one AiAuditLog row for the whole turn", async () => {

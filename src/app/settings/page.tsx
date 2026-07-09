@@ -11,13 +11,14 @@ export default async function SettingsPage() {
   const profile = await db.businessProfile.findFirst();
 
   const initial = {
-    name:         profile?.name         ?? "CT Field Ops",
-    abn:          profile?.abn          ?? "",
-    phone:        profile?.phone        ?? "",
-    email:        profile?.email        ?? "",
-    address:      profile?.address      ?? "",
-    hourlyRate:   profile?.hourlyRate   ?? null,
-    paymentTerms: profile?.paymentTerms ?? "",
+    name:                profile?.name                ?? "CT Field Ops",
+    abn:                 profile?.abn                 ?? "",
+    phone:               profile?.phone               ?? "",
+    email:               profile?.email                ?? "",
+    address:             profile?.address             ?? "",
+    hourlyRate:          profile?.hourlyRate          ?? null,
+    paymentTerms:        profile?.paymentTerms        ?? "",
+    industryDescription: profile?.industryDescription ?? "field service maintenance",
   };
 
   return (
