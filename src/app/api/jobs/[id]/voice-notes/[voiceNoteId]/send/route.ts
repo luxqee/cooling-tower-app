@@ -4,6 +4,7 @@ import { db } from "@/lib/db/client";
 import { validateSendVoiceNoteInput } from "@/lib/voice-notes/validate";
 import { summarizeTranscript } from "@/lib/ai/voice-note";
 import { calculateCostUsd } from "@/lib/ai/cost";
+import { isOwnedBlobUrl } from "@/lib/blob/ownership";
 
 export async function POST(
   req: Request,
@@ -17,7 +18,15 @@ export async function POST(
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message }, { status: 400 });
   }
-  const { transcript } = parsed.data;
+  const { transcript, photoUrls } = parsed.data;
+
+  // Photos are uploaded via the existing /api/upload/photo route, which stores
+  // them under "variations/<userId>/..." — same private-blob convention, just
+  // a different folder than voice-note audio/video.
+  const allPhotosOwned = photoUrls.every((url) => isOwnedBlobUrl(url, user.id, "variations"));
+  if (!allPhotosOwned) {
+    return NextResponse.json({ error: "Invalid photo URL" }, { status: 400 });
+  }
 
   const voiceNote = await db.voiceNote.findFirst({
     where: { id: params.voiceNoteId, jobId: params.id, technicianId: user.id, status: "awaiting_review" },
@@ -25,6 +34,8 @@ export async function POST(
   if (!voiceNote) {
     return NextResponse.json({ error: "Voice note not found or already sent" }, { status: 404 });
   }
+
+  const photoData = photoUrls.map((photoUrl) => ({ voiceNoteId: voiceNote.id, photoUrl }));
 
   try {
     const { summary, promptTokens, outputTokens } = await summarizeTranscript(transcript);
@@ -53,6 +64,9 @@ export async function POST(
       data: { transcript, status: "transcribed" },
     });
   }
+
+  // Photos aren't dependent on summarization succeeding — save them either way.
+  await db.voiceNotePhoto.createMany({ data: photoData });
 
   return NextResponse.json({ ok: true });
 }

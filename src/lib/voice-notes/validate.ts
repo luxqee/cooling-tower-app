@@ -12,6 +12,7 @@ export function validateVoiceNoteInput(input: unknown) {
 
 export const sendVoiceNoteInputSchema = z.object({
   transcript: z.string().min(1),
+  photoUrls: z.array(z.string().url()).max(6).optional().default([]),
 });
 
 export function validateSendVoiceNoteInput(input: unknown) {

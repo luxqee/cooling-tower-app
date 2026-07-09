@@ -4,6 +4,7 @@ vi.mock("@/lib/auth/clerk", () => ({ requireRole: vi.fn() }));
 vi.mock("@/lib/db/client", () => ({
   db: {
     voiceNote: { findFirst: vi.fn(), update: vi.fn() },
+    voiceNotePhoto: { createMany: vi.fn() },
     aiAuditLog: { create: vi.fn() },
     $transaction: vi.fn(),
   },
@@ -84,5 +85,53 @@ describe("POST /api/jobs/[id]/voice-notes/[voiceNoteId]/send", () => {
       data: { transcript: "Replaced fan belt on Tower 3.", status: "transcribed" },
     });
     expect(db.aiAuditLog.create).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when a photoUrl isn't owned by the caller", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
+    vi.mocked(db.voiceNote.findFirst).mockResolvedValue({ id: "vn1", technicianId: "t1" } as any);
+
+    const res = await POST(
+      makeReq({ transcript: "x", photoUrls: ["https://example.blob.vercel-storage.com/variations/OTHER-USER/1.jpg"] }),
+      { params: { id: "job1", voiceNoteId: "vn1" } }
+    );
+
+    expect(res.status).toBe(400);
+    expect(db.voiceNote.update).not.toHaveBeenCalled();
+    expect(db.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("creates VoiceNotePhoto rows for each photoUrl alongside a successful summary", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
+    vi.mocked(db.voiceNote.findFirst).mockResolvedValue({ id: "vn1", technicianId: "t1" } as any);
+    vi.mocked(summarizeTranscript).mockResolvedValue({
+      summary: { summary: "Fixed it.", actionItems: [] },
+      promptTokens: 100,
+      outputTokens: 20,
+    });
+    vi.mocked(db.$transaction).mockResolvedValue([{}, {}]);
+    vi.mocked(db.voiceNotePhoto.createMany).mockResolvedValue({ count: 1 } as any);
+
+    const photoUrl = "https://example.blob.vercel-storage.com/variations/t1/1.jpg";
+    await POST(makeReq({ transcript: "Fixed it.", photoUrls: [photoUrl] }), { params: { id: "job1", voiceNoteId: "vn1" } });
+
+    expect(db.voiceNotePhoto.createMany).toHaveBeenCalledWith({
+      data: [{ voiceNoteId: "vn1", photoUrl }],
+    });
+  });
+
+  it("still creates VoiceNotePhoto rows even when Claude summarization fails", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
+    vi.mocked(db.voiceNote.findFirst).mockResolvedValue({ id: "vn1", technicianId: "t1" } as any);
+    vi.mocked(summarizeTranscript).mockRejectedValue(new Error("Claude API error"));
+    vi.mocked(db.voiceNotePhoto.createMany).mockResolvedValue({ count: 1 } as any);
+
+    const photoUrl = "https://example.blob.vercel-storage.com/variations/t1/1.jpg";
+    const res = await POST(makeReq({ transcript: "x", photoUrls: [photoUrl] }), { params: { id: "job1", voiceNoteId: "vn1" } });
+
+    expect(res.status).toBe(200);
+    expect(db.voiceNotePhoto.createMany).toHaveBeenCalledWith({
+      data: [{ voiceNoteId: "vn1", photoUrl }],
+    });
   });
 });

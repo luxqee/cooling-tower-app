@@ -43,6 +43,26 @@ describe("validateSendVoiceNoteInput", () => {
     expect(result.success).toBe(true);
   });
 
+  it("accepts photoUrls as an optional array of URLs", () => {
+    const result = validateSendVoiceNoteInput({
+      transcript: "Replaced the fan belt.",
+      photoUrls: ["https://example.blob.vercel-storage.com/variations/u1/1.jpg"],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("defaults photoUrls to an empty array when omitted", () => {
+    const result = validateSendVoiceNoteInput({ transcript: "Replaced the fan belt." });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.photoUrls).toEqual([]);
+  });
+
+  it("rejects more than 6 photoUrls", () => {
+    const urls = Array.from({ length: 7 }, (_, i) => `https://example.blob.vercel-storage.com/variations/u1/${i}.jpg`);
+    const result = validateSendVoiceNoteInput({ transcript: "x", photoUrls: urls });
+    expect(result.success).toBe(false);
+  });
+
   it("rejects an empty transcript", () => {
     const result = validateSendVoiceNoteInput({ transcript: "" });
     expect(result.success).toBe(false);
