@@ -84,6 +84,11 @@ enum VoiceNoteStatus {
   awaiting_review
 }
 
+enum VoiceNoteMediaType {
+  audio
+  video
+}
+
 model User {
   id        String   @id @default(uuid())
   clerkId   String   @unique
@@ -383,23 +388,36 @@ model AiAuditLog {
 }
 
 model VoiceNote {
-  id              String          @id @default(uuid())
+  id              String             @id @default(uuid())
   jobId           String
   technicianId    String
   audioUrl        String
+  mediaType       VoiceNoteMediaType @default(audio)
   durationSeconds Int
   transcript      String?
   summary         String?
   actionItems     Json?
-  status          VoiceNoteStatus @default(pending)
-  assemblyaiId    String?         @unique
-  createdAt       DateTime        @default(now())
+  status          VoiceNoteStatus    @default(pending)
+  assemblyaiId    String?            @unique
+  createdAt       DateTime           @default(now())
 
-  job        Job  @relation(fields: [jobId], references: [id])
-  technician User @relation(fields: [technicianId], references: [id])
+  job        Job              @relation(fields: [jobId], references: [id])
+  technician User             @relation(fields: [technicianId], references: [id])
+  photos     VoiceNotePhoto[]
 
   @@index([jobId])
   @@index([status])
+}
+
+model VoiceNotePhoto {
+  id          String   @id @default(uuid())
+  voiceNoteId String
+  photoUrl    String
+  createdAt   DateTime @default(now())
+
+  voiceNote VoiceNote @relation(fields: [voiceNoteId], references: [id])
+
+  @@index([voiceNoteId])
 }
 
 model Contract {
