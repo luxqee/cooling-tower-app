@@ -1,16 +1,18 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Mic, Square } from "lucide-react";
+import { Mic, Video, Square } from "lucide-react";
 
 interface VoiceRecorderProps {
   jobId: string;
 }
 
 type RecorderState = "idle" | "recording" | "uploading" | "done" | "error";
+type RecordingMode = "audio" | "video";
 
 export function VoiceRecorder({ jobId }: VoiceRecorderProps) {
   const [state, setState] = useState<RecorderState>("idle");
+  const [mode, setMode] = useState<RecordingMode>("audio");
   const [error, setError] = useState<string | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -18,12 +20,15 @@ export function VoiceRecorder({ jobId }: VoiceRecorderProps) {
   const startTimeRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isStoppingRef = useRef(false);
+  const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
 
   async function startRecording() {
     setError(null);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/mp4";
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: mode === "video" });
+      const candidateType = mode === "video" ? "video/webm" : "audio/webm";
+      const fallbackType = mode === "video" ? "video/mp4" : "audio/mp4";
+      const mimeType = MediaRecorder.isTypeSupported(candidateType) ? candidateType : fallbackType;
       const recorder = new MediaRecorder(stream, { mimeType });
       chunksRef.current = [];
       isStoppingRef.current = false;
@@ -39,8 +44,11 @@ export function VoiceRecorder({ jobId }: VoiceRecorderProps) {
         setElapsedSeconds(Math.floor((Date.now() - startTimeRef.current) / 1000));
       }, 1000);
       setState("recording");
+      if (mode === "video" && videoPreviewRef.current) {
+        videoPreviewRef.current.srcObject = stream;
+      }
     } catch {
-      setError("Microphone access denied or unavailable.");
+      setError("Microphone/camera access denied or unavailable.");
       setState("error");
     }
   }
@@ -62,7 +70,7 @@ export function VoiceRecorder({ jobId }: VoiceRecorderProps) {
     });
 
     setState("uploading");
-    const mimeType = recorder.mimeType || "audio/webm";
+    const mimeType = recorder.mimeType || (mode === "video" ? "video/webm" : "audio/webm");
     const extension = mimeType.includes("webm") ? "webm" : "mp4";
     const blob = new Blob(chunksRef.current, { type: mimeType });
     const formData = new FormData();
@@ -76,7 +84,7 @@ export function VoiceRecorder({ jobId }: VoiceRecorderProps) {
       const createRes = await fetch(`/api/jobs/${jobId}/voice-notes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ audioUrl: url, durationSeconds }),
+        body: JSON.stringify({ audioUrl: url, durationSeconds, mediaType: mode }),
       });
       if (!createRes.ok) throw new Error("Failed to save voice note");
 
@@ -104,6 +112,29 @@ export function VoiceRecorder({ jobId }: VoiceRecorderProps) {
 
   return (
     <div className="space-y-2">
+      {state === "idle" && (
+        <div className="flex gap-2 text-xs">
+          <button
+            type="button"
+            onClick={() => setMode("audio")}
+            className={`flex-1 min-h-[32px] rounded-lg border font-medium ${mode === "audio" ? "border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400" : "border-slate-300 dark:border-slate-600 text-slate-500"}`}
+          >
+            Audio only
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("video")}
+            className={`flex-1 min-h-[32px] rounded-lg border font-medium ${mode === "video" ? "border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400" : "border-slate-300 dark:border-slate-600 text-slate-500"}`}
+          >
+            Video
+          </button>
+        </div>
+      )}
+
+      {state === "recording" && mode === "video" && (
+        <video ref={videoPreviewRef} autoPlay muted playsInline className="w-full rounded-lg bg-black aspect-video" />
+      )}
+
       {state === "recording" ? (
         <button
           type="button"
@@ -120,8 +151,8 @@ export function VoiceRecorder({ jobId }: VoiceRecorderProps) {
           disabled={state === "uploading"}
           className="w-full min-h-[48px] rounded-lg border border-slate-300 dark:border-slate-600 font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-40"
         >
-          <Mic className="w-4 h-4" />
-          {state === "uploading" ? "Saving…" : "Record voice note"}
+          {mode === "video" ? <Video className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+          {state === "uploading" ? "Saving…" : mode === "video" ? "Record video" : "Record voice note"}
         </button>
       )}
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
