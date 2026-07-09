@@ -187,7 +187,8 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                       {note.status.replace("_", " ")}
                     </span>
                   </div>
-                  {note.summary && <p>{note.summary}</p>}
+                  {note.transcript && <p className="text-slate-700 dark:text-slate-300">&ldquo;{note.transcript}&rdquo;</p>}
+                  {note.summary && <p className="text-xs text-slate-500 dark:text-slate-400">{note.summary}</p>}
                   {Array.isArray(note.actionItems) && note.actionItems.length > 0 && (
                     <ul className="list-disc list-inside text-xs text-slate-500 dark:text-slate-400">
                       {(note.actionItems as string[]).map((item, i) => <li key={i}>{item}</li>)}
