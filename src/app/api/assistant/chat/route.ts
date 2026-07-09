@@ -51,7 +51,7 @@ export async function POST(req: Request) {
   const { message } = parsed.data;
 
   const session = parsed.data.sessionId
-    ? await db.chatSession.findUnique({ where: { id: parsed.data.sessionId } })
+    ? await db.chatSession.findFirst({ where: { id: parsed.data.sessionId, userId: user.id } })
     : await db.chatSession.create({ data: { userId: user.id, title: message.slice(0, 80) } });
 
   if (!session) {

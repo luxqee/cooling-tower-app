@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/lib/auth/clerk", () => ({ requireRole: vi.fn() }));
 vi.mock("@/lib/db/client", () => ({
   db: {
-    chatSession: { create: vi.fn(), findUnique: vi.fn() },
+    chatSession: { create: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn() },
     chatMessage: { create: vi.fn(), findMany: vi.fn() },
     aiAuditLog: { create: vi.fn() },
   },
@@ -121,5 +121,17 @@ describe("POST /api/assistant/chat", () => {
 
     expect(res.status).toBe(200);
     expect(data.reply).toMatch(/trouble/i);
+  });
+
+  it("returns 404 (not another user's session) when sessionId belongs to a different user", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
+    vi.mocked(db.chatSession.findFirst).mockResolvedValue(null);
+
+    const res = await POST(makeReq({ message: "hi", sessionId: "someone-elses-session" }));
+
+    expect(res.status).toBe(404);
+    expect(db.chatSession.findFirst).toHaveBeenCalledWith({
+      where: { id: "someone-elses-session", userId: mockDirector.id },
+    });
   });
 });
