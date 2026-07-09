@@ -14,6 +14,7 @@ vi.mock("@/lib/db/client", () => ({
     },
     complianceTemplate: { findUnique: vi.fn() },
     job:                { findUnique: vi.fn() },
+    assignment:         { findMany: vi.fn(), findFirst: vi.fn() },
     businessProfile:    { findFirst: vi.fn().mockResolvedValue(null) },
   },
 }));
@@ -25,10 +26,12 @@ import { GET as getDoc } from "../documents/[id]/route";
 
 const TMPL_ID = "22222222-2222-4222-8222-222222222222";
 const JOB_ID  = "11111111-1111-4111-8111-111111111111";
+const OTHER_JOB_ID = "55555555-5555-4555-8555-555555555555";
 const DOC_ID  = "33333333-3333-4333-8333-333333333333";
 const MISSING = "44444444-4444-4444-8444-444444444444";
 
 const mockUser = { id: "u1", role: "technician" as const, name: "Jake", clerkId: "c1", email: "j@t.com", phone: "", isActive: true };
+const mockManager = { id: "u2", role: "director" as const, name: "Dana", clerkId: "c2", email: "d@t.com", phone: "", isActive: true };
 
 const mockTemplate = { id: TMPL_ID, name: "SWMS", type: "swms", sections: [], isActive: true, createdAt: new Date(), updatedAt: new Date() };
 const mockJob      = { id: JOB_ID,  customerName: "Rio Tinto", siteName: "Weipa", siteAddress: "QLD", status: "active", quotedHours: 8, createdAt: new Date() };
@@ -53,11 +56,33 @@ describe("GET /api/compliance/documents", () => {
 
   it("returns document list", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockUser as any);
+    vi.mocked(db.assignment.findMany).mockResolvedValue([{ jobId: JOB_ID }] as any);
     vi.mocked(db.complianceDocument.findMany).mockResolvedValue([mockDoc] as any);
     const res = await listDocs();
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data).toHaveLength(1);
+  });
+
+  it("scopes the query to only the technician's assigned jobs", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockUser as any);
+    vi.mocked(db.assignment.findMany).mockResolvedValue([{ jobId: JOB_ID }] as any);
+    vi.mocked(db.complianceDocument.findMany).mockResolvedValue([mockDoc] as any);
+    await listDocs();
+    expect(db.assignment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: mockUser.id } })
+    );
+    const callArg = vi.mocked(db.complianceDocument.findMany).mock.calls[0][0] as any;
+    expect(callArg.where).toEqual({ jobId: { in: [JOB_ID] } });
+  });
+
+  it("does not scope the query for a non-technician role", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockManager as any);
+    vi.mocked(db.complianceDocument.findMany).mockResolvedValue([mockDoc] as any);
+    await listDocs();
+    expect(db.assignment.findMany).not.toHaveBeenCalled();
+    const callArg = vi.mocked(db.complianceDocument.findMany).mock.calls[0][0] as any;
+    expect(callArg.where).toBeUndefined();
   });
 });
 
@@ -110,13 +135,30 @@ describe("GET /api/compliance/documents/[id]", () => {
     expect(res.status).toBe(401);
   });
 
-  it("returns 200 with document when found", async () => {
+  it("returns 200 with document when a technician is assigned to its job", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockUser as any);
     vi.mocked(db.complianceDocument.findUnique).mockResolvedValue(mockDoc as any);
+    vi.mocked(db.assignment.findFirst).mockResolvedValue({ id: "a1" } as any);
     const res = await getDoc(new Request(`http://localhost/api/compliance/documents/${DOC_ID}`), { params: { id: DOC_ID } });
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.id).toBe(DOC_ID);
+  });
+
+  it("returns 200 with document for a non-technician role with no assignment check", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockManager as any);
+    vi.mocked(db.complianceDocument.findUnique).mockResolvedValue(mockDoc as any);
+    const res = await getDoc(new Request(`http://localhost/api/compliance/documents/${DOC_ID}`), { params: { id: DOC_ID } });
+    expect(res.status).toBe(200);
+    expect(db.assignment.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("returns 403 when a technician is not assigned to the document's job", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockUser as any);
+    vi.mocked(db.complianceDocument.findUnique).mockResolvedValue({ ...mockDoc, jobId: OTHER_JOB_ID } as any);
+    vi.mocked(db.assignment.findFirst).mockResolvedValue(null);
+    const res = await getDoc(new Request(`http://localhost/api/compliance/documents/${DOC_ID}`), { params: { id: DOC_ID } });
+    expect(res.status).toBe(403);
   });
 
   it("returns 404 when document not found", async () => {

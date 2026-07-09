@@ -15,7 +15,14 @@ export default async function CompliancePage() {
   const user = await requireRole(["technician", "director", "service_manager", "admin", "sales_engineer", "draftsman"]).catch(() => null);
   if (!user) redirect("/sign-in");
 
+  let where;
+  if (user.role === "technician") {
+    const assignments = await db.assignment.findMany({ where: { userId: user.id } });
+    where = { jobId: { in: assignments.map((a) => a.jobId) } };
+  }
+
   const docs = await db.complianceDocument.findMany({
+    where,
     include: {
       template:  { select: { name: true, type: true } },
       job:       { select: { customerName: true, siteName: true } },

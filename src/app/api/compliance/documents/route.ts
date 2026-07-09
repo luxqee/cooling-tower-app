@@ -15,7 +15,15 @@ export async function GET() {
   const user = await requireRole(["technician", "director", "service_manager", "admin", "sales_engineer", "draftsman"]).catch(() => null);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  let where;
+  if (user.role === "technician") {
+    const assignments = await db.assignment.findMany({ where: { userId: user.id } });
+    const jobIds = assignments.map((a) => a.jobId);
+    where = { jobId: { in: jobIds } };
+  }
+
   const docs = await db.complianceDocument.findMany({
+    where,
     include: {
       template:  { select: { name: true, type: true } },
       job:       { select: { customerName: true, siteName: true } },

@@ -18,6 +18,11 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
 
   if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  if (user.role === "technician") {
+    const assignment = await db.assignment.findFirst({ where: { userId: user.id, jobId: doc.jobId } });
+    if (!assignment) return NextResponse.json({ error: "Not assigned to this job" }, { status: 403 });
+  }
+
   const businessProfile = await db.businessProfile.findFirst();
 
   try {
