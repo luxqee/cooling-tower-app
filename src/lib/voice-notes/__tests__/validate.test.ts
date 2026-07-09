@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validateVoiceNoteInput } from "../validate";
+import { validateVoiceNoteInput, validateSendVoiceNoteInput } from "../validate";
 
 describe("validateVoiceNoteInput", () => {
   const valid = {
@@ -25,5 +25,22 @@ describe("validateVoiceNoteInput", () => {
   it("rejects a zero or negative durationSeconds", () => {
     expect(validateVoiceNoteInput({ ...valid, durationSeconds: 0 }).success).toBe(false);
     expect(validateVoiceNoteInput({ ...valid, durationSeconds: -5 }).success).toBe(false);
+  });
+});
+
+describe("validateSendVoiceNoteInput", () => {
+  it("accepts a non-empty transcript", () => {
+    const result = validateSendVoiceNoteInput({ transcript: "Replaced the fan belt." });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an empty transcript", () => {
+    const result = validateSendVoiceNoteInput({ transcript: "" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a missing transcript", () => {
+    const result = validateSendVoiceNoteInput({});
+    expect(result.success).toBe(false);
   });
 });

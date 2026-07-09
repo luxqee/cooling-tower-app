@@ -8,3 +8,11 @@ export const voiceNoteInputSchema = z.object({
 export function validateVoiceNoteInput(input: unknown) {
   return voiceNoteInputSchema.safeParse(input);
 }
+
+export const sendVoiceNoteInputSchema = z.object({
+  transcript: z.string().min(1),
+});
+
+export function validateSendVoiceNoteInput(input: unknown) {
+  return sendVoiceNoteInputSchema.safeParse(input);
+}
