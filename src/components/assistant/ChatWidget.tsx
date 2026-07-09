@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send } from "lucide-react";
+import { renderFormattedMessage } from "@/lib/chat/formatMessage";
 
 interface ChatMessageDisplay {
   role: "user" | "assistant";
@@ -66,7 +67,7 @@ export function ChatWidget({ inline = false }: ChatWidgetProps) {
         {messages.map((m, i) => (
           <div key={i} className={`text-sm ${m.role === "user" ? "text-right" : "text-left"}`}>
             <span className={`inline-block px-3 py-2 rounded-lg max-w-[85%] ${m.role === "user" ? "bg-amber-600 text-white" : "bg-slate-100 dark:bg-slate-700"}`}>
-              {m.content}
+              {m.role === "assistant" ? renderFormattedMessage(m.content) : m.content}
             </span>
           </div>
         ))}
