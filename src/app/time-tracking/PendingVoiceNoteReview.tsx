@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Camera, X } from "lucide-react";
+import { Camera, X, AlertCircle } from "lucide-react";
 import { compressImage } from "@/lib/upload/compressImage";
 
 interface PendingVoiceNoteReviewProps {
@@ -97,9 +97,15 @@ export function PendingVoiceNoteReview({ jobId }: PendingVoiceNoteReviewProps) {
 
   return (
     <div className="space-y-3">
+      <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+        {notes.length === 1 ? "1 voice note needs to be reviewed and sent" : `${notes.length} voice notes need to be reviewed and sent`}
+      </p>
       {notes.map((note) => (
-        <div key={note.id} className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/10 p-3 space-y-2">
-          <p className="text-xs font-medium text-amber-700 dark:text-amber-400">Review your voice note</p>
+        <div key={note.id} className="rounded-lg border-2 border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/10 p-3 space-y-2">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+            <AlertCircle className="w-3.5 h-3.5" />
+            Action needed — check the transcript below, then press Send to submit it to the office
+          </div>
           <textarea
             value={drafts[note.id] ?? note.transcript}
             onChange={(e) => setDrafts((prev) => ({ ...prev, [note.id]: e.target.value }))}

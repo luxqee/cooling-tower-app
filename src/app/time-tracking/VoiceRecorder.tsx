@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Mic, Video, Square } from "lucide-react";
+import { Mic, Video, Square, Loader2 } from "lucide-react";
 
 interface VoiceRecorderProps {
   jobId: string;
@@ -134,7 +134,12 @@ export function VoiceRecorder({ jobId }: VoiceRecorderProps) {
   if (state === "done") {
     return (
       <div className="space-y-1">
-        <p className="text-sm text-emerald-600 dark:text-emerald-400">Voice note saved — transcribing now.</p>
+        <div className="flex items-center gap-2">
+          <Loader2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 animate-spin shrink-0" />
+          <p className="text-sm text-emerald-600 dark:text-emerald-400">
+            Voice note saved — transcribing now. When it&apos;s ready you&apos;ll need to review and send it below.
+          </p>
+        </div>
         <button
           type="button"
           onClick={() => setState("idle")}
