@@ -16,6 +16,7 @@ export async function GET() {
       job: { select: { customerName: true, siteName: true } },
     },
     orderBy: { submittedAt: "desc" },
+    take: 100,
   });
 
   return NextResponse.json(

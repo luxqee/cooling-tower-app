@@ -30,6 +30,7 @@ export async function GET() {
       createdBy: { select: { name: true } },
     },
     orderBy: { submittedAt: "desc" },
+    take: 200,
   });
 
   return NextResponse.json(docs);

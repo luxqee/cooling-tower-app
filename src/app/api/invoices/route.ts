@@ -11,6 +11,7 @@ export async function GET() {
       job: { select: { id: true, customerName: true, siteName: true, jobType: true } },
     },
     orderBy: { createdAt: "desc" },
+    take: 100,
   });
 
   return NextResponse.json(

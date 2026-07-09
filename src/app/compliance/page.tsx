@@ -29,6 +29,7 @@ export default async function CompliancePage() {
       createdBy: { select: { name: true } },
     },
     orderBy: { submittedAt: "desc" },
+    take: 200,
   });
 
   return (

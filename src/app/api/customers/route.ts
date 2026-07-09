@@ -24,6 +24,7 @@ export async function GET(req: Request) {
     where: q ? { name: { contains: q, mode: "insensitive" } } : undefined,
     select: { id: true, name: true, email: true, phone: true, abn: true },
     orderBy: { name: "asc" },
+    take: 200,
   });
 
   return NextResponse.json(customers);

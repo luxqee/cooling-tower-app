@@ -13,6 +13,7 @@ export async function GET(req: Request) {
   const assets = await db.asset.findMany({
     where: customerId ? { customerId } : undefined,
     orderBy: { serialNumber: "asc" },
+    take: 200,
   });
 
   return NextResponse.json(assets);

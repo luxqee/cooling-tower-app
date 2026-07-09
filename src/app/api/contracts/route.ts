@@ -7,7 +7,7 @@ export async function GET() {
   const user = await requireRole(["admin", "director", "service_manager"]).catch(() => null);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const contracts = await db.contract.findMany({ orderBy: { renewalDate: "asc" } });
+  const contracts = await db.contract.findMany({ orderBy: { renewalDate: "asc" }, take: 200 });
 
   return NextResponse.json(contracts.map((c) => ({ ...c, value: c.value.toNumber() })));
 }
