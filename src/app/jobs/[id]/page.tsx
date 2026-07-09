@@ -26,6 +26,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
       communications: { include: { author: { select: { name: true } } }, orderBy: { createdAt: "desc" } },
       assets: { include: { asset: { select: { id: true, serialNumber: true, assetType: true } } } },
       materialEntries: { orderBy: { createdAt: "desc" } },
+      voiceNotes: { include: { technician: { select: { name: true } } }, orderBy: { createdAt: "desc" } },
       contract: { select: { id: true, siteName: true, billingCadence: true } },
     },
   });
@@ -159,6 +160,39 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                   </div>
                   <p className="mt-0.5">{c.body}</p>
                   {c.author?.name && <p className="text-xs text-slate-400 mt-0.5">— {c.author.name}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-sm font-medium text-slate-700 dark:text-slate-300">Voice notes ({job.voiceNotes.length})</h2>
+          {job.voiceNotes.length === 0 && <p className="text-sm text-slate-500">No voice notes recorded.</p>}
+          {job.voiceNotes.length > 0 && (
+            <div className="rounded-lg border border-slate-200 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700">
+              {job.voiceNotes.map((note) => (
+                <div key={note.id} className="px-4 py-3 text-sm space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-slate-500">{note.technician.name} · {new Date(note.createdAt).toLocaleDateString("en-AU")}</span>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${
+                      note.status === "transcribed"
+                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400"
+                        : note.status === "failed"
+                          ? "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400"
+                          : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
+                    }`}>
+                      {note.status}
+                    </span>
+                  </div>
+                  {note.summary && <p>{note.summary}</p>}
+                  {Array.isArray(note.actionItems) && note.actionItems.length > 0 && (
+                    <ul className="list-disc list-inside text-xs text-slate-500 dark:text-slate-400">
+                      {(note.actionItems as string[]).map((item, i) => <li key={i}>{item}</li>)}
+                    </ul>
+                  )}
+                  {note.status === "pending" && <p className="text-xs text-slate-400">Transcribing…</p>}
+                  {note.status === "failed" && <p className="text-xs text-red-500">Transcription failed for this recording.</p>}
                 </div>
               ))}
             </div>
