@@ -3,6 +3,7 @@ import { getSessionUser } from "@/lib/auth/clerk";
 import { redirect } from "next/navigation";
 import { CrewBoard } from "./CrewBoard";
 import { HoursOverview } from "./HoursOverview";
+import { ChatWidget } from "@/components/assistant/ChatWidget";
 
 const DASHBOARD_ROLES = ["director", "service_manager", "admin"] as const;
 type DashboardRole = (typeof DASHBOARD_ROLES)[number];
@@ -18,6 +19,11 @@ export default async function DashboardPage() {
     <AppShell>
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-8">
         <h1 className="text-xl font-semibold">Dashboard</h1>
+
+        <div className="space-y-2">
+          <h2 className="text-sm font-medium text-slate-700 dark:text-slate-300">Assistant</h2>
+          <ChatWidget inline />
+        </div>
 
         {(user.role === "service_manager" || user.role === "director") && (
           <CrewBoard />

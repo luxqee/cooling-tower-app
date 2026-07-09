@@ -10,10 +10,12 @@ vi.mock("@/lib/db/client", () => ({
   },
 }));
 vi.mock("@/lib/ai/voice-note", () => ({ summarizeTranscript: vi.fn() }));
+vi.mock("@/lib/ai/semanticSearch", () => ({ indexDocument: vi.fn() }));
 
 import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
 import { summarizeTranscript } from "@/lib/ai/voice-note";
+import { indexDocument } from "@/lib/ai/semanticSearch";
 import { POST } from "../route";
 
 const mockTechnician = { id: "t1", role: "technician" as const, name: "Jake", clerkId: "c1", email: "j@t.com", isActive: true };
@@ -133,5 +135,39 @@ describe("POST /api/jobs/[id]/voice-notes/[voiceNoteId]/send", () => {
     expect(db.voiceNotePhoto.createMany).toHaveBeenCalledWith({
       data: [{ voiceNoteId: "vn1", photoUrl }],
     });
+  });
+
+  it("indexes the sent transcript for semantic search on success", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
+    vi.mocked(db.voiceNote.findFirst).mockResolvedValue({ id: "vn1", technicianId: "t1", jobId: "job1" } as any);
+    vi.mocked(summarizeTranscript).mockResolvedValue({
+      summary: { summary: "Fixed it.", actionItems: [] },
+      promptTokens: 100,
+      outputTokens: 20,
+    });
+    vi.mocked(db.$transaction).mockResolvedValue([{}, {}]);
+    vi.mocked(db.voiceNotePhoto.createMany).mockResolvedValue({ count: 0 } as any);
+    vi.mocked(indexDocument).mockResolvedValue(undefined);
+
+    await POST(makeReq({ transcript: "Replaced fan belt on Tower 3." }), { params: { id: "job1", voiceNoteId: "vn1" } });
+
+    expect(indexDocument).toHaveBeenCalledWith("VoiceNote", "vn1", "job1", "Replaced fan belt on Tower 3.");
+  });
+
+  it("does not fail the request if indexing throws", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
+    vi.mocked(db.voiceNote.findFirst).mockResolvedValue({ id: "vn1", technicianId: "t1", jobId: "job1" } as any);
+    vi.mocked(summarizeTranscript).mockResolvedValue({
+      summary: { summary: "Fixed it.", actionItems: [] },
+      promptTokens: 100,
+      outputTokens: 20,
+    });
+    vi.mocked(db.$transaction).mockResolvedValue([{}, {}]);
+    vi.mocked(db.voiceNotePhoto.createMany).mockResolvedValue({ count: 0 } as any);
+    vi.mocked(indexDocument).mockRejectedValue(new Error("Voyage down"));
+
+    const res = await POST(makeReq({ transcript: "x" }), { params: { id: "job1", voiceNoteId: "vn1" } });
+
+    expect(res.status).toBe(200);
   });
 });

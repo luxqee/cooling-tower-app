@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
 import { validateCommunicationInput } from "@/lib/communications/validate";
+import { indexDocument } from "@/lib/ai/semanticSearch";
 
 const OFFICE_ROLES = ["admin", "director", "service_manager"] as const;
 
@@ -55,6 +56,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       body: parsed.data.body,
     },
   });
+
+  try {
+    await indexDocument("JobCommunication", communication.id, jobId, communication.body);
+  } catch (err) {
+    console.error("Failed to index job communication for semantic search:", err);
+  }
 
   return NextResponse.json(communication, { status: 201 });
 }

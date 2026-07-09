@@ -110,6 +110,7 @@ model User {
   quotes              Quote[]
   aiAuditLogs         AiAuditLog[]
   voiceNotes          VoiceNote[]
+  chatSessions        ChatSession[]
 }
 
 model Customer {
@@ -157,6 +158,7 @@ model Job {
   customer            Customer? @relation(fields: [customerId], references: [id])
   contractId          String?
   contract            Contract? @relation(fields: [contractId], references: [id])
+  documentChunks      DocumentChunk[]
 
   @@index([status])
   @@index([jobType])
@@ -385,6 +387,47 @@ model AiAuditLog {
   @@index([userId])
   @@index([feature])
   @@index([createdAt])
+}
+
+model ChatSession {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User          @relation(fields: [userId], references: [id])
+  messages ChatMessage[]
+
+  @@index([userId])
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  sessionId String
+  role      String
+  content   String
+  toolCalls Json?
+  createdAt DateTime @default(now())
+
+  session ChatSession @relation(fields: [sessionId], references: [id])
+
+  @@index([sessionId])
+}
+
+model DocumentChunk {
+  id         String                       @id @default(uuid())
+  sourceType String
+  sourceId   String
+  jobId      String
+  chunkText  String
+  embedding  Unsupported("vector(1024)")
+  createdAt  DateTime                     @default(now())
+
+  job Job @relation(fields: [jobId], references: [id])
+
+  @@index([jobId])
+  @@index([sourceType, sourceId])
 }
 
 model VoiceNote {
