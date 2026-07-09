@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send } from "lucide-react";
 import { renderFormattedMessage } from "@/lib/chat/formatMessage";
+import { loadChatState, saveChatState } from "@/lib/chat/persistChatState";
 
 interface ChatMessageDisplay {
   role: "user" | "assistant";
@@ -21,6 +22,28 @@ export function ChatWidget({ inline = false }: ChatWidgetProps) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Real state (not a ref) so the "hydration finished" flag lands in the
+  // SAME render as the restored sessionId/messages — a ref would flip
+  // synchronously before that render committed, letting the persistence
+  // effect below fire once with the pre-hydration empty state and
+  // overwrite the very data hydration just loaded.
+  const [hydrated, setHydrated] = useState(false);
+
+  // Hydrate from the previous page's conversation, if any — otherwise the
+  // widget remounting on every navigation would silently wipe the chat.
+  useEffect(() => {
+    const saved = loadChatState();
+    if (saved) {
+      setSessionId(saved.sessionId);
+      setMessages(saved.messages);
+    }
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    saveChatState({ sessionId, messages });
+  }, [hydrated, sessionId, messages]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
