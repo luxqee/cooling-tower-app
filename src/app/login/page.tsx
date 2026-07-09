@@ -27,9 +27,6 @@ export default function LoginPage() {
           </p>
 
           <div className="mb-4 rounded-md border border-dashed border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/30 p-4">
-            <div className="text-2xs font-mono uppercase tracking-wider text-amber-700 dark:text-amber-500 mb-1">
-              Phase 1a
-            </div>
             <p className="text-sm text-amber-900 dark:text-amber-200">
               Planned: PIN, biometric, or passkey login with role-based routing.
             </p>
