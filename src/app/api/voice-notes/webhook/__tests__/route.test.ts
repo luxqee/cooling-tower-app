@@ -36,6 +36,22 @@ describe("POST /api/voice-notes/webhook", () => {
     expect(res.status).toBe(401);
   });
 
+  it("returns 401 for a same-length but incorrect secret (exercises the constant-time compare, not just a length check)", async () => {
+    // "wrong-password" is exactly 14 chars, same as "correct-secret"
+    const res = await POST(makeReq({ transcript_id: "t1" }, "wrong-password"));
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 401 when the secret header is missing entirely", async () => {
+    const req = new Request("http://localhost/api/voice-notes/webhook", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ transcript_id: "t1" }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(401);
+  });
+
   it("returns 400 when transcript_id is missing", async () => {
     const res = await POST(makeReq({}));
     expect(res.status).toBe(400);

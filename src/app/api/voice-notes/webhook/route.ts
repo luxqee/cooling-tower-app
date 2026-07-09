@@ -1,10 +1,20 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db/client";
 import { fetchTranscript } from "@/lib/ai/assemblyai";
 
+function isValidWebhookSecret(provided: string | null): boolean {
+  const expected = process.env.ASSEMBLYAI_WEBHOOK_SECRET ?? "";
+  if (!provided || !expected) return false;
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
+
 export async function POST(req: Request) {
   const secret = req.headers.get("x-webhook-secret");
-  if (secret !== process.env.ASSEMBLYAI_WEBHOOK_SECRET) {
+  if (!isValidWebhookSecret(secret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

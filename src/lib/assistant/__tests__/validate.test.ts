@@ -17,4 +17,12 @@ describe("validateChatInput", () => {
   it("rejects a missing message", () => {
     expect(validateChatInput({}).success).toBe(false);
   });
+
+  it("rejects a message over 4000 characters", () => {
+    expect(validateChatInput({ message: "a".repeat(4001) }).success).toBe(false);
+  });
+
+  it("accepts a message at exactly 4000 characters", () => {
+    expect(validateChatInput({ message: "a".repeat(4000) }).success).toBe(true);
+  });
 });
