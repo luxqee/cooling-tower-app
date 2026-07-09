@@ -5,6 +5,7 @@ import { validateSendVoiceNoteInput } from "@/lib/voice-notes/validate";
 import { summarizeTranscript } from "@/lib/ai/voice-note";
 import { calculateCostUsd } from "@/lib/ai/cost";
 import { isOwnedBlobUrl } from "@/lib/blob/ownership";
+import { indexDocument } from "@/lib/ai/semanticSearch";
 
 export async function POST(
   req: Request,
@@ -67,6 +68,12 @@ export async function POST(
 
   // Photos aren't dependent on summarization succeeding — save them either way.
   await db.voiceNotePhoto.createMany({ data: photoData });
+
+  try {
+    await indexDocument("VoiceNote", voiceNote.id, params.id, transcript);
+  } catch (err) {
+    console.error("Failed to index voice note for semantic search:", err);
+  }
 
   return NextResponse.json({ ok: true });
 }

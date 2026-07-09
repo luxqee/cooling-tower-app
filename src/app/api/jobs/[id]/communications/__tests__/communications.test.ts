@@ -16,9 +16,11 @@ vi.mock("@/lib/db/client", () => ({
     jobCommunication: { create: vi.fn(), findMany: vi.fn() },
   },
 }));
+vi.mock("@/lib/ai/semanticSearch", () => ({ indexDocument: vi.fn() }));
 
 import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
+import { indexDocument } from "@/lib/ai/semanticSearch";
 import { GET, POST } from "../route";
 
 const JOB_ID = "11111111-1111-4111-8111-111111111111";
@@ -124,5 +126,39 @@ describe("POST /api/jobs/[id]/communications", () => {
         data: expect.objectContaining({ jobId: JOB_ID, authorId: mockDirector.id, type: "internal_note" }),
       })
     );
+  });
+
+  it("indexes the communication body for semantic search on success", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
+    vi.mocked(db.job.findUnique).mockResolvedValue(mockJob as any);
+    vi.mocked(db.jobCommunication.create).mockResolvedValue({
+      id: "jc1",
+      jobId: JOB_ID,
+      authorId: mockDirector.id,
+      ...body,
+      createdAt: new Date(),
+    } as any);
+    vi.mocked(indexDocument).mockResolvedValue(undefined);
+
+    await POST(makePostReq(body), makeCtx());
+
+    expect(indexDocument).toHaveBeenCalledWith("JobCommunication", "jc1", JOB_ID, "Customer requested Friday visit");
+  });
+
+  it("does not fail the request if indexing throws", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
+    vi.mocked(db.job.findUnique).mockResolvedValue(mockJob as any);
+    vi.mocked(db.jobCommunication.create).mockResolvedValue({
+      id: "jc1",
+      jobId: JOB_ID,
+      authorId: mockDirector.id,
+      ...body,
+      createdAt: new Date(),
+    } as any);
+    vi.mocked(indexDocument).mockRejectedValue(new Error("Voyage down"));
+
+    const res = await POST(makePostReq(body), makeCtx());
+
+    expect(res.status).toBe(201);
   });
 });
