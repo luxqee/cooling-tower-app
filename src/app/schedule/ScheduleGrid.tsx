@@ -96,7 +96,8 @@ function AssignmentBlock({
             e.stopPropagation();
             setConfirming(true);
           }}
-          className="absolute top-0.5 right-0.5 hidden group-hover:flex p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-400 hover:text-red-500"
+          aria-label="Remove assignment"
+          className="absolute top-0.5 right-0.5 flex p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-400 hover:text-red-500"
         >
           <Trash2 className="w-3 h-3" />
         </button>

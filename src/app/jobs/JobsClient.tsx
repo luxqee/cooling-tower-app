@@ -347,11 +347,18 @@ function JobCard({ job, canEdit }: { job: Job; canEdit: boolean }) {
   const [confirming, setConfirming] = useState(false);
   const [loggingOpen, setLoggingOpen] = useState(false);
   const [materialsOpen, setMaterialsOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function deleteJob() {
+    setDeleteError(null);
     startTransition(async () => {
-      await fetch(`/api/jobs/${job.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/jobs/${job.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setDeleteError(data?.error ?? "Failed to delete job. Try again.");
+        return;
+      }
       router.refresh();
     });
   }
@@ -378,16 +385,16 @@ function JobCard({ job, canEdit }: { job: Job; canEdit: boolean }) {
             </span>
             {canEdit && (
               <>
-                <button onClick={() => setMaterialsOpen(true)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
+                <button onClick={() => setMaterialsOpen(true)} aria-label="Materials & costs" title="Materials & costs" className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
                   <Receipt className="w-3.5 h-3.5" />
                 </button>
-                <button onClick={() => setLoggingOpen(true)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
+                <button onClick={() => setLoggingOpen(true)} aria-label="Communication log" title="Communication log" className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
                   <MessageSquare className="w-3.5 h-3.5" />
                 </button>
-                <button onClick={() => setEditing(true)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
+                <button onClick={() => setEditing(true)} aria-label="Edit job" title="Edit job" className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
-                <button onClick={() => setConfirming(true)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-600">
+                <button onClick={() => setConfirming(true)} aria-label="Delete job" title="Delete job" className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-600">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </>
@@ -416,8 +423,9 @@ function JobCard({ job, canEdit }: { job: Job; canEdit: boolean }) {
           <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-3 py-3 space-y-2">
             <p className="text-sm text-red-700 dark:text-red-300 font-medium">Delete this job?</p>
             <p className="text-xs text-red-600 dark:text-red-400">This will remove all time entries and assignments.</p>
+            {deleteError && <p className="text-xs text-red-700 dark:text-red-300 font-medium">{deleteError}</p>}
             <div className="flex gap-2">
-              <button onClick={() => setConfirming(false)} className="flex-1 min-h-[36px] rounded-lg border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300">Cancel</button>
+              <button onClick={() => { setConfirming(false); setDeleteError(null); }} className="flex-1 min-h-[36px] rounded-lg border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300">Cancel</button>
               <button onClick={deleteJob} disabled={isPending} className="flex-1 min-h-[36px] rounded-lg bg-red-600 text-white font-semibold text-sm disabled:opacity-40">
                 {isPending ? "Deleting…" : "Delete"}
               </button>

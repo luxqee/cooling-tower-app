@@ -44,6 +44,10 @@ export function ChatWidget({ inline = false }: ChatWidgetProps) {
       setSessionId(data.sessionId);
       setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
     } catch {
+      // Roll the failed message back into the input rather than losing it —
+      // the user can retry without retyping.
+      setMessages((prev) => prev.slice(0, -1));
+      setInput(trimmed);
       setError("Failed to send. Try again.");
     } finally {
       setSending(false);
@@ -51,7 +55,7 @@ export function ChatWidget({ inline = false }: ChatWidgetProps) {
   }
 
   const panel = (
-    <div className={inline ? "rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex flex-col h-[420px]" : "w-80 sm:w-96 h-[480px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl flex flex-col"}>
+    <div className={inline ? "rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex flex-col h-[420px] max-h-[80vh]" : "w-80 sm:w-96 h-[480px] max-h-[80vh] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl flex flex-col"}>
       {!inline && (
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700">
           <p className="text-sm font-semibold">Assistant</p>

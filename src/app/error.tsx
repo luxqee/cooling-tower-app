@@ -4,9 +4,10 @@ import { SignOutButton } from "@clerk/nextjs";
 
 interface Props {
   error: Error & { digest?: string };
+  reset: () => void;
 }
 
-export default function GlobalError({ error }: Props) {
+export default function GlobalError({ error, reset }: Props) {
   // Re-throw redirect/notFound errors so Next.js framework handles them.
   // In production, error.message is sanitised to a generic string, but
   // error.digest is preserved. Redirect digests start with "NEXT_REDIRECT";
@@ -24,16 +25,24 @@ export default function GlobalError({ error }: Props) {
           Something went wrong
         </h1>
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          Your session may have expired. Please sign in again.
+          An unexpected error occurred. You can try again, or sign in again if that doesn&apos;t help.
         </p>
-        {/* Sign out first so Clerk doesn't immediately redirect back to this
-            page in a loop. SignOutButton clears the session then follows
-            redirectUrl. */}
-        <SignOutButton redirectUrl="/sign-in">
-          <button className="inline-block px-5 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-sm">
-            Sign in again
+        <div className="flex items-center justify-center gap-3">
+          <button
+            onClick={reset}
+            className="inline-block px-5 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-sm"
+          >
+            Try again
           </button>
-        </SignOutButton>
+          {/* Sign out first so Clerk doesn't immediately redirect back to this
+              page in a loop. SignOutButton clears the session then follows
+              redirectUrl. */}
+          <SignOutButton redirectUrl="/sign-in">
+            <button className="inline-block px-5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-semibold text-sm">
+              Sign in again
+            </button>
+          </SignOutButton>
+        </div>
       </div>
     </div>
   );
