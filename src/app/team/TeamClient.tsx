@@ -9,7 +9,6 @@ const ROLES = [
   { value: "service_manager", label: "Service Manager" },
   { value: "admin", label: "Admin" },
   { value: "sales_engineer", label: "Sales Engineer" },
-  { value: "draftsman", label: "Draftsman" },
 ] as const;
 
 type Role = (typeof ROLES)[number]["value"];
@@ -20,7 +19,6 @@ const ROLE_COLOURS: Record<string, string> = {
   service_manager: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
   admin: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
   sales_engineer: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  draftsman: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
 };
 
 const ROLE_LABELS: Record<string, string> = Object.fromEntries(ROLES.map((r) => [r.value, r.label]));

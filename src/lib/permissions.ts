@@ -1,17 +1,13 @@
 // The full set of valid roles — for validating role input (team invites,
 // the Clerk webhook, role-edit forms), NOT for "who can see this section"
-// (that's PAGE_ACCESS below). These happen to look similar to
-// PAGE_ACCESS.compliance today only because every role currently has some
-// compliance access — that's a coincidence, not the same concern, so don't
-// conflate the two. A literal tuple (not just `readonly UserRole[]`) so it
-// can be passed directly to z.enum().
+// (that's PAGE_ACCESS below). A literal tuple (not just `readonly
+// UserRole[]`) so it can be passed directly to z.enum().
 export const ALL_ROLES = [
   "technician",
   "director",
   "service_manager",
   "admin",
   "sales_engineer",
-  "draftsman",
 ] as const;
 
 export type UserRole = (typeof ALL_ROLES)[number];
@@ -39,7 +35,7 @@ export const PAGE_ACCESS: Record<string, readonly UserRole[]> = {
   variations: ["director", "admin"],
   variationsSubmit: ["technician"],
   team: ["director", "service_manager"],
-  compliance: ["technician", "director", "service_manager", "admin", "sales_engineer", "draftsman"],
+  compliance: ["technician", "director", "service_manager", "admin", "sales_engineer"],
   complianceTemplates: ["admin"],
   settings: ["director", "admin"],
   quotes: ["sales_engineer", "director", "admin"],

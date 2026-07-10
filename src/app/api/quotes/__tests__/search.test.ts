@@ -69,7 +69,7 @@ describe("GET /api/quotes/search", () => {
     expect(res.status).toBe(401);
   });
 
-  it("returns 401 for draftsman role", async () => {
+  it("returns 401 for a role not permitted to search quotes", async () => {
     vi.mocked(requireRole).mockRejectedValue(new Error("Forbidden"));
     const res = await GET_SEARCH(makeSearchReq());
     expect(res.status).toBe(401);

@@ -20,18 +20,16 @@ export default async function DevLoginPage() {
     service_manager: "bg-emerald-50 border-emerald-200 text-emerald-800",
     admin:           "bg-red-50     border-red-200     text-red-800",
     sales_engineer:  "bg-amber-50   border-amber-200   text-amber-800",
-    draftsman:       "bg-slate-50   border-slate-200   text-slate-800",
   };
 
   // Detect seeded test accounts by role name pattern
-  const roleOrder = ["technician", "director", "service_manager", "admin", "sales_engineer", "draftsman"];
+  const roleOrder = ["technician", "director", "service_manager", "admin", "sales_engineer"];
   const ROLE_WHAT: Record<string, string> = {
     technician:      "Clock in/out, fill compliance docs",
     director:        "Full access, invite team, approve variations",
     service_manager: "All jobs, crew board, schedule",
     admin:           "Director + manage compliance templates",
     sales_engineer:  "Jobs and customer data",
-    draftsman:       "Read-only access",
   };
 
   const seededUsers = roleOrder

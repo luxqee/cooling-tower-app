@@ -12,7 +12,6 @@ enum UserRole {
   service_manager
   admin
   sales_engineer
-  draftsman
 }
 
 enum JobStatus {
