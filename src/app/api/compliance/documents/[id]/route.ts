@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/clerk";
+import { PAGE_ACCESS } from "@/lib/permissions";
 import { db } from "@/lib/db/client";
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const user = await requireRole(["technician", "director", "service_manager", "admin", "sales_engineer", "draftsman"]).catch(() => null);
+  const user = await requireRole(PAGE_ACCESS.compliance).catch(() => null);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const doc = await db.complianceDocument.findUnique({

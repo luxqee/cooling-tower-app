@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth/clerk";
+import { ALL_ROLES } from "@/lib/permissions";
 import { db } from "@/lib/db/client";
 
 const patchSchema = z.object({
-  role: z.enum(["technician", "director", "service_manager", "admin", "sales_engineer", "draftsman"]).optional(),
+  role: z.enum(ALL_ROLES).optional(),
   isActive: z.boolean().optional(),
 });
 

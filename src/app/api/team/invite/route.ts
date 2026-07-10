@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireRole } from "@/lib/auth/clerk";
-
-const ROLES = ["technician", "director", "service_manager", "admin", "sales_engineer", "draftsman"] as const;
+import { ALL_ROLES } from "@/lib/permissions";
 
 const inviteSchema = z.object({
   email: z.string().email("Invalid email address"),
-  role: z.enum(ROLES),
+  role: z.enum(ALL_ROLES),
 });
 
 export async function POST(req: Request) {

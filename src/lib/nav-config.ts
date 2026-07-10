@@ -13,22 +13,19 @@ import {
   Building2,
   type LucideIcon,
 } from "lucide-react";
+import { PAGE_ACCESS, type UserRole } from "./permissions";
 
-export type UserRole =
-  | "technician"
-  | "director"
-  | "service_manager"
-  | "admin"
-  | "sales_engineer"
-  | "draftsman";
+export type { UserRole };
 
 export interface NavItem {
   label: string;
   href: string;
   icon: LucideIcon;
   description: string;
-  // Which roles can see this nav item once auth is implemented
-  visibleTo: UserRole[];
+  // Which roles can see this nav item. Sourced from permissions.ts wherever
+  // a page has its own single-source-of-truth requireRole() check for the
+  // same access boundary — see that file for which sections aren't covered.
+  visibleTo: readonly UserRole[];
 }
 
 export const navItems: NavItem[] = [
@@ -44,28 +41,28 @@ export const navItems: NavItem[] = [
     href: "/jobs",
     icon: Briefcase,
     description: "Active jobs with hours logged vs quoted",
-    visibleTo: ["director", "service_manager", "admin", "sales_engineer"],
+    visibleTo: PAGE_ACCESS.jobs,
   },
   {
     label: "Time tracking",
     href: "/time-tracking",
     icon: Clock,
     description: "Clock-in records and live crew status",
-    visibleTo: ["director", "service_manager", "technician"],
+    visibleTo: PAGE_ACCESS.timeTracking,
   },
   {
     label: "Variations",
     href: "/variations",
     icon: FileEdit,
     description: "Pending approvals and approved variation history",
-    visibleTo: ["director", "admin"],
+    visibleTo: PAGE_ACCESS.variations,
   },
   {
     label: "Log Variation",
     href: "/variations/submit",
     icon: FileEdit,
     description: "Submit extra work found on site",
-    visibleTo: ["technician"],
+    visibleTo: PAGE_ACCESS.variationsSubmit,
   },
   {
     label: "Schedule",
@@ -79,48 +76,48 @@ export const navItems: NavItem[] = [
     href: "/team",
     icon: Users,
     description: "Technicians, roles, and assignments",
-    visibleTo: ["director", "service_manager"],
+    visibleTo: PAGE_ACCESS.team,
   },
   {
     label: "Compliance",
     href: "/compliance",
     icon: ShieldCheck,
     description: "SWMS, JSA, and WHS compliance documents",
-    visibleTo: ["technician", "director", "service_manager", "admin", "sales_engineer", "draftsman"],
+    visibleTo: PAGE_ACCESS.compliance,
   },
   {
     label: "Templates",
     href: "/compliance/templates",
     icon: FileText,
     description: "Manage compliance document templates",
-    visibleTo: ["admin"],
+    visibleTo: PAGE_ACCESS.complianceTemplates,
   },
   {
     label: "Settings",
     href: "/settings",
     icon: Settings,
     description: "Business profile and system settings",
-    visibleTo: ["director", "admin"],
+    visibleTo: PAGE_ACCESS.settings,
   },
   {
     label: "Quotes",
     href: "/quotes",
     icon: BarChart2,
     description: "Historical job data for quoting",
-    visibleTo: ["sales_engineer", "director", "admin"],
+    visibleTo: PAGE_ACCESS.quotes,
   },
   {
     label: "Invoices",
     href: "/invoices",
     icon: Receipt,
     description: "Invoice management and sending",
-    visibleTo: ["admin", "director"],
+    visibleTo: PAGE_ACCESS.invoices,
   },
   {
     label: "Customers",
     href: "/customers",
     icon: Building2,
     description: "Customer contacts and linked jobs",
-    visibleTo: ["admin", "director", "sales_engineer"],
+    visibleTo: PAGE_ACCESS.customers,
   },
 ];

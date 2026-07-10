@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { put } from "@vercel/blob";
 import { requireRole } from "@/lib/auth/clerk";
+import { PAGE_ACCESS } from "@/lib/permissions";
 import { db } from "@/lib/db/client";
 import { generatePdf } from "@/lib/compliance/generatePdf";
 
@@ -12,7 +13,7 @@ const docSchema = z.object({
 });
 
 export async function GET() {
-  const user = await requireRole(["technician", "director", "service_manager", "admin", "sales_engineer", "draftsman"]).catch(() => null);
+  const user = await requireRole(PAGE_ACCESS.compliance).catch(() => null);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   let where;
@@ -37,7 +38,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const user = await requireRole(["technician", "director", "service_manager", "admin", "sales_engineer", "draftsman"]).catch(() => null);
+  const user = await requireRole(PAGE_ACCESS.compliance).catch(() => null);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();

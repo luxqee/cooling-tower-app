@@ -1,11 +1,12 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { requireRole } from "@/lib/auth/clerk";
+import { PAGE_ACCESS } from "@/lib/permissions";
 import { db } from "@/lib/db/client";
 import { redirect } from "next/navigation";
 import { TeamClient } from "./TeamClient";
 
 export default async function TeamPage() {
-  const user = await requireRole(["director", "service_manager"]).catch(() => null);
+  const user = await requireRole(PAGE_ACCESS.team).catch(() => null);
   if (!user) redirect("/sign-in");
 
   const users = await db.user.findMany({

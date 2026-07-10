@@ -2,11 +2,9 @@ import { headers } from "next/headers";
 import type { WebhookEvent } from "@clerk/nextjs/server";
 import { Webhook } from "svix";
 import { db } from "@/lib/db/client";
-import type { UserRole } from "@/lib/nav-config";
+import { ALL_ROLES, type UserRole } from "@/lib/permissions";
 
-const VALID_ROLES: UserRole[] = [
-  "technician", "director", "service_manager", "admin", "sales_engineer", "draftsman",
-];
+const VALID_ROLES = ALL_ROLES;
 
 export async function POST(req: Request) {
   const secret = process.env.CLERK_WEBHOOK_SECRET;

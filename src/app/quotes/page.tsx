@@ -1,11 +1,12 @@
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/AppShell";
 import { requireRole } from "@/lib/auth/clerk";
+import { PAGE_ACCESS } from "@/lib/permissions";
 import { QuotesClient } from "./QuotesClient";
 import { NewQuoteButton } from "./NewQuoteButton";
 
 export default async function QuotesPage() {
-  const user = await requireRole(["sales_engineer", "director", "admin"]).catch(() => null);
+  const user = await requireRole(PAGE_ACCESS.quotes).catch(() => null);
   if (!user) redirect("/");
 
   return (

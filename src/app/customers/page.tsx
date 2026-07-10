@@ -1,12 +1,13 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { requireRole } from "@/lib/auth/clerk";
+import { PAGE_ACCESS } from "@/lib/permissions";
 import { db } from "@/lib/db/client";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { CustomerList } from "./CustomerList";
 
 export default async function CustomersPage() {
-  const user = await requireRole(["admin", "director", "sales_engineer"]).catch(() => null);
+  const user = await requireRole(PAGE_ACCESS.customers).catch(() => null);
   if (!user) redirect("/");
 
   const customers = await db.customer.findMany({

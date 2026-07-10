@@ -1,11 +1,12 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { requireRole } from "@/lib/auth/clerk";
+import { PAGE_ACCESS } from "@/lib/permissions";
 import { db } from "@/lib/db/client";
 import { ClockCard } from "./ClockCard";
 import { redirect } from "next/navigation";
 
 export default async function TimeTrackingPage() {
-  const user = await requireRole(["technician", "service_manager", "director"]).catch(() => null);
+  const user = await requireRole(PAGE_ACCESS.timeTracking).catch(() => null);
   if (!user) redirect("/sign-in");
 
   const today = new Date();

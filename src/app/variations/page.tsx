@@ -1,11 +1,12 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { requireRole } from "@/lib/auth/clerk";
+import { PAGE_ACCESS } from "@/lib/permissions";
 import { db } from "@/lib/db/client";
 import { VariationsList } from "./VariationsList";
 import { redirect } from "next/navigation";
 
 export default async function VariationsPage() {
-  const user = await requireRole(["director", "admin"]).catch(() => null);
+  const user = await requireRole(PAGE_ACCESS.variations).catch(() => null);
   if (!user) redirect("/sign-in");
 
   const [pendingRows, decidedRows] = await Promise.all([

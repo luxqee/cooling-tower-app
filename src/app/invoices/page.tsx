@@ -1,11 +1,12 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { requireRole } from "@/lib/auth/clerk";
+import { PAGE_ACCESS } from "@/lib/permissions";
 import { db } from "@/lib/db/client";
 import { redirect } from "next/navigation";
 import { InvoiceList } from "./InvoiceList";
 
 export default async function InvoicesPage() {
-  const user = await requireRole(["admin", "director"]).catch(() => null);
+  const user = await requireRole(PAGE_ACCESS.invoices).catch(() => null);
   if (!user) redirect("/");
 
   const invoices = await db.invoice.findMany({

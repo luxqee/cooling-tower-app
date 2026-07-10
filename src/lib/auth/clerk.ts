@@ -67,7 +67,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   }
 }
 
-export async function requireRole(allowedRoles: UserRole[]): Promise<SessionUser> {
+export async function requireRole(allowedRoles: readonly UserRole[]): Promise<SessionUser> {
   const user = await getSessionUser();
   if (!user) throw new Error("Unauthorized");
   if (!allowedRoles.includes(user.role)) throw new Error("Forbidden");

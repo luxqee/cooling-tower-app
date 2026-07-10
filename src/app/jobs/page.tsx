@@ -1,11 +1,12 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { requireRole } from "@/lib/auth/clerk";
+import { PAGE_ACCESS } from "@/lib/permissions";
 import { db } from "@/lib/db/client";
 import { redirect } from "next/navigation";
 import { JobsClient } from "./JobsClient";
 
 export default async function JobsPage() {
-  const user = await requireRole(["director", "service_manager", "admin", "sales_engineer"]).catch(() => null);
+  const user = await requireRole(PAGE_ACCESS.jobs).catch(() => null);
   if (!user) redirect("/sign-in");
 
   const canCreate = ["director", "service_manager", "admin"].includes(user.role);
