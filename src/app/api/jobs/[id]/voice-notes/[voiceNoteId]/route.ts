@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { del } from "@vercel/blob";
-import { requireRole } from "@/lib/auth/clerk";
+import { getSessionUser } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
 
 export async function DELETE(
   _req: Request,
   { params }: { params: { id: string; voiceNoteId: string } }
 ) {
-  const user = await requireRole(["director", "admin"]).catch(() => null);
+  const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const note = await db.voiceNote.findFirst({
@@ -15,6 +15,16 @@ export async function DELETE(
     include: { photos: true },
   });
   if (!note) return NextResponse.json({ error: "Voice note not found" }, { status: 404 });
+
+  // Directors/admins can delete any voice note. A technician can only
+  // discard their own recording, and only before it's been sent to the
+  // office (awaiting_review) — once sent, deletion is an office-only action.
+  const isOfficeDelete = user.role === "director" || user.role === "admin";
+  const isOwnPendingNote =
+    user.role === "technician" && note.technicianId === user.id && note.status === "awaiting_review";
+  if (!isOfficeDelete && !isOwnPendingNote) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   await db.$transaction([
     db.voiceNotePhoto.deleteMany({ where: { voiceNoteId: note.id } }),

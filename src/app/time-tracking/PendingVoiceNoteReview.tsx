@@ -20,6 +20,7 @@ export function PendingVoiceNoteReview({ jobId }: PendingVoiceNoteReviewProps) {
   const [photos, setPhotos] = useState<Record<string, string[]>>({});
   const [uploadingPhotoFor, setUploadingPhotoFor] = useState<string | null>(null);
   const [sendingId, setSendingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
@@ -93,6 +94,23 @@ export function PendingVoiceNoteReview({ jobId }: PendingVoiceNoteReviewProps) {
     }
   }
 
+  async function deleteNote(noteId: string) {
+    if (!window.confirm("Discard this recording? It won't be sent to the office.")) return;
+    setError(null);
+    setDeletingId(noteId);
+    try {
+      const res = await fetch(`/api/jobs/${jobId}/voice-notes/${noteId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
+      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+      setPhotos((prev) => { const next = { ...prev }; delete next[noteId]; return next; });
+      setDrafts((prev) => { const next = { ...prev }; delete next[noteId]; return next; });
+    } catch {
+      setError("Failed to discard. Try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   if (notes.length === 0) return null;
 
   return (
@@ -157,14 +175,25 @@ export function PendingVoiceNoteReview({ jobId }: PendingVoiceNoteReviewProps) {
             {uploadingPhotoFor === note.id ? "Uploading…" : "Add photo"}
           </button>
 
-          <button
-            type="button"
-            onClick={() => send(note.id)}
-            disabled={sendingId === note.id || uploadingPhotoFor === note.id}
-            className="w-full min-h-[40px] rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-sm disabled:opacity-40"
-          >
-            {sendingId === note.id ? "Sending…" : uploadingPhotoFor === note.id ? "Waiting for photo…" : "Send"}
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => deleteNote(note.id)}
+              disabled={sendingId === note.id || uploadingPhotoFor === note.id || deletingId === note.id}
+              aria-label="Discard recording"
+              className="min-h-[40px] px-4 rounded-lg border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 font-semibold text-sm disabled:opacity-40"
+            >
+              {deletingId === note.id ? "Discarding…" : "Delete"}
+            </button>
+            <button
+              type="button"
+              onClick={() => send(note.id)}
+              disabled={sendingId === note.id || uploadingPhotoFor === note.id || deletingId === note.id}
+              className="flex-1 min-h-[40px] rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-sm disabled:opacity-40"
+            >
+              {sendingId === note.id ? "Sending…" : uploadingPhotoFor === note.id ? "Waiting for photo…" : "Send"}
+            </button>
+          </div>
         </div>
       ))}
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
