@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Plus, X, Pencil, Trash2, MessageSquare, Receipt } from "lucide-react";
 import Link from "next/link";
 import { NewJobForm } from "./NewJobForm";
@@ -341,7 +342,41 @@ function MaterialsModal({ job, canReconcile, onClose }: { job: Job; canReconcile
   );
 }
 
-function JobCard({ job, canEdit }: { job: Job; canEdit: boolean }) {
+const STATUS_BADGE_CLASS: Record<string, string> = {
+  active: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400",
+  complete: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400",
+  cancelled: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400",
+  scheduled: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
+};
+
+function JobActionButtons({ onMaterials, onLog, onEdit, onDelete }: {
+  onMaterials: () => void;
+  onLog: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <>
+      <button onClick={onMaterials} aria-label="Materials & costs" title="Materials & costs" className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
+        <Receipt className="w-3.5 h-3.5" />
+      </button>
+      <button onClick={onLog} aria-label="Communication log" title="Communication log" className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
+        <MessageSquare className="w-3.5 h-3.5" />
+      </button>
+      <button onClick={onEdit} aria-label="Edit job" title="Edit job" className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
+        <Pencil className="w-3.5 h-3.5" />
+      </button>
+      <button onClick={onDelete} aria-label="Delete job" title="Delete job" className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-600">
+        <Trash2 className="w-3.5 h-3.5" />
+      </button>
+    </>
+  );
+}
+
+// Shared by both the mobile card and desktop table row — same state,
+// same modals (portaled to <body> so they render correctly regardless of
+// whether the trigger lives inside a <div> or a <tr>), different layout.
+function useJobCardState(job: Job) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -363,6 +398,27 @@ function JobCard({ job, canEdit }: { job: Job; canEdit: boolean }) {
     });
   }
 
+  return {
+    editing, setEditing, confirming, setConfirming, loggingOpen, setLoggingOpen,
+    materialsOpen, setMaterialsOpen, deleteError, setDeleteError, isPending, deleteJob,
+  };
+}
+
+function JobCardModals({ job, canEdit, state }: { job: Job; canEdit: boolean; state: ReturnType<typeof useJobCardState> }) {
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <>
+      {state.editing && <EditJobModal job={job} onClose={() => state.setEditing(false)} />}
+      {state.loggingOpen && <CommunicationLogModal job={job} onClose={() => state.setLoggingOpen(false)} />}
+      {state.materialsOpen && <MaterialsModal job={job} canReconcile={canEdit} onClose={() => state.setMaterialsOpen(false)} />}
+    </>,
+    document.body
+  );
+}
+
+function JobCard({ job, canEdit }: { job: Job; canEdit: boolean }) {
+  const state = useJobCardState(job);
+
   return (
     <>
       <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-4 space-y-3">
@@ -372,32 +428,16 @@ function JobCard({ job, canEdit }: { job: Job; canEdit: boolean }) {
             <p className="text-sm text-slate-500 truncate">{job.siteName}</p>
           </Link>
           <div className="flex items-center gap-2 shrink-0">
-            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-              job.status === "active"
-                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400"
-                : job.status === "complete"
-                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400"
-                  : job.status === "cancelled"
-                    ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"
-                    : "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
-            }`}>
+            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_BADGE_CLASS[job.status]}`}>
               {job.status}
             </span>
             {canEdit && (
-              <>
-                <button onClick={() => setMaterialsOpen(true)} aria-label="Materials & costs" title="Materials & costs" className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
-                  <Receipt className="w-3.5 h-3.5" />
-                </button>
-                <button onClick={() => setLoggingOpen(true)} aria-label="Communication log" title="Communication log" className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
-                  <MessageSquare className="w-3.5 h-3.5" />
-                </button>
-                <button onClick={() => setEditing(true)} aria-label="Edit job" title="Edit job" className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
-                  <Pencil className="w-3.5 h-3.5" />
-                </button>
-                <button onClick={() => setConfirming(true)} aria-label="Delete job" title="Delete job" className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-600">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </>
+              <JobActionButtons
+                onMaterials={() => state.setMaterialsOpen(true)}
+                onLog={() => state.setLoggingOpen(true)}
+                onEdit={() => state.setEditing(true)}
+                onDelete={() => state.setConfirming(true)}
+              />
             )}
           </div>
         </div>
@@ -419,23 +459,90 @@ function JobCard({ job, canEdit }: { job: Job; canEdit: boolean }) {
 
         {job.crew.length > 0 && <p className="text-xs text-slate-500">{job.crew.join(", ")}</p>}
 
-        {confirming && (
+        {state.confirming && (
           <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-3 py-3 space-y-2">
             <p className="text-sm text-red-700 dark:text-red-300 font-medium">Delete this job?</p>
             <p className="text-xs text-red-600 dark:text-red-400">This will remove all time entries and assignments.</p>
-            {deleteError && <p className="text-xs text-red-700 dark:text-red-300 font-medium">{deleteError}</p>}
+            {state.deleteError && <p className="text-xs text-red-700 dark:text-red-300 font-medium">{state.deleteError}</p>}
             <div className="flex gap-2">
-              <button onClick={() => { setConfirming(false); setDeleteError(null); }} className="flex-1 min-h-[36px] rounded-lg border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300">Cancel</button>
-              <button onClick={deleteJob} disabled={isPending} className="flex-1 min-h-[36px] rounded-lg bg-red-600 text-white font-semibold text-sm disabled:opacity-40">
-                {isPending ? "Deleting…" : "Delete"}
+              <button onClick={() => { state.setConfirming(false); state.setDeleteError(null); }} className="flex-1 min-h-[36px] rounded-lg border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300">Cancel</button>
+              <button onClick={state.deleteJob} disabled={state.isPending} className="flex-1 min-h-[36px] rounded-lg bg-red-600 text-white font-semibold text-sm disabled:opacity-40">
+                {state.isPending ? "Deleting…" : "Delete"}
               </button>
             </div>
           </div>
         )}
       </div>
-      {editing && <EditJobModal job={job} onClose={() => setEditing(false)} />}
-      {loggingOpen && <CommunicationLogModal job={job} onClose={() => setLoggingOpen(false)} />}
-      {materialsOpen && <MaterialsModal job={job} canReconcile={canEdit} onClose={() => setMaterialsOpen(false)} />}
+      <JobCardModals job={job} canEdit={canEdit} state={state} />
+    </>
+  );
+}
+
+// Desktop-only table row — same interactive state/modals as JobCard, laid
+// out for a wide screen instead of a stacked card.
+function JobRow({ job, canEdit }: { job: Job; canEdit: boolean }) {
+  const state = useJobCardState(job);
+  const pct = Math.min((job.loggedHours / job.quotedHours) * 100, 100);
+
+  return (
+    <>
+      <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/60">
+        <td className="px-4 py-3 min-w-0">
+          <Link href={`/jobs/${job.id}`} className="block hover:underline">
+            <p className="font-semibold truncate">{job.customerName}</p>
+            <p className="text-sm text-slate-500 truncate">{job.siteName}</p>
+          </Link>
+        </td>
+        <td className="px-4 py-3">
+          <span className={`text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${STATUS_BADGE_CLASS[job.status]}`}>
+            {job.status}
+          </span>
+        </td>
+        <td className="px-4 py-3 w-48">
+          <div className="flex items-center justify-between text-xs mb-1">
+            <span className={job.isOverQuota ? "text-red-600 font-semibold" : "text-slate-700 dark:text-slate-300"}>
+              {job.loggedHours}h / {job.quotedHours}h{job.isOverQuota && " ⚠"}
+            </span>
+          </div>
+          <div className="h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+            <div className={`h-full rounded-full ${job.isOverQuota ? "bg-red-500" : "bg-amber-400"}`} style={{ width: `${pct}%` }} />
+          </div>
+        </td>
+        <td className="px-4 py-3 text-sm text-slate-500 max-w-[16rem] truncate">
+          {job.crew.length > 0 ? job.crew.join(", ") : "—"}
+        </td>
+        <td className="px-4 py-3">
+          {canEdit && (
+            <div className="flex items-center gap-1 justify-end">
+              <JobActionButtons
+                onMaterials={() => state.setMaterialsOpen(true)}
+                onLog={() => state.setLoggingOpen(true)}
+                onEdit={() => state.setEditing(true)}
+                onDelete={() => state.setConfirming(true)}
+              />
+            </div>
+          )}
+        </td>
+      </tr>
+      {state.confirming && (
+        <tr>
+          <td colSpan={5} className="px-4 py-3 bg-red-50 dark:bg-red-900/20 border-t border-red-200 dark:border-red-800">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm text-red-700 dark:text-red-300 font-medium">Delete this job?</p>
+                <p className="text-xs text-red-600 dark:text-red-400">This will remove all time entries and assignments.{state.deleteError && ` ${state.deleteError}`}</p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <button onClick={() => { state.setConfirming(false); state.setDeleteError(null); }} className="min-h-[36px] px-3 rounded-lg border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300">Cancel</button>
+                <button onClick={state.deleteJob} disabled={state.isPending} className="min-h-[36px] px-3 rounded-lg bg-red-600 text-white font-semibold text-sm disabled:opacity-40">
+                  {state.isPending ? "Deleting…" : "Delete"}
+                </button>
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
+      <JobCardModals job={job} canEdit={canEdit} state={state} />
     </>
   );
 }
@@ -462,11 +569,36 @@ export function JobsClient({ jobs, canCreate }: JobsClientProps) {
 
       {jobs.length === 0 && !showForm && <p className="text-sm text-slate-500">No active jobs.</p>}
 
-      <div className="space-y-3">
-        {jobs.map((job) => (
-          <JobCard key={job.id} job={job} canEdit={canCreate} />
-        ))}
-      </div>
+      {jobs.length > 0 && (
+        <>
+          {/* Mobile / narrow screens: stacked cards */}
+          <div className="lg:hidden space-y-3">
+            {jobs.map((job) => (
+              <JobCard key={job.id} job={job} canEdit={canCreate} />
+            ))}
+          </div>
+
+          {/* Desktop: a real table instead of a stretched single-column list */}
+          <div className="hidden lg:block overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-700 text-left text-xs text-slate-500">
+                  <th className="px-4 py-2.5 font-medium">Job</th>
+                  <th className="px-4 py-2.5 font-medium">Status</th>
+                  <th className="px-4 py-2.5 font-medium">Hours</th>
+                  <th className="px-4 py-2.5 font-medium">Crew</th>
+                  <th className="px-4 py-2.5"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                {jobs.map((job) => (
+                  <JobRow key={job.id} job={job} canEdit={canCreate} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
 
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40">

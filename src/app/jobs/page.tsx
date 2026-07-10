@@ -50,7 +50,7 @@ export default async function JobsPage() {
 
   return (
     <AppShell>
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+      <div className="max-w-2xl lg:max-w-6xl mx-auto px-4 py-6 space-y-5">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold">Jobs</h1>
