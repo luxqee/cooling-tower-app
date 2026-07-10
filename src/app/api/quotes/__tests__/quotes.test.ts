@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/auth/clerk", () => ({ requireRole: vi.fn() }));
 vi.mock("@/lib/db/client", () => ({
-  db: { quote: { findMany: vi.fn(), create: vi.fn() } },
+  db: { quote: { findMany: vi.fn(), create: vi.fn() }, customer: { findUnique: vi.fn() } },
 }));
 
 import { requireRole } from "@/lib/auth/clerk";
@@ -74,8 +74,45 @@ describe("POST /api/quotes", () => {
     expect(res.status).toBe(201);
     expect(db.quote.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ customerName: "Rio Tinto", totalAmount: 760, status: "draft" }),
+        data: expect.objectContaining({ customerName: "Rio Tinto", customerId: null, totalAmount: 760, status: "draft" }),
       })
     );
+  });
+
+  it("returns 404 when customerId doesn't match a real customer", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockSalesEngineer as any);
+    vi.mocked(db.customer.findUnique).mockResolvedValue(null);
+
+    const res = await POST(makePostReq({ ...body, customerId: "11111111-1111-4111-8111-111111111111", customerName: undefined }));
+
+    expect(res.status).toBe(404);
+    expect(db.quote.create).not.toHaveBeenCalled();
+  });
+
+  it("resolves customerId to a real customer and snapshots its name, when no customerName is given", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockSalesEngineer as any);
+    vi.mocked(db.customer.findUnique).mockResolvedValue({ id: "c1", name: "Rio Tinto Pty Ltd" } as any);
+    vi.mocked(db.quote.create).mockResolvedValue({
+      id: "q1", customerName: "Rio Tinto Pty Ltd", totalAmount: { toNumber: () => 760 }, status: "draft", createdAt: new Date(),
+    } as any);
+
+    const { customerName: _unused, ...rest } = body;
+    const res = await POST(makePostReq({ ...rest, customerId: "11111111-1111-4111-8111-111111111111" }));
+
+    expect(res.status).toBe(201);
+    expect(db.quote.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ customerId: "11111111-1111-4111-8111-111111111111", customerName: "Rio Tinto Pty Ltd" }),
+      })
+    );
+  });
+
+  it("returns 400 when neither customerName nor customerId is given", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockSalesEngineer as any);
+    const { customerName: _unused, ...rest } = body;
+
+    const res = await POST(makePostReq(rest));
+
+    expect(res.status).toBe(400);
   });
 });

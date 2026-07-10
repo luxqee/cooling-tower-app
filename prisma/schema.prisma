@@ -145,6 +145,7 @@ model Customer {
   assets       Asset[]
   contracts    Contract[]
   portalTokens CustomerPortalToken[]
+  quotes       Quote[]
 
   @@index([name])
 }
@@ -510,6 +511,7 @@ model Contract {
 model Quote {
   id           String      @id @default(uuid())
   createdById  String
+  customerId   String?
   customerName String
   siteName     String
   jobType      String
@@ -521,10 +523,12 @@ model Quote {
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
-  createdBy User @relation(fields: [createdById], references: [id])
+  createdBy User      @relation(fields: [createdById], references: [id])
+  customer  Customer? @relation(fields: [customerId], references: [id])
 
   @@index([status])
   @@index([createdById])
+  @@index([customerId])
 }
 
 model JobCommunication {

@@ -22,12 +22,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message }, { status: 400 });
   }
 
+  let { customerName, customerId } = parsed.data;
+
+  if (customerId) {
+    const customer = await db.customer.findUnique({ where: { id: customerId } });
+    if (!customer) return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    customerName = customer.name;
+  } else if (!customerName || customerName.trim().length < 1) {
+    return NextResponse.json({ error: "Customer name required" }, { status: 400 });
+  }
+
   const totalAmount = calculateQuoteTotal(parsed.data.lineItems);
 
   const quote = await db.quote.create({
     data: {
       createdById: user.id,
-      customerName: parsed.data.customerName,
+      customerId: customerId ?? null,
+      customerName: customerName!,
       siteName: parsed.data.siteName,
       jobType: parsed.data.jobType,
       lineItems: parsed.data.lineItems,

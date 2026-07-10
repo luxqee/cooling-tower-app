@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import { Plus, X, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -10,12 +10,24 @@ interface LineItem {
   unitPrice: string;
 }
 
+interface CustomerOption {
+  id: string;
+  name: string;
+}
+
 const emptyLine = (): LineItem => ({ description: "", qty: "1", unitPrice: "" });
 
 export function NewQuoteButton() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [customerName, setCustomerName] = useState("");
+
+  // Customer search-and-select (same pattern as NewJobForm)
+  const [customerQuery, setCustomerQuery] = useState("");
+  const [customerId, setCustomerId] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<CustomerOption[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const [siteName, setSiteName] = useState("");
   const [jobType, setJobType] = useState("");
   const [lines, setLines] = useState<LineItem[]>([emptyLine()]);
@@ -24,12 +36,56 @@ export function NewQuoteButton() {
 
   const total = lines.reduce((sum, l) => sum + (parseFloat(l.qty) || 0) * (parseFloat(l.unitPrice) || 0), 0);
 
+  useEffect(() => {
+    if (customerId) return;
+    if (customerQuery.trim().length < 2) {
+      setSuggestions([]);
+      setShowDropdown(false);
+      return;
+    }
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => {
+      fetch(`/api/customers?q=${encodeURIComponent(customerQuery.trim())}`, { signal: ctrl.signal })
+        .then((r) => (r.ok ? r.json() : []))
+        .then((data: CustomerOption[]) => {
+          setSuggestions(data);
+          setShowDropdown(data.length > 0);
+        })
+        .catch(() => {});
+    }, 200);
+    return () => { clearTimeout(timer); ctrl.abort(); };
+  }, [customerQuery, customerId]);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  function selectCustomer(option: CustomerOption) {
+    setCustomerId(option.id);
+    setCustomerQuery(option.name);
+    setSuggestions([]);
+    setShowDropdown(false);
+  }
+
+  function clearCustomer() {
+    setCustomerId(null);
+    setCustomerQuery("");
+    setSuggestions([]);
+    setShowDropdown(false);
+  }
+
   function updateLine(i: number, field: keyof LineItem, value: string) {
     setLines((prev) => prev.map((l, idx) => (idx === i ? { ...l, [field]: value } : l)));
   }
 
   function reset() {
-    setCustomerName("");
+    clearCustomer();
     setSiteName("");
     setJobType("");
     setLines([emptyLine()]);
@@ -43,10 +99,17 @@ export function NewQuoteButton() {
         .filter((l) => l.description.trim())
         .map((l) => ({ description: l.description, qty: parseFloat(l.qty) || 0, unitPrice: parseFloat(l.unitPrice) || 0 }));
 
+      const body: Record<string, unknown> = { siteName, jobType, lineItems };
+      if (customerId) {
+        body.customerId = customerId;
+      } else {
+        body.customerName = customerQuery.trim();
+      }
+
       const res = await fetch("/api/quotes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customerName, siteName, jobType, lineItems }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) { setError((await res.json()).error ?? "Failed to create quote."); return; }
       reset();
@@ -56,6 +119,7 @@ export function NewQuoteButton() {
   }
 
   const inp = "w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-base";
+  const hasCustomer = customerId ? true : customerQuery.trim().length > 0;
 
   return (
     <>
@@ -76,7 +140,42 @@ export function NewQuoteButton() {
             </div>
 
             <div className="overflow-y-auto space-y-3">
-              <input type="text" placeholder="Customer name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} className={inp} />
+              <div className="relative" ref={dropdownRef}>
+                <input
+                  type="text"
+                  value={customerQuery}
+                  onChange={(e) => { if (!customerId) setCustomerQuery(e.target.value); }}
+                  onFocus={() => { if (!customerId && suggestions.length > 0) setShowDropdown(true); }}
+                  placeholder={customerId ? "" : "Customer name — search or type"}
+                  readOnly={!!customerId}
+                  className={`${inp} pr-10 ${customerId ? "bg-slate-50 dark:bg-slate-800 cursor-default" : ""}`}
+                />
+                {customerId && (
+                  <button
+                    type="button"
+                    onClick={clearCustomer}
+                    aria-label="Clear customer"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg leading-none"
+                  >
+                    ✕
+                  </button>
+                )}
+                {showDropdown && (
+                  <ul className="absolute z-20 mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg max-h-48 overflow-y-auto">
+                    {suggestions.map((s) => (
+                      <li key={s.id}>
+                        <button
+                          type="button"
+                          onClick={() => selectCustomer(s)}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800"
+                        >
+                          {s.name}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
               <input type="text" placeholder="Site name" value={siteName} onChange={(e) => setSiteName(e.target.value)} className={inp} />
               <input type="text" placeholder="Job type (e.g. Annual service)" value={jobType} onChange={(e) => setJobType(e.target.value)} className={inp} />
 
@@ -105,7 +204,7 @@ export function NewQuoteButton() {
 
             <button
               onClick={save}
-              disabled={isPending || !customerName.trim() || !siteName.trim() || !jobType.trim() || total <= 0}
+              disabled={isPending || !hasCustomer || !siteName.trim() || !jobType.trim() || total <= 0}
               className="w-full min-h-[44px] rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm disabled:opacity-40 shrink-0"
             >
               {isPending ? "Saving…" : "Save as draft"}

@@ -7,7 +7,8 @@ const lineItemSchema = z.object({
 });
 
 export const createQuoteSchema = z.object({
-  customerName: z.string().min(1, "Customer name required"),
+  customerName: z.string().min(1, "Customer name required").optional(),
+  customerId: z.string().uuid().optional(),
   siteName: z.string().min(1, "Site name required"),
   jobType: z.string().min(1, "Job type required"),
   lineItems: z.array(lineItemSchema).min(1, "At least one line item required"),
