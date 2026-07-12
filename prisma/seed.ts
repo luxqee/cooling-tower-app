@@ -6,13 +6,19 @@ const db = new PrismaClient({ adapter });
 
 const d = (iso: string) => new Date(iso);
 
-const SEED_JOB_IDS = [
-  "seed-job-riotinto",
-  "seed-job-bhp",
-  "seed-job-stanwell",
-  "seed-job-glencore",
-  "seed-job-incitec",
-  "seed-job-qal",
+// Job.id has no DB-level UUID format constraint (Job.id is a plain String
+// column — @default(uuid()) is only used when no id is supplied), but every
+// jobId Zod schema across the app (variations, schedule assignments,
+// clock-in, compliance documents, asset-job linking) validates with
+// z.string().uuid(). Seed job IDs must be real UUIDs or those endpoints
+// 400 on any seeded job — see seed-ids.test.ts.
+export const SEED_JOB_IDS = [
+  "8d30c260-1f99-4280-af15-4c802866c526", // seed-job-riotinto
+  "c3f79548-f16b-4d32-b937-51cf7d42cb34", // seed-job-bhp
+  "67e75b3b-9505-4028-b41f-1a706ba891c2", // seed-job-stanwell
+  "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6", // seed-job-glencore
+  "ef78d400-db40-4b4c-96fb-819ed060aa34", // seed-job-incitec
+  "cb4aef5a-a7e8-4411-bd89-a9b9e086bfce", // seed-job-qal
 ];
 
 const SEED_USER_IDS = [
@@ -22,13 +28,16 @@ const SEED_USER_IDS = [
   "seed-user-tom",
 ];
 
-const SEED_CUSTOMER_IDS = [
-  "seed-customer-riotinto",
-  "seed-customer-bhp",
-  "seed-customer-stanwell",
-  "seed-customer-glencore",
-  "seed-customer-incitec",
-  "seed-customer-qal",
+// Same UUID-format requirement as SEED_JOB_IDS above, this time for
+// customerId (contracts/validate.ts, quoting/validate.ts, assets/validate.ts,
+// jobs/route.ts all require z.string().uuid()). See seed-ids.test.ts.
+export const SEED_CUSTOMER_IDS = [
+  "6f1e32aa-f961-468e-96fd-9336dc2c34d5", // seed-customer-riotinto
+  "69c31a1c-e330-44a3-9af6-a1cc2bef7abf", // seed-customer-bhp
+  "98cf136c-bd96-4933-ae98-fad4f9ce31c9", // seed-customer-stanwell
+  "b22b7ca9-2025-444d-a5bf-59308220f8eb", // seed-customer-glencore
+  "b2ddddcb-35a0-46a1-b0ef-f221d2571438", // seed-customer-incitec
+  "ba6843fe-3e1b-482d-b4c9-c6a1a21a8c6b", // seed-customer-qal
 ];
 
 async function main() {
@@ -92,7 +101,7 @@ async function main() {
   // ─── Customers ────────────────────────────────────────────────────────────
   const customers = [
     {
-      id: "seed-customer-riotinto",
+      id: "6f1e32aa-f961-468e-96fd-9336dc2c34d5",
       name: "Rio Tinto",
       abn: "96 004 458 404",
       contactPerson: "Priya Nathan",
@@ -102,7 +111,7 @@ async function main() {
       notes: "Annual service customer since 2019. Prefers scheduling around wet season (Nov–Apr).",
     },
     {
-      id: "seed-customer-bhp",
+      id: "69c31a1c-e330-44a3-9af6-a1cc2bef7abf",
       name: "BHP",
       abn: "49 004 028 077",
       contactPerson: "Craig Ferris",
@@ -112,7 +121,7 @@ async function main() {
       notes: "Quarterly inspections. Site induction required 48h before arrival.",
     },
     {
-      id: "seed-customer-stanwell",
+      id: "98cf136c-bd96-4933-ae98-fad4f9ce31c9",
       name: "Stanwell Corporation",
       abn: "78 132 181 792",
       contactPerson: "Diane Osei",
@@ -122,7 +131,7 @@ async function main() {
       notes: null,
     },
     {
-      id: "seed-customer-glencore",
+      id: "b22b7ca9-2025-444d-a5bf-59308220f8eb",
       name: "Glencore",
       abn: "31 088 796 969",
       contactPerson: "Aaron Blake",
@@ -132,7 +141,7 @@ async function main() {
       notes: "Long-term maintenance contract customer.",
     },
     {
-      id: "seed-customer-incitec",
+      id: "b2ddddcb-35a0-46a1-b0ef-f221d2571438",
       name: "Incitec Pivot",
       abn: "42 004 080 264",
       contactPerson: "Helen Marsh",
@@ -142,7 +151,7 @@ async function main() {
       notes: null,
     },
     {
-      id: "seed-customer-qal",
+      id: "ba6843fe-3e1b-482d-b4c9-c6a1a21a8c6b",
       name: "Queensland Alumina Ltd",
       abn: "37 009 660 872",
       contactPerson: "Rowan Kelly",
@@ -228,9 +237,9 @@ async function main() {
   // ─── Jobs ─────────────────────────────────────────────────────────────────
   const jobs = [
     {
-      id: "seed-job-riotinto",
+      id: "8d30c260-1f99-4280-af15-4c802866c526",
       customerName: "Rio Tinto",
-      customerId: "seed-customer-riotinto",
+      customerId: "6f1e32aa-f961-468e-96fd-9336dc2c34d5",
       siteName: "Weipa Processing Plant",
       siteAddress: "1 Bauxite Rd, Weipa QLD 4874",
       status: "complete" as const,
@@ -239,9 +248,9 @@ async function main() {
       quotedCost: 7000,
     },
     {
-      id: "seed-job-bhp",
+      id: "c3f79548-f16b-4d32-b937-51cf7d42cb34",
       customerName: "BHP",
-      customerId: "seed-customer-bhp",
+      customerId: "69c31a1c-e330-44a3-9af6-a1cc2bef7abf",
       siteName: "Hay Point Coal Terminal",
       siteAddress: "Port Road, Hay Point QLD 4740",
       status: "complete" as const,
@@ -250,9 +259,9 @@ async function main() {
       quotedCost: 3500,
     },
     {
-      id: "seed-job-stanwell",
+      id: "67e75b3b-9505-4028-b41f-1a706ba891c2",
       customerName: "Stanwell Corporation",
-      customerId: "seed-customer-stanwell",
+      customerId: "98cf136c-bd96-4933-ae98-fad4f9ce31c9",
       siteName: "Stanwell Power Station",
       siteAddress: "Stanwell Rd, Stanwell QLD 4702",
       status: "complete" as const,
@@ -261,9 +270,9 @@ async function main() {
       quotedCost: 1200,
     },
     {
-      id: "seed-job-glencore",
+      id: "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6",
       customerName: "Glencore",
-      customerId: "seed-customer-glencore",
+      customerId: "b22b7ca9-2025-444d-a5bf-59308220f8eb",
       siteName: "Mt Isa Copper Operations",
       siteAddress: "22 Marian St, Mount Isa QLD 4825",
       status: "active" as const,
@@ -272,9 +281,9 @@ async function main() {
       quotedCost: 8500,
     },
     {
-      id: "seed-job-incitec",
+      id: "ef78d400-db40-4b4c-96fb-819ed060aa34",
       customerName: "Incitec Pivot",
-      customerId: "seed-customer-incitec",
+      customerId: "b2ddddcb-35a0-46a1-b0ef-f221d2571438",
       siteName: "Gibson Island Fertiliser Plant",
       siteAddress: "Gibson Island, Murarrie QLD 4172",
       status: "scheduled" as const,
@@ -283,9 +292,9 @@ async function main() {
       quotedCost: 2800,
     },
     {
-      id: "seed-job-qal",
+      id: "cb4aef5a-a7e8-4411-bd89-a9b9e086bfce",
       customerName: "Queensland Alumina Ltd",
-      customerId: "seed-customer-qal",
+      customerId: "ba6843fe-3e1b-482d-b4c9-c6a1a21a8c6b",
       siteName: "Gladstone Refinery",
       siteAddress: "1 Parsons Rd, Gladstone QLD 4680",
       status: "scheduled" as const,
@@ -319,23 +328,23 @@ async function main() {
   await db.assignment.createMany({
     data: [
       // Rio Tinto — 2 days, Jake + Sarah both days, Mike day 1 only
-      { userId: jakeId,  jobId: "seed-job-riotinto", assignedDate: d("2026-06-10T00:00:00Z"), endDate: d("2026-06-11T00:00:00Z") },
-      { userId: sarahId, jobId: "seed-job-riotinto", assignedDate: d("2026-06-10T00:00:00Z"), endDate: d("2026-06-11T00:00:00Z") },
-      { userId: mikeId,  jobId: "seed-job-riotinto", assignedDate: d("2026-06-10T00:00:00Z") },
+      { userId: jakeId,  jobId: "8d30c260-1f99-4280-af15-4c802866c526", assignedDate: d("2026-06-10T00:00:00Z"), endDate: d("2026-06-11T00:00:00Z") },
+      { userId: sarahId, jobId: "8d30c260-1f99-4280-af15-4c802866c526", assignedDate: d("2026-06-10T00:00:00Z"), endDate: d("2026-06-11T00:00:00Z") },
+      { userId: mikeId,  jobId: "8d30c260-1f99-4280-af15-4c802866c526", assignedDate: d("2026-06-10T00:00:00Z") },
       // BHP — 1 day, Jake + Mike
-      { userId: jakeId, jobId: "seed-job-bhp", assignedDate: d("2026-06-22T00:00:00Z") },
-      { userId: mikeId, jobId: "seed-job-bhp", assignedDate: d("2026-06-22T00:00:00Z") },
+      { userId: jakeId, jobId: "c3f79548-f16b-4d32-b937-51cf7d42cb34", assignedDate: d("2026-06-22T00:00:00Z") },
+      { userId: mikeId, jobId: "c3f79548-f16b-4d32-b937-51cf7d42cb34", assignedDate: d("2026-06-22T00:00:00Z") },
       // Stanwell — 1 day, Mike
-      { userId: mikeId, jobId: "seed-job-stanwell", assignedDate: d("2026-07-01T00:00:00Z") },
+      { userId: mikeId, jobId: "67e75b3b-9505-4028-b41f-1a706ba891c2", assignedDate: d("2026-07-01T00:00:00Z") },
       // Glencore — 3 days Jake, 2 days Sarah (active)
-      { userId: jakeId,  jobId: "seed-job-glencore", assignedDate: d("2026-07-07T00:00:00Z"), endDate: d("2026-07-09T00:00:00Z") },
-      { userId: sarahId, jobId: "seed-job-glencore", assignedDate: d("2026-07-07T00:00:00Z"), endDate: d("2026-07-08T00:00:00Z") },
+      { userId: jakeId,  jobId: "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6", assignedDate: d("2026-07-07T00:00:00Z"), endDate: d("2026-07-09T00:00:00Z") },
+      { userId: sarahId, jobId: "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6", assignedDate: d("2026-07-07T00:00:00Z"), endDate: d("2026-07-08T00:00:00Z") },
       // Incitec — upcoming Thu 10 Jul
-      { userId: sarahId, jobId: "seed-job-incitec", assignedDate: d("2026-07-10T00:00:00Z") },
-      { userId: mikeId,  jobId: "seed-job-incitec", assignedDate: d("2026-07-10T00:00:00Z") },
+      { userId: sarahId, jobId: "ef78d400-db40-4b4c-96fb-819ed060aa34", assignedDate: d("2026-07-10T00:00:00Z") },
+      { userId: mikeId,  jobId: "ef78d400-db40-4b4c-96fb-819ed060aa34", assignedDate: d("2026-07-10T00:00:00Z") },
       // QAL — upcoming Mon 14 Jul
-      { userId: jakeId, jobId: "seed-job-qal", assignedDate: d("2026-07-14T00:00:00Z"), endDate: d("2026-07-15T00:00:00Z") },
-      { userId: mikeId, jobId: "seed-job-qal", assignedDate: d("2026-07-14T00:00:00Z"), endDate: d("2026-07-15T00:00:00Z") },
+      { userId: jakeId, jobId: "cb4aef5a-a7e8-4411-bd89-a9b9e086bfce", assignedDate: d("2026-07-14T00:00:00Z"), endDate: d("2026-07-15T00:00:00Z") },
+      { userId: mikeId, jobId: "cb4aef5a-a7e8-4411-bd89-a9b9e086bfce", assignedDate: d("2026-07-14T00:00:00Z"), endDate: d("2026-07-15T00:00:00Z") },
     ],
   });
   console.log("  ✓ Assignments (12 across all jobs)");
@@ -346,23 +355,23 @@ async function main() {
   await db.timeEntry.createMany({
     data: [
       // Rio Tinto day 1 — Jake 10.5h, Sarah 9.5h, Mike 8.5h
-      { userId: jakeId,  jobId: "seed-job-riotinto", clockInTime: d("2026-06-10T07:00:00Z"), clockOutTime: d("2026-06-10T17:30:00Z"), durationMinutes: 630, status: "complete" },
-      { userId: sarahId, jobId: "seed-job-riotinto", clockInTime: d("2026-06-10T07:00:00Z"), clockOutTime: d("2026-06-10T16:30:00Z"), durationMinutes: 570, status: "complete" },
-      { userId: mikeId,  jobId: "seed-job-riotinto", clockInTime: d("2026-06-10T07:00:00Z"), clockOutTime: d("2026-06-10T15:30:00Z"), durationMinutes: 510, status: "complete" },
+      { userId: jakeId,  jobId: "8d30c260-1f99-4280-af15-4c802866c526", clockInTime: d("2026-06-10T07:00:00Z"), clockOutTime: d("2026-06-10T17:30:00Z"), durationMinutes: 630, status: "complete" },
+      { userId: sarahId, jobId: "8d30c260-1f99-4280-af15-4c802866c526", clockInTime: d("2026-06-10T07:00:00Z"), clockOutTime: d("2026-06-10T16:30:00Z"), durationMinutes: 570, status: "complete" },
+      { userId: mikeId,  jobId: "8d30c260-1f99-4280-af15-4c802866c526", clockInTime: d("2026-06-10T07:00:00Z"), clockOutTime: d("2026-06-10T15:30:00Z"), durationMinutes: 510, status: "complete" },
       // Rio Tinto day 2 — Jake 9h, Sarah 8.5h
-      { userId: jakeId,  jobId: "seed-job-riotinto", clockInTime: d("2026-06-11T07:00:00Z"), clockOutTime: d("2026-06-11T16:00:00Z"), durationMinutes: 540, status: "complete" },
-      { userId: sarahId, jobId: "seed-job-riotinto", clockInTime: d("2026-06-11T07:00:00Z"), clockOutTime: d("2026-06-11T15:30:00Z"), durationMinutes: 510, status: "complete" },
+      { userId: jakeId,  jobId: "8d30c260-1f99-4280-af15-4c802866c526", clockInTime: d("2026-06-11T07:00:00Z"), clockOutTime: d("2026-06-11T16:00:00Z"), durationMinutes: 540, status: "complete" },
+      { userId: sarahId, jobId: "8d30c260-1f99-4280-af15-4c802866c526", clockInTime: d("2026-06-11T07:00:00Z"), clockOutTime: d("2026-06-11T15:30:00Z"), durationMinutes: 510, status: "complete" },
       // BHP — Jake 9.5h, Mike 9h
-      { userId: jakeId, jobId: "seed-job-bhp", clockInTime: d("2026-06-22T07:30:00Z"), clockOutTime: d("2026-06-22T17:00:00Z"), durationMinutes: 570, status: "complete" },
-      { userId: mikeId, jobId: "seed-job-bhp", clockInTime: d("2026-06-22T07:30:00Z"), clockOutTime: d("2026-06-22T16:30:00Z"), durationMinutes: 540, status: "complete" },
+      { userId: jakeId, jobId: "c3f79548-f16b-4d32-b937-51cf7d42cb34", clockInTime: d("2026-06-22T07:30:00Z"), clockOutTime: d("2026-06-22T17:00:00Z"), durationMinutes: 570, status: "complete" },
+      { userId: mikeId, jobId: "c3f79548-f16b-4d32-b937-51cf7d42cb34", clockInTime: d("2026-06-22T07:30:00Z"), clockOutTime: d("2026-06-22T16:30:00Z"), durationMinutes: 540, status: "complete" },
       // Stanwell — Mike 6.5h
-      { userId: mikeId, jobId: "seed-job-stanwell", clockInTime: d("2026-07-01T08:00:00Z"), clockOutTime: d("2026-07-01T14:30:00Z"), durationMinutes: 390, status: "complete" },
+      { userId: mikeId, jobId: "67e75b3b-9505-4028-b41f-1a706ba891c2", clockInTime: d("2026-07-01T08:00:00Z"), clockOutTime: d("2026-07-01T14:30:00Z"), durationMinutes: 390, status: "complete" },
       // Glencore day 1 — Jake 10h, Sarah 9.5h (complete)
-      { userId: jakeId,  jobId: "seed-job-glencore", clockInTime: d("2026-07-07T07:00:00Z"), clockOutTime: d("2026-07-07T17:00:00Z"), durationMinutes: 600, status: "complete" },
-      { userId: sarahId, jobId: "seed-job-glencore", clockInTime: d("2026-07-07T07:00:00Z"), clockOutTime: d("2026-07-07T16:30:00Z"), durationMinutes: 570, status: "complete" },
+      { userId: jakeId,  jobId: "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6", clockInTime: d("2026-07-07T07:00:00Z"), clockOutTime: d("2026-07-07T17:00:00Z"), durationMinutes: 600, status: "complete" },
+      { userId: sarahId, jobId: "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6", clockInTime: d("2026-07-07T07:00:00Z"), clockOutTime: d("2026-07-07T16:30:00Z"), durationMinutes: 570, status: "complete" },
       // Glencore day 2 — Sarah done (8.5h), Jake still clocked in (active)
-      { userId: sarahId, jobId: "seed-job-glencore", clockInTime: d("2026-07-08T07:00:00Z"), clockOutTime: d("2026-07-08T15:30:00Z"), durationMinutes: 510, status: "complete" },
-      { userId: jakeId,  jobId: "seed-job-glencore", clockInTime: d("2026-07-07T21:00:00Z"), clockOutTime: null, durationMinutes: null, status: "active" },
+      { userId: sarahId, jobId: "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6", clockInTime: d("2026-07-08T07:00:00Z"), clockOutTime: d("2026-07-08T15:30:00Z"), durationMinutes: 510, status: "complete" },
+      { userId: jakeId,  jobId: "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6", clockInTime: d("2026-07-07T21:00:00Z"), clockOutTime: null, durationMinutes: null, status: "active" },
     ],
   });
   console.log("  ✓ Time entries (12 — Jake active on Glencore)");
@@ -374,21 +383,21 @@ async function main() {
     data: [
       // Rio Tinto — 2 approved ($1,400 + $800), 1 rejected
       {
-        jobId: "seed-job-riotinto", technicianId: jakeId,
+        jobId: "8d30c260-1f99-4280-af15-4c802866c526", technicianId: jakeId,
         description: "Replace Level 2 fill packs — deteriorated beyond service life, causing up to 20% efficiency loss",
         costEstimate: 1400, status: "approved", directorDecision: "approved",
         decisionReason: "Approved — critical for thermal efficiency. Order immediately.",
         submittedAt: d("2026-06-10T14:00:00Z"), decidedAt: d("2026-06-12T09:00:00Z"),
       },
       {
-        jobId: "seed-job-riotinto", technicianId: sarahId,
+        jobId: "8d30c260-1f99-4280-af15-4c802866c526", technicianId: sarahId,
         description: "Replace water distribution nozzles — 6 blocked, causing uneven water distribution across tower",
         costEstimate: 800, status: "approved", directorDecision: "approved",
         decisionReason: "Approved.",
         submittedAt: d("2026-06-10T15:30:00Z"), decidedAt: d("2026-06-12T09:05:00Z"),
       },
       {
-        jobId: "seed-job-riotinto", technicianId: sarahId,
+        jobId: "8d30c260-1f99-4280-af15-4c802866c526", technicianId: sarahId,
         description: "Replace basin liner — minor cracking noted at south-west corner, could develop into leak",
         costEstimate: 2200, status: "rejected", directorDecision: "rejected",
         decisionReason: "Defer to next annual service — non-urgent at this stage. Monitor over coming months.",
@@ -396,7 +405,7 @@ async function main() {
       },
       // BHP — 1 approved ($680)
       {
-        jobId: "seed-job-bhp", technicianId: mikeId,
+        jobId: "c3f79548-f16b-4d32-b937-51cf7d42cb34", technicianId: mikeId,
         description: "Chemical descaling treatment — significant scale buildup on heat exchanger reducing flow rate by ~30%",
         costEstimate: 680, status: "approved", directorDecision: "approved",
         decisionReason: "Approved — proceed immediately.",
@@ -404,7 +413,7 @@ async function main() {
       },
       // Stanwell — 1 approved ($480)
       {
-        jobId: "seed-job-stanwell", technicianId: mikeId,
+        jobId: "67e75b3b-9505-4028-b41f-1a706ba891c2", technicianId: mikeId,
         description: "Replace pump bearing — seized, causing vibration and risk of pump failure. Bearing on hand.",
         costEstimate: 480, status: "approved", directorDecision: "approved",
         decisionReason: "Approved — safety critical.",
@@ -412,14 +421,14 @@ async function main() {
       },
       // Glencore — 1 pending, 1 queried (sent back)
       {
-        jobId: "seed-job-glencore", technicianId: jakeId,
+        jobId: "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6", technicianId: jakeId,
         description: "Replace fan belt on Tower 3 — visible cracking and glazing, risk of snap under load",
         costEstimate: 320, status: "pending", directorDecision: null,
         decisionReason: null,
         submittedAt: d("2026-07-07T15:00:00Z"), decidedAt: null,
       },
       {
-        jobId: "seed-job-glencore", technicianId: sarahId,
+        jobId: "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6", technicianId: sarahId,
         description: "Replace float valve assembly on Tower 1 — leaking, causing overflow and water loss",
         costEstimate: 450, status: "queried", directorDecision: "queried",
         decisionReason: "Please provide a photo of the damage before I approve — need to confirm it's the valve and not the inlet pipe.",
@@ -441,7 +450,7 @@ async function main() {
   await db.invoice.createMany({
     data: [
       {
-        jobId: "seed-job-riotinto",
+        jobId: "8d30c260-1f99-4280-af15-4c802866c526",
         invoiceNumber: "INV-2026-0001",
         status: "paid",
         baseAmount: 6700,
@@ -453,7 +462,7 @@ async function main() {
         paidAt: d("2026-06-28T04:00:00Z"),
       },
       {
-        jobId: "seed-job-bhp",
+        jobId: "c3f79548-f16b-4d32-b937-51cf7d42cb34",
         invoiceNumber: "INV-2026-0002",
         status: "sent",
         baseAmount: 2683,
@@ -465,7 +474,7 @@ async function main() {
         paidAt: null,
       },
       {
-        jobId: "seed-job-stanwell",
+        jobId: "67e75b3b-9505-4028-b41f-1a706ba891c2",
         invoiceNumber: null,
         status: "draft",
         baseAmount: 0,
@@ -541,7 +550,7 @@ async function main() {
   await db.complianceDocument.createMany({
     data: [
       {
-        jobId: "seed-job-riotinto", templateId: "seed-tmpl-jsa", createdById: jakeId,
+        jobId: "8d30c260-1f99-4280-af15-4c802866c526", templateId: "seed-tmpl-jsa", createdById: jakeId,
         values: {
           working_at_height: true, electrical_hazards: false, chemical_exposure: true, confined_space: false,
           hard_hat: true, safety_glasses: true, gloves: true, harness: true,
@@ -550,7 +559,7 @@ async function main() {
         submittedAt: d("2026-06-10T06:45:00Z"),
       },
       {
-        jobId: "seed-job-bhp", templateId: "seed-tmpl-swms", createdById: mikeId,
+        jobId: "c3f79548-f16b-4d32-b937-51cf7d42cb34", templateId: "seed-tmpl-swms", createdById: mikeId,
         values: {
           work_description: "Quarterly inspection and chemical descaling of cooling tower heat exchanger.",
           location: "Terminal block C, ground level",
@@ -569,27 +578,27 @@ async function main() {
   await db.jobCommunication.createMany({
     data: [
       {
-        jobId: "seed-job-riotinto", authorId: tomId, type: "client_call",
+        jobId: "8d30c260-1f99-4280-af15-4c802866c526", authorId: tomId, type: "client_call",
         body: "Called Priya Nathan to confirm access arrangements for the annual service. Site induction booked for 7am arrival.",
         createdAt: d("2026-06-09T23:00:00Z"),
       },
       {
-        jobId: "seed-job-riotinto", authorId: tomId, type: "internal_note",
+        jobId: "8d30c260-1f99-4280-af15-4c802866c526", authorId: tomId, type: "internal_note",
         body: "Customer mentioned budget is tight this year — get variation sign-off in writing before ordering parts.",
         createdAt: d("2026-06-10T00:00:00Z"),
       },
       {
-        jobId: "seed-job-glencore", authorId: tomId, type: "field_instruction",
+        jobId: "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6", authorId: tomId, type: "field_instruction",
         body: "Tower 3 fan belt is on order, ETA Wednesday. Don't run Tower 3 above 60% load until it's replaced.",
         createdAt: d("2026-07-07T22:00:00Z"),
       },
       {
-        jobId: "seed-job-glencore", authorId: tomId, type: "internal_note",
+        jobId: "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6", authorId: tomId, type: "internal_note",
         body: "Site contact Aaron Blake is on leave until the 14th — escalate anything urgent to the site duty manager instead.",
         createdAt: d("2026-07-08T01:00:00Z"),
       },
       {
-        jobId: "seed-job-bhp", authorId: tomId, type: "client_call",
+        jobId: "c3f79548-f16b-4d32-b937-51cf7d42cb34", authorId: tomId, type: "client_call",
         body: "Craig Ferris confirmed invoice INV-2026-0002 is in this week's payment run.",
         createdAt: d("2026-06-26T03:00:00Z"),
       },
@@ -600,19 +609,19 @@ async function main() {
   // ─── Assets (Phase 3 batch b) ──────────────────────────────────────────────
   const assets = [
     {
-      id: "seed-asset-riotinto-1", customerId: "seed-customer-riotinto",
+      id: "seed-asset-riotinto-1", customerId: "6f1e32aa-f961-468e-96fd-9336dc2c34d5",
       serialNumber: "BAC-VT1-40-2891", assetType: "BAC VT1-40 Cooling Tower", location: "Roof level 3, north",
     },
     {
-      id: "seed-asset-riotinto-2", customerId: "seed-customer-riotinto",
+      id: "seed-asset-riotinto-2", customerId: "6f1e32aa-f961-468e-96fd-9336dc2c34d5",
       serialNumber: "BAC-VT1-40-2892", assetType: "BAC VT1-40 Cooling Tower", location: "Roof level 3, south",
     },
     {
-      id: "seed-asset-glencore-1", customerId: "seed-customer-glencore",
+      id: "seed-asset-glencore-1", customerId: "b22b7ca9-2025-444d-a5bf-59308220f8eb",
       serialNumber: "EVAPCO-AT-112", assetType: "Evapco AT Series Cooling Tower", location: "Processing building, west wing",
     },
     {
-      id: "seed-asset-bhp-1", customerId: "seed-customer-bhp",
+      id: "seed-asset-bhp-1", customerId: "69c31a1c-e330-44a3-9af6-a1cc2bef7abf",
       serialNumber: "MARLEY-NC-8408", assetType: "Marley NC Cooling Tower", location: "Terminal block C",
     },
   ];
@@ -623,10 +632,10 @@ async function main() {
   await db.jobAsset.deleteMany({ where: { jobId: { in: SEED_JOB_IDS } } });
   await db.jobAsset.createMany({
     data: [
-      { jobId: "seed-job-riotinto", assetId: "seed-asset-riotinto-1" },
-      { jobId: "seed-job-riotinto", assetId: "seed-asset-riotinto-2" },
-      { jobId: "seed-job-glencore", assetId: "seed-asset-glencore-1" },
-      { jobId: "seed-job-bhp", assetId: "seed-asset-bhp-1" },
+      { jobId: "8d30c260-1f99-4280-af15-4c802866c526", assetId: "seed-asset-riotinto-1" },
+      { jobId: "8d30c260-1f99-4280-af15-4c802866c526", assetId: "seed-asset-riotinto-2" },
+      { jobId: "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6", assetId: "seed-asset-glencore-1" },
+      { jobId: "c3f79548-f16b-4d32-b937-51cf7d42cb34", assetId: "seed-asset-bhp-1" },
     ],
   });
   console.log("  ✓ Assets (4, linked to jobs for service history)");
@@ -637,31 +646,31 @@ async function main() {
   await db.materialEntry.createMany({
     data: [
       {
-        jobId: "seed-job-riotinto", createdById: jakeId,
+        jobId: "8d30c260-1f99-4280-af15-4c802866c526", createdById: jakeId,
         description: "Replacement fill pack set (Level 2)", supplierName: "CoolTower Parts Co",
         quantity: 1, estimatedCost: 980, actualCost: 1015, status: "reconciled",
         createdAt: d("2026-06-10T14:30:00Z"), reconciledAt: d("2026-06-13T02:00:00Z"),
       },
       {
-        jobId: "seed-job-riotinto", createdById: sarahId,
+        jobId: "8d30c260-1f99-4280-af15-4c802866c526", createdById: sarahId,
         description: "Water distribution nozzles x6", supplierName: "CoolTower Parts Co",
         quantity: 6, estimatedCost: 210, status: "pending",
         createdAt: d("2026-06-10T15:45:00Z"),
       },
       {
-        jobId: "seed-job-glencore", createdById: sarahId,
+        jobId: "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6", createdById: sarahId,
         description: "Chemical biocide treatment (5L)", supplierName: "ChemTreat Australia",
         quantity: 1, estimatedCost: 165, actualCost: 172, status: "reconciled",
         createdAt: d("2026-07-07T08:30:00Z"), reconciledAt: d("2026-07-07T18:00:00Z"),
       },
       {
-        jobId: "seed-job-glencore", createdById: jakeId,
+        jobId: "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6", createdById: jakeId,
         description: "Fan belt, Tower 3", supplierName: null,
         quantity: 1, estimatedCost: 85, status: "pending",
         createdAt: d("2026-07-07T15:10:00Z"),
       },
       {
-        jobId: "seed-job-bhp", createdById: mikeId,
+        jobId: "c3f79548-f16b-4d32-b937-51cf7d42cb34", createdById: mikeId,
         description: "Descaling chemical treatment kit", supplierName: "ChemTreat Australia",
         quantity: 1, estimatedCost: 420, actualCost: 445, status: "received",
         createdAt: d("2026-06-22T13:15:00Z"),
@@ -714,19 +723,19 @@ async function main() {
   // ─── Maintenance contracts (Phase 3 batch e) ───────────────────────────────
   const contracts = [
     {
-      id: "seed-contract-riotinto", customerId: "seed-customer-riotinto",
+      id: "seed-contract-riotinto", customerId: "6f1e32aa-f961-468e-96fd-9336dc2c34d5",
       siteName: "Weipa Processing Plant", value: 28000, billingCadence: "quarterly" as const,
       serviceIntervalDays: 90, startDate: d("2026-04-08T00:00:00Z"), renewalDate: d("2026-07-15T00:00:00Z"),
       status: "active" as const,
     },
     {
-      id: "seed-contract-glencore", customerId: "seed-customer-glencore",
+      id: "seed-contract-glencore", customerId: "b22b7ca9-2025-444d-a5bf-59308220f8eb",
       siteName: "Mt Isa Copper Operations", value: 34000, billingCadence: "quarterly" as const,
       serviceIntervalDays: 90, startDate: d("2026-05-01T00:00:00Z"), renewalDate: d("2026-08-01T00:00:00Z"),
       status: "active" as const,
     },
     {
-      id: "seed-contract-bhp", customerId: "seed-customer-bhp",
+      id: "seed-contract-bhp", customerId: "69c31a1c-e330-44a3-9af6-a1cc2bef7abf",
       siteName: "Hay Point Coal Terminal", value: 14000, billingCadence: "monthly" as const,
       serviceIntervalDays: 30, startDate: d("2026-01-01T00:00:00Z"), renewalDate: d("2026-02-01T00:00:00Z"),
       status: "lapsed" as const,
@@ -735,7 +744,7 @@ async function main() {
   for (const c of contracts) {
     await db.contract.upsert({ where: { id: c.id }, update: c, create: c });
   }
-  await db.job.update({ where: { id: "seed-job-glencore" }, data: { contractId: "seed-contract-glencore" } });
+  await db.job.update({ where: { id: "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6" }, data: { contractId: "seed-contract-glencore" } });
   console.log("  ✓ Maintenance contracts (3 — one renewing soon, one lapsed, one linked to a job)");
 
   // ─── Customer portal token (Phase 3 batch f) ───────────────────────────────
@@ -744,7 +753,7 @@ async function main() {
     update: { expiresAt: d("2026-08-07T00:00:00Z") },
     create: {
       id: "seed-portal-token-riotinto",
-      customerId: "seed-customer-riotinto",
+      customerId: "6f1e32aa-f961-468e-96fd-9336dc2c34d5",
       token: "demo-portal-token-riotinto",
       expiresAt: d("2026-08-07T00:00:00Z"),
     },
