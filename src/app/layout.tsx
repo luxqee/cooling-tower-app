@@ -3,6 +3,7 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "next-themes";
+import { Toaster } from "sonner";
 import { PushRegistrar } from "@/components/PushRegistrar";
 import "./globals.css";
 
@@ -38,6 +39,7 @@ export default function RootLayout({
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <PushRegistrar />
             {children}
+            <Toaster richColors position="top-center" />
           </ThemeProvider>
         </body>
       </html>
