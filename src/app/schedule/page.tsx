@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { getSessionUser } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
+import { getJobsAssignableToUser } from "@/lib/jobs/queries";
 import { redirect } from "next/navigation";
 import { weekStart, toDateString } from "@/lib/schedule/dateUtils";
 import { TodayCard } from "./TodayCard";
@@ -99,11 +100,7 @@ export default async function SchedulePage({
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
-    db.job.findMany({
-      where: { status: { in: ["active", "scheduled"] } },
-      select: { id: true, customerName: true, siteName: true },
-      orderBy: { customerName: "asc" },
-    }),
+    getJobsAssignableToUser(user),
   ]);
 
   const serialisedAssignments = assignments.map((a) => ({
