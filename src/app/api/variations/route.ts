@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
+import { getActiveJobById } from "@/lib/jobs/queries";
 import { validateVariationInput } from "@/lib/variations/validate";
 import { sendPushToUser } from "@/lib/push/vapid";
 import { notifyUsers } from "@/lib/notifications/create";
@@ -39,9 +40,7 @@ export async function POST(req: Request) {
 
   const { jobId, description, costEstimate, photoUrl } = parsed.data;
 
-  const job = await db.job.findFirst({
-    where: { id: jobId, status: { in: ["active", "scheduled"] } },
-  });
+  const job = await getActiveJobById(jobId);
   if (!job) {
     return NextResponse.json({ error: "Job not found or not active" }, { status: 404 });
   }

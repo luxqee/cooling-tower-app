@@ -12,16 +12,17 @@ vi.mock("@/lib/variations/validate", () => ({
 }));
 vi.mock("@/lib/db/client", () => ({
   db: {
-    job:        { findFirst: vi.fn() },
     assignment: { findFirst: vi.fn() },
     variation:  { create: vi.fn(), findMany: vi.fn() },
     user:       { findMany: vi.fn() },
     notification: { createMany: vi.fn() },
   },
 }));
+vi.mock("@/lib/jobs/queries", () => ({ getActiveJobById: vi.fn() }));
 
 import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
+import { getActiveJobById } from "@/lib/jobs/queries";
 import { GET, POST } from "../route";
 
 const JOB_ID = "11111111-1111-4111-8111-111111111111";
@@ -57,7 +58,7 @@ describe("POST /api/variations", () => {
 
   it("returns 403 when technician is not assigned to the job", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockUser as any);
-    vi.mocked(db.job.findFirst).mockResolvedValue(mockJob as any);
+    vi.mocked(getActiveJobById).mockResolvedValue(mockJob as any);
     vi.mocked(db.assignment.findFirst).mockResolvedValue(null); // not assigned
     const res = await POST(makeReq(body));
     expect(res.status).toBe(403);
@@ -67,14 +68,14 @@ describe("POST /api/variations", () => {
 
   it("returns 404 when job does not exist", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockUser as any);
-    vi.mocked(db.job.findFirst).mockResolvedValue(null);
+    vi.mocked(getActiveJobById).mockResolvedValue(null);
     const res = await POST(makeReq(body));
     expect(res.status).toBe(404);
   });
 
   it("returns 201 when technician is assigned to the job", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockUser as any);
-    vi.mocked(db.job.findFirst).mockResolvedValue(mockJob as any);
+    vi.mocked(getActiveJobById).mockResolvedValue(mockJob as any);
     vi.mocked(db.assignment.findFirst).mockResolvedValue({ id: "a1" } as any);
     vi.mocked(db.variation.create).mockResolvedValue({
       id: "v1", ...body, costEstimate: { toNumber: () => 450 }, status: "pending", submittedAt: new Date(),
