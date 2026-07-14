@@ -1,7 +1,7 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { requireRole } from "@/lib/auth/clerk";
 import { PAGE_ACCESS } from "@/lib/permissions";
-import { db } from "@/lib/db/client";
+import { getJobsAssignableToUser } from "@/lib/jobs/queries";
 import { VariationForm } from "../VariationForm";
 import { redirect } from "next/navigation";
 
@@ -9,11 +9,7 @@ export default async function SubmitVariationPage() {
   const user = await requireRole(PAGE_ACCESS.variationsSubmit).catch(() => null);
   if (!user) redirect("/sign-in");
 
-  const jobs = await db.job.findMany({
-    where: { status: { in: ["active", "scheduled"] } },
-    select: { id: true, customerName: true, siteName: true },
-    orderBy: [{ customerName: "asc" }, { siteName: "asc" }],
-  });
+  const jobs = await getJobsAssignableToUser(user);
 
   return (
     <AppShell>
