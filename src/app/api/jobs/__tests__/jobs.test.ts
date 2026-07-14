@@ -3,13 +3,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/lib/auth/clerk", () => ({ requireRole: vi.fn() }));
 vi.mock("@/lib/db/client", () => ({
   db: {
-    job:      { update: vi.fn(), delete: vi.fn(), create: vi.fn() },
-    customer: { findUnique: vi.fn() },
+    job: { update: vi.fn(), delete: vi.fn(), create: vi.fn() },
   },
 }));
+vi.mock("@/lib/customers/queries", () => ({ getCustomerById: vi.fn() }));
 
 import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
+import { getCustomerById } from "@/lib/customers/queries";
 import { DELETE, PATCH } from "../[id]/route";
 import { POST } from "../route";
 
@@ -105,7 +106,7 @@ describe("POST /api/jobs", () => {
 
   it("returns 404 when customerId references unknown customer", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
-    vi.mocked(db.customer.findUnique).mockResolvedValue(null);
+    vi.mocked(getCustomerById).mockResolvedValue(null);
     const { customerName: _cn, ...bodyWithoutName } = validPostBody;
     const res = await POST(makePostReq({
       ...bodyWithoutName,
@@ -116,7 +117,7 @@ describe("POST /api/jobs", () => {
 
   it("derives customerName from customer when customerId is provided", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
-    vi.mocked(db.customer.findUnique).mockResolvedValue({
+    vi.mocked(getCustomerById).mockResolvedValue({
       id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
       name: "BHP",
     } as any);

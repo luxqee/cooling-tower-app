@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
 import { validateCreateQuoteInput, calculateQuoteTotal } from "@/lib/quoting/validate";
+import { getCustomerById } from "@/lib/customers/queries";
 
 export async function GET() {
   const user = await requireRole(["admin", "director", "sales_engineer"]).catch(() => null);
@@ -25,7 +26,7 @@ export async function POST(req: Request) {
   let { customerName, customerId } = parsed.data;
 
   if (customerId) {
-    const customer = await db.customer.findUnique({ where: { id: customerId } });
+    const customer = await getCustomerById(customerId);
     if (!customer) return NextResponse.json({ error: "Customer not found" }, { status: 404 });
     customerName = customer.name;
   } else if (!customerName || customerName.trim().length < 1) {
