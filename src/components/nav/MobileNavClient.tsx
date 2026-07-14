@@ -51,7 +51,7 @@ export function MobileNavClient({ visibleHrefs, user }: Props) {
           </div>
           <button
             onClick={() => setIsOpen(false)}
-            className="flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="flex h-11 w-11 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
             aria-label="Close menu"
           >
             <X className="h-4 w-4" />

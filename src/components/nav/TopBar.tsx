@@ -106,7 +106,7 @@ export function TopBar({ showSearch = false }: TopBarProps) {
                   type="button"
                   onClick={closeSearch}
                   aria-label="Close search"
-                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
