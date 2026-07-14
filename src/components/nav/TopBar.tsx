@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { navItems } from "@/lib/nav-config";
 import { Search, X } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 interface SearchResults {
   jobs: { id: string; customerName: string; siteName: string; status: string }[];
@@ -162,6 +163,7 @@ export function TopBar({ showSearch = false }: TopBarProps) {
             )}
           </div>
         )}
+        <ThemeToggle />
         <NotificationBell />
       </div>
     </header>
