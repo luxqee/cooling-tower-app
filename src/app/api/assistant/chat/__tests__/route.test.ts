@@ -93,8 +93,9 @@ describe("POST /api/assistant/chat", () => {
     await POST(makeReq({ message: "hi" }));
 
     const [callArg] = mockCreate.mock.calls[0];
-    expect(callArg.system).toContain("HVAC servicing");
-    expect(callArg.system).not.toContain("cooling tower");
+    expect(callArg.system[0].text).toContain("HVAC servicing");
+    expect(callArg.system[0].text).not.toContain("cooling tower");
+    expect(callArg.system[0].cache_control).toEqual({ type: "ephemeral" });
   });
 
   it("falls back to a generic system prompt when no business profile exists", async () => {
@@ -110,7 +111,7 @@ describe("POST /api/assistant/chat", () => {
     await POST(makeReq({ message: "hi" }));
 
     const [callArg] = mockCreate.mock.calls[0];
-    expect(callArg.system).toContain("field service maintenance");
+    expect(callArg.system[0].text).toContain("field service maintenance");
   });
 
   it("executes a tool call, feeds the result back, and returns the follow-up text — one AiAuditLog row for the whole turn", async () => {
