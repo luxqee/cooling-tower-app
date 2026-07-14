@@ -3,14 +3,15 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/lib/db/client", () => ({
   db: {
     user: { findFirst: vi.fn() },
-    job: { findFirst: vi.fn() },
     assignment: { findFirst: vi.fn() },
     variation: { create: vi.fn() },
     quote: { create: vi.fn() },
   },
 }));
+vi.mock("@/lib/jobs/queries", () => ({ getActiveJobById: vi.fn() }));
 
 import { db } from "@/lib/db/client";
+import { getActiveJobById } from "@/lib/jobs/queries";
 import { draftVariation, draftQuote } from "../draft";
 
 const director = { id: "u1", role: "director" as const, name: "Dana", clerkId: "c1", email: "d@t.com", isActive: true };
@@ -40,7 +41,7 @@ describe("draftVariation", () => {
 
   it("creates a pending Variation attributed to the resolved technician, not the calling director", async () => {
     vi.mocked(db.user.findFirst).mockResolvedValue({ id: "tech1", name: "Jake Morrison", role: "technician" } as any);
-    vi.mocked(db.job.findFirst).mockResolvedValue({ id: "job1" } as any);
+    vi.mocked(getActiveJobById).mockResolvedValue({ id: "job1" } as any);
     vi.mocked(db.assignment.findFirst).mockResolvedValue({ id: "a1" } as any);
     vi.mocked(db.variation.create).mockResolvedValue({ id: "var1" } as any);
 
@@ -59,7 +60,7 @@ describe("draftVariation", () => {
 
   it("returns an error when the resolved technician isn't assigned to the job", async () => {
     vi.mocked(db.user.findFirst).mockResolvedValue({ id: "tech1", name: "Jake Morrison", role: "technician" } as any);
-    vi.mocked(db.job.findFirst).mockResolvedValue({ id: "job1" } as any);
+    vi.mocked(getActiveJobById).mockResolvedValue({ id: "job1" } as any);
     vi.mocked(db.assignment.findFirst).mockResolvedValue(null);
 
     const result = await draftVariation(

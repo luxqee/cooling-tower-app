@@ -1,4 +1,5 @@
 import { db } from "@/lib/db/client";
+import { getActiveJobById } from "@/lib/jobs/queries";
 
 interface CallingUser {
   id: string;
@@ -26,7 +27,7 @@ export async function draftVariation(
     return { ok: false, error: `Couldn't find a technician named "${args.technicianName}".` };
   }
 
-  const job = await db.job.findFirst({ where: { id: args.jobId, status: { in: ["active", "scheduled"] } } });
+  const job = await getActiveJobById(args.jobId);
   if (!job) {
     return { ok: false, error: "Job not found or not active." };
   }

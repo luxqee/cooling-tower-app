@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
+import { getActiveJobById } from "@/lib/jobs/queries";
 import { validateVoiceNoteInput } from "@/lib/voice-notes/validate";
 import { uploadAudioToAssemblyAI, submitTranscription } from "@/lib/ai/assemblyai";
 import { isOwnedBlobUrl } from "@/lib/blob/ownership";
@@ -16,7 +17,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   }
   const { audioUrl, durationSeconds, mediaType } = parsed.data;
 
-  const job = await db.job.findFirst({ where: { id: params.id, status: { in: ["active", "scheduled"] } } });
+  const job = await getActiveJobById(params.id);
   if (!job) return NextResponse.json({ error: "Job not found or not active" }, { status: 404 });
 
   const assignment = await db.assignment.findFirst({ where: { userId: user.id, jobId: params.id } });

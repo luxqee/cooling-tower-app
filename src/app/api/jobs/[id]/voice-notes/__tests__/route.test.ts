@@ -3,11 +3,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/lib/auth/clerk", () => ({ requireRole: vi.fn() }));
 vi.mock("@/lib/db/client", () => ({
   db: {
-    job: { findFirst: vi.fn() },
     assignment: { findFirst: vi.fn() },
     voiceNote: { create: vi.fn(), update: vi.fn() },
   },
 }));
+vi.mock("@/lib/jobs/queries", () => ({ getActiveJobById: vi.fn() }));
 vi.mock("@/lib/ai/assemblyai", () => ({
   uploadAudioToAssemblyAI: vi.fn(),
   submitTranscription: vi.fn(),
@@ -15,6 +15,7 @@ vi.mock("@/lib/ai/assemblyai", () => ({
 
 import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
+import { getActiveJobById } from "@/lib/jobs/queries";
 import { uploadAudioToAssemblyAI, submitTranscription } from "@/lib/ai/assemblyai";
 import { POST } from "../route";
 
@@ -52,14 +53,14 @@ describe("POST /api/jobs/[id]/voice-notes", () => {
 
   it("returns 404 when the job doesn't exist or isn't active/scheduled", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
-    vi.mocked(db.job.findFirst).mockResolvedValue(null);
+    vi.mocked(getActiveJobById).mockResolvedValue(null);
     const res = await POST(makeReq(validBody), { params: { id: "job1" } });
     expect(res.status).toBe(404);
   });
 
   it("returns 403 when the technician isn't assigned to the job", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
-    vi.mocked(db.job.findFirst).mockResolvedValue({ id: "job1" } as any);
+    vi.mocked(getActiveJobById).mockResolvedValue({ id: "job1" } as any);
     vi.mocked(db.assignment.findFirst).mockResolvedValue(null);
     const res = await POST(makeReq(validBody), { params: { id: "job1" } });
     expect(res.status).toBe(403);
@@ -67,7 +68,7 @@ describe("POST /api/jobs/[id]/voice-notes", () => {
 
   it("returns 400 and never creates a voice note when audioUrl hostname isn't blob storage", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
-    vi.mocked(db.job.findFirst).mockResolvedValue({ id: "job1" } as any);
+    vi.mocked(getActiveJobById).mockResolvedValue({ id: "job1" } as any);
     vi.mocked(db.assignment.findFirst).mockResolvedValue({ id: "a1" } as any);
 
     const res = await POST(
@@ -81,7 +82,7 @@ describe("POST /api/jobs/[id]/voice-notes", () => {
 
   it("returns 400 and never creates a voice note when audioUrl path belongs to a different technician", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
-    vi.mocked(db.job.findFirst).mockResolvedValue({ id: "job1" } as any);
+    vi.mocked(getActiveJobById).mockResolvedValue({ id: "job1" } as any);
     vi.mocked(db.assignment.findFirst).mockResolvedValue({ id: "a1" } as any);
 
     const res = await POST(
@@ -98,7 +99,7 @@ describe("POST /api/jobs/[id]/voice-notes", () => {
 
   it("creates the voice note and submits it to AssemblyAI on success", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
-    vi.mocked(db.job.findFirst).mockResolvedValue({ id: "job1" } as any);
+    vi.mocked(getActiveJobById).mockResolvedValue({ id: "job1" } as any);
     vi.mocked(db.assignment.findFirst).mockResolvedValue({ id: "a1" } as any);
     vi.mocked(db.voiceNote.create).mockResolvedValue({ id: "vn1", jobId: "job1", technicianId: "t1", status: "pending" } as any);
     vi.mocked(uploadAudioToAssemblyAI).mockResolvedValue("https://cdn.assemblyai.com/upload/xyz");
@@ -125,7 +126,7 @@ describe("POST /api/jobs/[id]/voice-notes", () => {
 
   it("marks the voice note failed (but still returns 201) when AssemblyAI submission throws", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
-    vi.mocked(db.job.findFirst).mockResolvedValue({ id: "job1" } as any);
+    vi.mocked(getActiveJobById).mockResolvedValue({ id: "job1" } as any);
     vi.mocked(db.assignment.findFirst).mockResolvedValue({ id: "a1" } as any);
     vi.mocked(db.voiceNote.create).mockResolvedValue({ id: "vn1", jobId: "job1", technicianId: "t1", status: "pending" } as any);
     vi.mocked(uploadAudioToAssemblyAI).mockRejectedValue(new Error("network error"));
@@ -139,7 +140,7 @@ describe("POST /api/jobs/[id]/voice-notes", () => {
 
   it("stores mediaType: video when a video recording is submitted", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockTechnician as any);
-    vi.mocked(db.job.findFirst).mockResolvedValue({ id: "job1" } as any);
+    vi.mocked(getActiveJobById).mockResolvedValue({ id: "job1" } as any);
     vi.mocked(db.assignment.findFirst).mockResolvedValue({ id: "a1" } as any);
     vi.mocked(db.voiceNote.create).mockResolvedValue({ id: "vn1", jobId: "job1", technicianId: "t1", status: "pending" } as any);
     vi.mocked(uploadAudioToAssemblyAI).mockResolvedValue("https://cdn.assemblyai.com/upload/xyz");
