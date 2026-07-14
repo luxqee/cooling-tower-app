@@ -4,9 +4,11 @@ vi.mock("@/lib/auth/clerk", () => ({ requireRole: vi.fn() }));
 vi.mock("@/lib/db/client", () => ({
   db: { contract: { findMany: vi.fn(), create: vi.fn() } },
 }));
+vi.mock("@/lib/customers/queries", () => ({ getCustomerById: vi.fn() }));
 
 import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
+import { getCustomerById } from "@/lib/customers/queries";
 import { GET, POST } from "../route";
 
 const CUSTOMER_ID = "88888888-8888-4888-8888-888888888888";
@@ -63,6 +65,7 @@ describe("POST /api/contracts", () => {
 
   it("returns 201 and computes renewalDate from startDate + cadence", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
+    vi.mocked(getCustomerById).mockResolvedValue({ id: CUSTOMER_ID, name: "Rio Tinto" } as any);
     vi.mocked(db.contract.create).mockResolvedValue({
       id: "ct1", ...body, value: { toNumber: () => 4800 }, status: "active",
       renewalDate: new Date("2026-10-01T00:00:00.000Z"),
@@ -78,5 +81,13 @@ describe("POST /api/contracts", () => {
         }),
       })
     );
+  });
+
+  it("returns 404 when customerId doesn't match a real customer", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
+    vi.mocked(getCustomerById).mockResolvedValue(null);
+    const res = await POST(makePostReq(body));
+    expect(res.status).toBe(404);
+    expect(db.contract.create).not.toHaveBeenCalled();
   });
 });

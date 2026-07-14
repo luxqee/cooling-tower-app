@@ -4,9 +4,11 @@ vi.mock("@/lib/auth/clerk", () => ({ requireRole: vi.fn() }));
 vi.mock("@/lib/db/client", () => ({
   db: { asset: { findMany: vi.fn(), create: vi.fn() } },
 }));
+vi.mock("@/lib/customers/queries", () => ({ getCustomerById: vi.fn() }));
 
 import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
+import { getCustomerById } from "@/lib/customers/queries";
 import { GET, POST } from "../route";
 
 const CUSTOMER_ID = "22222222-2222-4222-8222-222222222222";
@@ -68,11 +70,20 @@ describe("POST /api/assets", () => {
 
   it("returns 201 and creates the asset for admin", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockAdmin as any);
+    vi.mocked(getCustomerById).mockResolvedValue({ id: CUSTOMER_ID, name: "Rio Tinto" } as any);
     vi.mocked(db.asset.create).mockResolvedValue({ id: "a1", ...body } as any);
     const res = await POST(makePostReq(body));
     expect(res.status).toBe(201);
     expect(db.asset.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining(body) })
     );
+  });
+
+  it("returns 404 when customerId doesn't match a real customer", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockAdmin as any);
+    vi.mocked(getCustomerById).mockResolvedValue(null);
+    const res = await POST(makePostReq(body));
+    expect(res.status).toBe(404);
+    expect(db.asset.create).not.toHaveBeenCalled();
   });
 });
