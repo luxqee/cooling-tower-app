@@ -139,7 +139,7 @@ export function ChatWidget({ inline = false }: ChatWidgetProps) {
       {!inline && (
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-300 dark:border-slate-700">
           <p className="text-sm font-semibold">Assistant</p>
-          <button onClick={() => setOpen(false)} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
+          <button onClick={() => setOpen(false)} className="h-11 w-11 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
             <X className="w-4 h-4" />
           </button>
         </div>

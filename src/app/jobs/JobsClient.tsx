@@ -61,7 +61,7 @@ function EditJobModal({ job, onClose }: { job: Job; onClose: () => void }) {
       <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 space-y-4 shadow-xl">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Edit job</h2>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="h-11 w-11 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><X className="w-5 h-5" /></button>
         </div>
         <div className="space-y-3">
           {[
@@ -160,7 +160,7 @@ function CommunicationLogModal({ job, onClose }: { job: Job; onClose: () => void
             <h2 className="text-lg font-semibold">Communication log</h2>
             <p className="text-sm text-slate-500 truncate">{job.siteName}</p>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="h-11 w-11 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><X className="w-5 h-5" /></button>
         </div>
 
         <div className="overflow-y-auto space-y-2 min-h-[80px]">
@@ -275,7 +275,7 @@ function MaterialsModal({ job, canReconcile, onClose }: { job: Job; canReconcile
             <h2 className="text-lg font-semibold">Materials &amp; costs</h2>
             <p className="text-sm text-slate-500 truncate">{job.siteName} — est. ${totalEstimated.toFixed(0)}</p>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="h-11 w-11 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"><X className="w-5 h-5" /></button>
         </div>
 
         <div className="overflow-y-auto space-y-2 min-h-[80px]">
@@ -596,7 +596,7 @@ export function JobsClient({ jobs, canCreate }: JobsClientProps) {
           <div className="w-full max-w-md rounded-2xl bg-white dark:bg-slate-900 p-6 space-y-5 shadow-xl">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">New job</h2>
-              <button onClick={() => setShowForm(false)} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
+              <button onClick={() => setShowForm(false)} className="h-11 w-11 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
                 <X className="w-5 h-5" />
               </button>
             </div>
