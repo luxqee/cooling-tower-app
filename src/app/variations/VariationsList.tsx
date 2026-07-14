@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { VariationCard } from "./VariationCard";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 interface Variation {
   id: string;
@@ -30,17 +31,7 @@ interface VariationsListProps {
   decidedVariations: DecidedVariation[];
 }
 
-const STATUS_STYLES: Record<string, string> = {
-  approved: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400",
-  rejected: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400",
-  queried: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  approved: "Approved",
-  rejected: "Rejected",
-  queried: "Sent back",
-};
+const QUERIED_LABEL_OVERRIDE = "Sent back";
 
 export function VariationsList({ initialVariations, decidedVariations }: VariationsListProps) {
   const [variations, setVariations] = useState(initialVariations);
@@ -85,11 +76,10 @@ export function VariationsList({ initialVariations, decidedVariations }: Variati
                     <span className="text-base font-semibold text-slate-700 dark:text-slate-200">
                       ${v.costEstimate.toFixed(0)}
                     </span>
-                    <span
-                      className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_STYLES[v.status]}`}
-                    >
-                      {STATUS_LABEL[v.status]}
-                    </span>
+                    <StatusBadge
+                      status={v.status}
+                      label={v.status === "queried" ? QUERIED_LABEL_OVERRIDE : undefined}
+                    />
                   </div>
                 </div>
                 <p className="text-sm text-slate-600 dark:text-slate-400">{v.description}</p>

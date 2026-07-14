@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CustomerForm } from "../CustomerForm";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 interface CustomerProps {
   id:            string;
@@ -301,13 +302,6 @@ function AssetsSection({ customerId, assets, canManage }: { customerId: string; 
   );
 }
 
-const STATUS_BADGE: Record<string, string> = {
-  scheduled: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
-  active:    "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  complete:  "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400",
-  cancelled: "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400",
-};
-
 export function CustomerDetail({ customer, jobs, assets, contracts, canEdit, canManageAssets, canSharePortal }: CustomerDetailProps) {
   const [editing, setEditing] = useState(false);
 
@@ -418,9 +412,7 @@ export function CustomerDetail({ customer, jobs, assets, contracts, canEdit, can
                     </td>
                     <td className="py-3 pr-4 text-slate-500">{j.jobType}</td>
                     <td className="py-3 pr-4">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${STATUS_BADGE[j.status]}`}>
-                        {j.status}
-                      </span>
+                      <StatusBadge status={j.status} />
                     </td>
                     <td className="py-3 pr-4 text-slate-500">
                       {new Date(j.createdAt).toLocaleDateString("en-AU")}

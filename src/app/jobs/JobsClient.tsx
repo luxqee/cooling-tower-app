@@ -7,6 +7,7 @@ import Link from "next/link";
 import { NewJobForm } from "./NewJobForm";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { StatusBadge, type Status } from "@/components/ui/StatusBadge";
 
 interface Job {
   id: string;
@@ -335,13 +336,6 @@ function MaterialsModal({ job, canReconcile, onClose }: { job: Job; canReconcile
   );
 }
 
-const STATUS_BADGE_CLASS: Record<string, string> = {
-  active: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400",
-  complete: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400",
-  cancelled: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400",
-  scheduled: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
-};
-
 function JobActionButtons({ onMaterials, onLog, onEdit, onDelete }: {
   onMaterials: () => void;
   onLog: () => void;
@@ -421,9 +415,7 @@ function JobCard({ job, canEdit }: { job: Job; canEdit: boolean }) {
             <p className="text-sm text-slate-500 truncate">{job.siteName}</p>
           </Link>
           <div className="flex items-center gap-2 shrink-0">
-            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_BADGE_CLASS[job.status]}`}>
-              {job.status}
-            </span>
+            <StatusBadge status={job.status as Status} />
             {canEdit && (
               <JobActionButtons
                 onMaterials={() => state.setMaterialsOpen(true)}
@@ -487,9 +479,7 @@ function JobRow({ job, canEdit }: { job: Job; canEdit: boolean }) {
           </Link>
         </td>
         <td className="px-4 py-3">
-          <span className={`text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${STATUS_BADGE_CLASS[job.status]}`}>
-            {job.status}
-          </span>
+          <StatusBadge status={job.status as Status} />
         </td>
         <td className="px-4 py-3 w-48">
           <div className="flex items-center justify-between text-xs mb-1">

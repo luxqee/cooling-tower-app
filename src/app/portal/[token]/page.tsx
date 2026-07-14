@@ -1,12 +1,6 @@
 import { db } from "@/lib/db/client";
 import { getCustomerForToken } from "@/lib/portal/getCustomerForToken";
-
-const STATUS_BADGE: Record<string, string> = {
-  scheduled: "bg-slate-100 text-slate-600",
-  active: "bg-amber-100 text-amber-700",
-  complete: "bg-emerald-100 text-emerald-700",
-  cancelled: "bg-red-100 text-red-600",
-};
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 export default async function CustomerPortalPage({ params }: { params: { token: string } }) {
   const customer = await getCustomerForToken(params.token);
@@ -64,9 +58,7 @@ export default async function CustomerPortalPage({ params }: { params: { token: 
                     <p className="font-medium truncate">{j.siteName}</p>
                     <p className="text-xs text-slate-500">{j.jobType} · {new Date(j.createdAt).toLocaleDateString("en-AU")}</p>
                   </div>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize shrink-0 ${STATUS_BADGE[j.status] ?? "bg-slate-100 text-slate-600"}`}>
-                    {j.status}
-                  </span>
+                  <StatusBadge status={j.status} />
                 </div>
               ))}
             </div>

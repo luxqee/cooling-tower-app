@@ -4,13 +4,7 @@ import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
 import { redirect, notFound } from "next/navigation";
 import { DeleteVoiceNoteButton } from "./DeleteVoiceNoteButton";
-
-const STATUS_BADGE: Record<string, string> = {
-  scheduled: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
-  active: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  complete: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400",
-  cancelled: "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400",
-};
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 export default async function JobDetailPage({ params }: { params: { id: string } }) {
   const user = await requireRole(["director", "service_manager", "admin", "sales_engineer"]).catch(() => null);
@@ -49,9 +43,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
               <h1 className="text-xl font-semibold">{job.customerName}</h1>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{job.siteName} · {job.siteAddress}</p>
             </div>
-            <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize shrink-0 ${STATUS_BADGE[job.status] ?? "bg-slate-100 text-slate-600"}`}>
-              {job.status}
-            </span>
+            <StatusBadge status={job.status} />
           </div>
         </div>
 

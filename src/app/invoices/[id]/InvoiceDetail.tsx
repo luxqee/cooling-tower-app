@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 
 interface Invoice {
   id: string;
@@ -33,11 +34,6 @@ interface InvoiceDetailProps {
   userRole: "admin" | "director";
 }
 
-const STATUS_BADGE: Record<string, string> = {
-  draft: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
-  sent:  "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  paid:  "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400",
-};
 
 const inp = "w-full min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 text-base";
 
@@ -146,9 +142,7 @@ export function InvoiceDetail({ invoice: initial, job, variations, defaultHourly
           <h1 className="text-xl font-semibold font-mono">
             {invoice.invoiceNumber ?? "Draft Invoice"}
           </h1>
-          <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${STATUS_BADGE[invoice.status]}`}>
-            {invoice.status}
-          </span>
+          <StatusBadge status={invoice.status} />
         </div>
         <p className="text-sm text-slate-500 dark:text-slate-400">
           {job.customerName} — {job.siteName}
