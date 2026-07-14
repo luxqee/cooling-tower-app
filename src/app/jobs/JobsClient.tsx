@@ -6,6 +6,7 @@ import { Plus, X, Pencil, Trash2, MessageSquare, Receipt } from "lucide-react";
 import Link from "next/link";
 import { NewJobForm } from "./NewJobForm";
 import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 
 interface Job {
   id: string;
@@ -32,7 +33,6 @@ function EditJobModal({ job, onClose }: { job: Job; onClose: () => void }) {
     quotedCost: job.quotedCost != null ? String(job.quotedCost) : "",
     status: job.status,
   });
-  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function set(k: keyof typeof fields, v: string) {
@@ -47,7 +47,7 @@ function EditJobModal({ job, onClose }: { job: Job; onClose: () => void }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...fields, quotedHours: parseFloat(fields.quotedHours), quotedCost: cost }),
       });
-      if (!res.ok) { setError((await res.json()).error ?? "Failed."); return; }
+      if (!res.ok) { toast.error((await res.json()).error ?? "Failed."); return; }
       router.refresh();
       onClose();
     });
@@ -89,7 +89,6 @@ function EditJobModal({ job, onClose }: { job: Job; onClose: () => void }) {
               {STATUS_OPTS.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex gap-3 pt-1">
             <button onClick={onClose} className="flex-1 min-h-[48px] rounded-lg border border-slate-300 dark:border-slate-600 text-sm font-medium">Cancel</button>
             <button onClick={save} disabled={isPending} className="flex-1 min-h-[48px] rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm disabled:opacity-40">
@@ -121,7 +120,6 @@ function CommunicationLogModal({ job, onClose }: { job: Job; onClose: () => void
   const [loadError, setLoadError] = useState<string | null>(null);
   const [type, setType] = useState<Communication["type"]>("internal_note");
   const [body, setBody] = useState("");
-  const [submitError, setSubmitError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function load() {
@@ -140,13 +138,12 @@ function CommunicationLogModal({ job, onClose }: { job: Job; onClose: () => void
   function submit() {
     if (!body.trim()) return;
     startTransition(async () => {
-      setSubmitError(null);
       const res = await fetch(`/api/jobs/${job.id}/communications`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type, body }),
       });
-      if (!res.ok) { setSubmitError((await res.json()).error ?? "Failed to save."); return; }
+      if (!res.ok) { toast.error((await res.json()).error ?? "Failed to save."); return; }
       setBody("");
       load();
     });
@@ -194,7 +191,6 @@ function CommunicationLogModal({ job, onClose }: { job: Job; onClose: () => void
             rows={2}
             className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-base"
           />
-          {submitError && <p className="text-sm text-red-600">{submitError}</p>}
           <button
             onClick={submit}
             disabled={isPending || !body.trim()}
@@ -222,7 +218,6 @@ function MaterialsModal({ job, canReconcile, onClose }: { job: Job; canReconcile
   const [loadError, setLoadError] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [estimatedCost, setEstimatedCost] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [reconcileValues, setReconcileValues] = useState<Record<string, string>>({});
   const [isPending, startTransition] = useTransition();
 
@@ -243,13 +238,12 @@ function MaterialsModal({ job, canReconcile, onClose }: { job: Job; canReconcile
     const cost = parseFloat(estimatedCost);
     if (!description.trim() || Number.isNaN(cost)) return;
     startTransition(async () => {
-      setError(null);
       const res = await fetch(`/api/jobs/${job.id}/materials`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ description, estimatedCost: cost }),
       });
-      if (!res.ok) { setError((await res.json()).error ?? "Failed to save."); return; }
+      if (!res.ok) { toast.error((await res.json()).error ?? "Failed to save."); return; }
       setDescription("");
       setEstimatedCost("");
       load();
@@ -328,7 +322,6 @@ function MaterialsModal({ job, canReconcile, onClose }: { job: Job; canReconcile
         <div className="space-y-2 shrink-0 pt-2 border-t border-slate-300 dark:border-slate-700">
           <input type="text" placeholder="Description (e.g. pump seal)" value={description} onChange={(e) => setDescription(e.target.value)} className={inp} />
           <input type="number" inputMode="decimal" placeholder="Estimated cost ($)" value={estimatedCost} onChange={(e) => setEstimatedCost(e.target.value)} className={inp} />
-          {error && <p className="text-sm text-red-600">{error}</p>}
           <button
             onClick={submit}
             disabled={isPending || !description.trim() || !estimatedCost}

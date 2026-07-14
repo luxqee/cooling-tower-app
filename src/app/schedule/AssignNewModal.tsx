@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { X } from "lucide-react";
+import { toast } from "sonner";
 
 interface Technician {
   id: string;
@@ -70,7 +71,7 @@ export function AssignNewModal({
 
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Failed to create assignment.");
+        toast.error(data.error ?? "Failed to create assignment.");
         return;
       }
       if (data.warning) onConflict(data.warning);

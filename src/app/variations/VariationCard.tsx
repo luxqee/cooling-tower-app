@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils/cn";
 
 function photoSrc(url: string) {
@@ -50,7 +51,7 @@ export function VariationCard({ variation, onDecided }: VariationCardProps) {
       });
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error ?? "Failed to save decision.");
+        toast.error(data.error ?? "Failed to save decision.");
         return;
       }
       onDecided(variation.id);

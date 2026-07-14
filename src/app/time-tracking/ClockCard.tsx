@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 import { LiveTimer } from "./LiveTimer";
 import { VoiceRecorder } from "./VoiceRecorder";
 import { PendingVoiceNoteReview } from "./PendingVoiceNoteReview";
@@ -45,7 +46,7 @@ export function ClockCard({ jobs, activeEntry, usingFallback = false }: ClockCar
       });
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error ?? "Clock-in failed.");
+        toast.error(data.error ?? "Clock-in failed.");
         return;
       }
       const entry = await res.json();
@@ -69,7 +70,7 @@ export function ClockCard({ jobs, activeEntry, usingFallback = false }: ClockCar
       });
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error ?? "Clock-out failed.");
+        toast.error(data.error ?? "Clock-out failed.");
         return;
       }
       setCurrentEntry(null);
