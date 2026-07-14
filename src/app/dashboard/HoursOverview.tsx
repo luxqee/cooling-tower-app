@@ -1,22 +1,9 @@
-import { db } from "@/lib/db/client";
+import { getActiveJobsWithHours } from "@/lib/jobs/queries";
 import { isOverQuota } from "@/lib/time/utils";
 import { cn } from "@/lib/utils/cn";
 
 export async function HoursOverview() {
-  const jobs = await db.job.findMany({
-    where: { status: { in: ["active", "scheduled"] } },
-    select: {
-      id: true,
-      customerName: true,
-      siteName: true,
-      quotedHours: true,
-      timeEntries: {
-        where: { status: "complete" },
-        select: { durationMinutes: true },
-      },
-    },
-    orderBy: { createdAt: "desc" },
-  }).catch(() => []);
+  const jobs = await getActiveJobsWithHours().catch(() => []);
 
   const rows = jobs.map((job) => {
     const loggedMinutes = job.timeEntries.reduce((sum, e) => sum + (e.durationMinutes ?? 0), 0);

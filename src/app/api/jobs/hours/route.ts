@@ -1,25 +1,12 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/clerk";
-import { db } from "@/lib/db/client";
+import { getActiveJobsWithHours } from "@/lib/jobs/queries";
 
 export async function GET() {
   const user = await requireRole(["director", "service_manager", "admin"]).catch(() => null);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const jobs = await db.job.findMany({
-    where: { status: { in: ["active", "scheduled"] } },
-    select: {
-      id: true,
-      customerName: true,
-      siteName: true,
-      quotedHours: true,
-      timeEntries: {
-        where: { status: "complete" },
-        select: { durationMinutes: true },
-      },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  const jobs = await getActiveJobsWithHours();
 
   return NextResponse.json(
     jobs.map((job) => {
