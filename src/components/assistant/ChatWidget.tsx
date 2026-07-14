@@ -110,6 +110,26 @@ export function ChatWidget({ inline = false }: ChatWidgetProps) {
     }
   }
 
+  async function sendQuickAction(action: "activeJobs" | "weekAssignments") {
+    if (sending) return;
+    setError(null);
+    setSending(true);
+    try {
+      const res = await fetch("/api/assistant/quick-action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      if (!res.ok) throw new Error("Request failed");
+      const data = await res.json();
+      setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
+    } catch {
+      setError("Failed to load. Try again.");
+    } finally {
+      setSending(false);
+    }
+  }
+
   function discardPendingAction() {
     setPendingAction(null);
   }
@@ -157,6 +177,24 @@ export function ChatWidget({ inline = false }: ChatWidgetProps) {
             </button>
           </div>
         )}
+      </div>
+      <div className="flex gap-2 px-3 pt-2">
+        <button
+          type="button"
+          onClick={() => sendQuickAction("activeJobs")}
+          disabled={sending || !!pendingAction}
+          className="flex-1 min-h-[32px] rounded-lg border border-slate-300 dark:border-slate-600 text-xs font-medium disabled:opacity-40"
+        >
+          Active jobs
+        </button>
+        <button
+          type="button"
+          onClick={() => sendQuickAction("weekAssignments")}
+          disabled={sending || !!pendingAction}
+          className="flex-1 min-h-[32px] rounded-lg border border-slate-300 dark:border-slate-600 text-xs font-medium disabled:opacity-40"
+        >
+          This week&apos;s assignments
+        </button>
       </div>
       <div className="flex gap-2 p-3 border-t border-slate-200 dark:border-slate-700">
         <input
