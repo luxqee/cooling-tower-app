@@ -33,7 +33,13 @@ export function NavLinks({ visibleHrefs, user, onNavigate }: Props) {
             const Icon = item.icon;
 
             return (
-              <li key={item.href}>
+              <li
+                key={item.href}
+                className={cn(
+                  "group/item rounded-md transition-[max-height] duration-200 ease-out overflow-hidden",
+                  item.quickAction ? "max-h-9 hover:max-h-24" : "max-h-9"
+                )}
+              >
                 <Link
                   href={item.href}
                   onClick={onNavigate}
@@ -57,6 +63,20 @@ export function NavLinks({ visibleHrefs, user, onNavigate }: Props) {
                   />
                   <span className="flex-1">{item.label}</span>
                 </Link>
+                {item.quickAction && (
+                  <div className="px-3 pb-2 pt-0.5 opacity-0 group-hover/item:opacity-100 transition-opacity duration-150 delay-75">
+                    <p className="text-2xs text-slate-500 dark:text-slate-500 leading-snug mb-1.5">
+                      {item.description}
+                    </p>
+                    <Link
+                      href={item.quickAction.href}
+                      onClick={onNavigate}
+                      className="block text-center text-2xs font-semibold rounded px-2 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 transition-colors"
+                    >
+                      {item.quickAction.label}
+                    </Link>
+                  </div>
+                )}
               </li>
             );
           })}

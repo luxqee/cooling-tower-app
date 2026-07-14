@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect, useRef } from "react";
 import { Plus, X, Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface LineItem {
   description: string;
@@ -20,6 +20,11 @@ const emptyLine = (): LineItem => ({ description: "", qty: "1", unitPrice: "" })
 export function NewQuoteButton() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("new") === "1") setOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Customer search-and-select (same pattern as NewJobForm)
   const [customerQuery, setCustomerQuery] = useState("");

@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { Plus, X, Pencil, Trash2, MessageSquare, Receipt } from "lucide-react";
 import Link from "next/link";
 import { NewJobForm } from "./NewJobForm";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface Job {
   id: string;
@@ -554,6 +554,14 @@ interface JobsClientProps {
 
 export function JobsClient({ jobs, canCreate }: JobsClientProps) {
   const [showForm, setShowForm] = useState(false);
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("new") === "1") setShowForm(true);
+    // Only ever needs to fire once, on the params present at mount —
+    // re-running on every searchParams change would re-open a form the
+    // user just closed if any other param on this page changes later.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <>

@@ -26,6 +26,10 @@ export interface NavItem {
   // a page has its own single-source-of-truth requireRole() check for the
   // same access boundary — see that file for which sections aren't covered.
   visibleTo: readonly UserRole[];
+  // Shown in the desktop sidebar's hover-expand panel (NavLinks.tsx) for
+  // sections with a real "create" action. Omit for sections with nothing
+  // to quick-create (Dashboard, Time tracking, Settings, etc.).
+  quickAction?: { label: string; href: string };
 }
 
 export const navItems: NavItem[] = [
@@ -42,6 +46,7 @@ export const navItems: NavItem[] = [
     icon: Briefcase,
     description: "Active jobs with hours logged vs quoted",
     visibleTo: PAGE_ACCESS.jobs,
+    quickAction: { label: "+ Add Job", href: "/jobs?new=1" },
   },
   {
     label: "Time tracking",
@@ -70,6 +75,7 @@ export const navItems: NavItem[] = [
     icon: Calendar,
     description: "Crew assignments and breakdown response",
     visibleTo: ["service_manager", "director", "admin", "technician"],
+    quickAction: { label: "+ Assign Job", href: "/schedule" },
   },
   {
     label: "Team",
@@ -84,6 +90,7 @@ export const navItems: NavItem[] = [
     icon: ShieldCheck,
     description: "SWMS, JSA, and WHS compliance documents",
     visibleTo: PAGE_ACCESS.compliance,
+    quickAction: { label: "+ New Document", href: "/compliance/new" },
   },
   {
     label: "Templates",
@@ -105,6 +112,7 @@ export const navItems: NavItem[] = [
     icon: BarChart2,
     description: "Historical job data for quoting",
     visibleTo: PAGE_ACCESS.quotes,
+    quickAction: { label: "+ New Quote", href: "/quotes?new=1" },
   },
   {
     label: "Invoices",
@@ -119,5 +127,6 @@ export const navItems: NavItem[] = [
     icon: Building2,
     description: "Customer contacts and linked jobs",
     visibleTo: PAGE_ACCESS.customers,
+    quickAction: { label: "+ New Customer", href: "/customers/new" },
   },
 ];
