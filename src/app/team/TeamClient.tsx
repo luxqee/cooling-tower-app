@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 const ROLES = [
   { value: "technician", label: "Technician" },
@@ -42,7 +43,6 @@ function UserRow({ user, canEdit }: { user: User; canEdit: boolean }) {
   const [editing, setEditing] = useState(false);
   const [role, setRole] = useState<Role>(user.role as Role);
   const [isActive, setIsActive] = useState(user.isActive);
-  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function save() {
@@ -54,11 +54,10 @@ function UserRow({ user, canEdit }: { user: User; canEdit: boolean }) {
       });
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error ?? "Failed to update.");
+        toast.error(data.error ?? "Failed to update.");
         return;
       }
       setEditing(false);
-      setError(null);
       router.refresh();
     });
   }
@@ -123,10 +122,9 @@ function UserRow({ user, canEdit }: { user: User; canEdit: boolean }) {
               </select>
             </div>
           </div>
-          {error && <p className="text-xs text-red-600">{error}</p>}
           <div className="flex gap-2">
             <button
-              onClick={() => { setEditing(false); setRole(user.role as Role); setIsActive(user.isActive); setError(null); }}
+              onClick={() => { setEditing(false); setRole(user.role as Role); setIsActive(user.isActive); }}
               className="flex-1 min-h-[36px] rounded-lg border border-slate-300 dark:border-slate-600 text-sm"
             >
               Cancel

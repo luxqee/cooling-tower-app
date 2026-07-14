@@ -3,6 +3,7 @@
 import { useState, useTransition, useEffect, useRef } from "react";
 import { Plus, X, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 
 interface LineItem {
   description: string;
@@ -36,7 +37,6 @@ export function NewQuoteButton() {
   const [siteName, setSiteName] = useState("");
   const [jobType, setJobType] = useState("");
   const [lines, setLines] = useState<LineItem[]>([emptyLine()]);
-  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const total = lines.reduce((sum, l) => sum + (parseFloat(l.qty) || 0) * (parseFloat(l.unitPrice) || 0), 0);
@@ -94,12 +94,10 @@ export function NewQuoteButton() {
     setSiteName("");
     setJobType("");
     setLines([emptyLine()]);
-    setError(null);
   }
 
   function save() {
     startTransition(async () => {
-      setError(null);
       const lineItems = lines
         .filter((l) => l.description.trim())
         .map((l) => ({ description: l.description, qty: parseFloat(l.qty) || 0, unitPrice: parseFloat(l.unitPrice) || 0 }));
@@ -116,7 +114,7 @@ export function NewQuoteButton() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      if (!res.ok) { setError((await res.json()).error ?? "Failed to create quote."); return; }
+      if (!res.ok) { toast.error((await res.json()).error ?? "Failed to create quote."); return; }
       reset();
       setOpen(false);
       router.refresh();
@@ -204,7 +202,6 @@ export function NewQuoteButton() {
               </div>
 
               <p className="text-sm font-semibold text-right">Total: ${total.toFixed(2)}</p>
-              {error && <p className="text-sm text-red-600">{error}</p>}
             </div>
 
             <button
