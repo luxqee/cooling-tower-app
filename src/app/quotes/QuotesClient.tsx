@@ -169,7 +169,7 @@ export function QuotesClient() {
           ].map(({ label, value }) => (
             <div
               key={label}
-              className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4"
+              className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 p-4"
             >
               <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
               <p className="mt-1 text-xl font-semibold">{value}</p>
@@ -190,7 +190,7 @@ export function QuotesClient() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-200 dark:border-slate-700">
+              <tr className="border-b border-slate-300 dark:border-slate-700">
                 {[
                   "Customer",
                   "Site",
@@ -215,7 +215,7 @@ export function QuotesClient() {
               {results.map((row) => {
                 const overageClass =
                   row.overagePct === null
-                    ? "text-slate-400"
+                    ? "text-slate-500"
                     : row.overagePct > 0
                     ? "text-red-600 dark:text-red-400"
                     : "text-green-600 dark:text-green-400";
@@ -226,7 +226,7 @@ export function QuotesClient() {
 
                 const costOverageClass =
                   row.costOveragePct === null
-                    ? "text-slate-400"
+                    ? "text-slate-500"
                     : row.costOveragePct > 0
                     ? "text-red-600 dark:text-red-400"
                     : "text-green-600 dark:text-green-400";
@@ -241,23 +241,23 @@ export function QuotesClient() {
                     <td className={`py-2.5 pr-4 font-medium ${overageClass}`}>{overageText}</td>
                     {hasCostData ? (
                       <>
-                        <td className={`py-2.5 pr-4 ${row.quotedCost == null ? "text-slate-400" : ""}`}>
+                        <td className={`py-2.5 pr-4 ${row.quotedCost == null ? "text-slate-500" : ""}`}>
                           {row.quotedCost != null ? `$${row.quotedCost.toFixed(0)}` : "—"}
                         </td>
-                        <td className={`py-2.5 pr-4 ${row.variationTotal === 0 ? "text-slate-400" : ""}`}>
+                        <td className={`py-2.5 pr-4 ${row.variationTotal === 0 ? "text-slate-500" : ""}`}>
                           {row.variationTotal > 0 ? `$${row.variationTotal.toFixed(0)}` : "—"}
                         </td>
                         <td className={`py-2.5 pr-4 font-medium ${costOverageClass}`}>
                           {row.costOveragePct != null
                             ? `${row.costOveragePct >= 0 ? "+" : ""}${row.costOveragePct.toFixed(1)}%`
                             : row.quotedCost != null
-                            ? <span className="text-slate-400 font-normal">no invoice</span>
+                            ? <span className="text-slate-500 font-normal">no invoice</span>
                             : "—"}
                         </td>
                       </>
                     ) : (
                       <td
-                        className={`py-2.5 pr-4 ${row.variationTotal === 0 ? "text-slate-400" : ""}`}
+                        className={`py-2.5 pr-4 ${row.variationTotal === 0 ? "text-slate-500" : ""}`}
                       >
                         ${row.variationTotal.toFixed(2)}
                       </td>
@@ -271,7 +271,7 @@ export function QuotesClient() {
       )}
 
       {hasCostData && results.length > 0 && (
-        <p className="text-xs text-slate-400 dark:text-slate-500">
+        <p className="text-xs text-slate-500 dark:text-slate-500">
           Cost vs quote compares the invoiced total against the quoted cost. Jobs without an invoice show &ldquo;no invoice&rdquo;.
         </p>
       )}

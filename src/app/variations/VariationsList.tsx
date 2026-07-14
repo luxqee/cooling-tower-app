@@ -65,14 +65,14 @@ export function VariationsList({ initialVariations, decidedVariations }: Variati
       {/* History */}
       {decidedVariations.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-base font-semibold text-slate-700 dark:text-slate-300 border-t border-slate-200 dark:border-slate-700 pt-6">
+          <h2 className="text-base font-semibold text-slate-700 dark:text-slate-300 border-t border-slate-300 dark:border-slate-700 pt-6">
             History
           </h2>
           <div className="space-y-3">
             {decidedVariations.map((v) => (
               <div
                 key={v.id}
-                className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-4 space-y-2"
+                className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-4 space-y-2"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -98,7 +98,7 @@ export function VariationsList({ initialVariations, decidedVariations }: Variati
                     {v.decisionReason}
                   </p>
                 )}
-                <p className="text-xs text-slate-400 font-mono">
+                <p className="text-xs text-slate-500 font-mono">
                   {v.decidedAt
                     ? new Date(v.decidedAt).toLocaleString("en-AU")
                     : new Date(v.submittedAt).toLocaleString("en-AU")}

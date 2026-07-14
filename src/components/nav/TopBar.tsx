@@ -77,7 +77,7 @@ export function TopBar({ showSearch = false }: TopBarProps) {
   const trimmedQuery = query.trim();
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur pl-14 pr-4 lg:px-8">
+    <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-300 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur pl-14 pr-4 lg:px-8">
       <div>
         <div className="text-2xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-500">
           Field Operations
@@ -92,7 +92,7 @@ export function TopBar({ showSearch = false }: TopBarProps) {
           <div ref={containerRef} className="relative">
             {open ? (
               <div className="flex items-center gap-1 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 pl-2 pr-1 h-9 w-40 sm:w-64">
-                <Search className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                <Search className="h-3.5 w-3.5 shrink-0 text-slate-500" />
                 <input
                   ref={inputRef}
                   value={query}
@@ -105,7 +105,7 @@ export function TopBar({ showSearch = false }: TopBarProps) {
                   type="button"
                   onClick={closeSearch}
                   aria-label="Close search"
-                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -121,14 +121,14 @@ export function TopBar({ showSearch = false }: TopBarProps) {
             )}
 
             {open && trimmedQuery.length >= 2 && (
-              <div className="absolute right-0 mt-2 w-72 sm:w-80 max-h-96 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg">
-                {loading && <p className="px-4 py-3 text-sm text-slate-400">Searching…</p>}
+              <div className="absolute right-0 mt-2 w-72 sm:w-80 max-h-96 overflow-y-auto rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg">
+                {loading && <p className="px-4 py-3 text-sm text-slate-500">Searching…</p>}
                 {!loading && !hasResults && (
-                  <p className="px-4 py-3 text-sm text-slate-400">No matches for &ldquo;{trimmedQuery}&rdquo;.</p>
+                  <p className="px-4 py-3 text-sm text-slate-500">No matches for &ldquo;{trimmedQuery}&rdquo;.</p>
                 )}
                 {!loading && results && results.jobs.length > 0 && (
                   <div className="py-1">
-                    <p className="px-4 pt-2 pb-1 text-2xs font-mono uppercase tracking-wider text-slate-400">Jobs</p>
+                    <p className="px-4 pt-2 pb-1 text-2xs font-mono uppercase tracking-wider text-slate-500">Jobs</p>
                     {results.jobs.map((job) => (
                       <button
                         key={job.id}
@@ -144,7 +144,7 @@ export function TopBar({ showSearch = false }: TopBarProps) {
                 )}
                 {!loading && results && results.customers.length > 0 && (
                   <div className="py-1 border-t border-slate-100 dark:border-slate-800">
-                    <p className="px-4 pt-2 pb-1 text-2xs font-mono uppercase tracking-wider text-slate-400">Customers</p>
+                    <p className="px-4 pt-2 pb-1 text-2xs font-mono uppercase tracking-wider text-slate-500">Customers</p>
                     {results.customers.map((customer) => (
                       <button
                         key={customer.id}

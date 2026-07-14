@@ -22,7 +22,7 @@ export async function HoursOverview() {
         {rows.map((row) => (
           <li
             key={row.id}
-            className="flex items-center justify-between gap-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3"
+            className="flex items-center justify-between gap-4 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3"
           >
             <div className="min-w-0">
               <p className="font-medium truncate">{row.customerName}</p>

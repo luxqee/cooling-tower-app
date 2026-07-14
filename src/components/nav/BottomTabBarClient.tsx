@@ -19,7 +19,7 @@ export function BottomTabBarClient({ hrefs }: Props) {
   });
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 flex h-16 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 pb-[env(safe-area-inset-bottom)]">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 flex h-16 border-t border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 pb-[env(safe-area-inset-bottom)]">
       {tabs.map(({ href, label, Icon }) => {
         const isActive = pathname === href || pathname.startsWith(href + "/");
         return (

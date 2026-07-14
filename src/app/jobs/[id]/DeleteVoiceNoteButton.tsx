@@ -36,7 +36,7 @@ export function DeleteVoiceNoteButton({ jobId, noteId }: DeleteVoiceNoteButtonPr
         disabled={deleting}
         aria-label="Delete voice note"
         title="Delete voice note"
-        className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-40"
+        className="p-1 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-40"
       >
         <Trash2 className="w-3.5 h-3.5" />
       </button>

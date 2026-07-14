@@ -122,7 +122,7 @@ export function CustomerForm({ initial, onSave, onCancel }: CustomerFormProps) {
 
       <div className="space-y-1.5">
         <label className="text-sm font-medium">
-          ABN <span className="font-normal text-slate-400">optional</span>
+          ABN <span className="font-normal text-slate-500">optional</span>
         </label>
         <input
           type="text"
@@ -135,7 +135,7 @@ export function CustomerForm({ initial, onSave, onCancel }: CustomerFormProps) {
 
       <div className="space-y-1.5">
         <label className="text-sm font-medium">
-          Contact person <span className="font-normal text-slate-400">optional</span>
+          Contact person <span className="font-normal text-slate-500">optional</span>
         </label>
         <input
           type="text"
@@ -148,7 +148,7 @@ export function CustomerForm({ initial, onSave, onCancel }: CustomerFormProps) {
 
       <div className="space-y-1.5">
         <label className="text-sm font-medium">
-          Email <span className="font-normal text-slate-400">optional</span>
+          Email <span className="font-normal text-slate-500">optional</span>
         </label>
         <input
           type="email"
@@ -162,7 +162,7 @@ export function CustomerForm({ initial, onSave, onCancel }: CustomerFormProps) {
 
       <div className="space-y-1.5">
         <label className="text-sm font-medium">
-          Phone <span className="font-normal text-slate-400">optional</span>
+          Phone <span className="font-normal text-slate-500">optional</span>
         </label>
         <input
           type="tel"
@@ -175,7 +175,7 @@ export function CustomerForm({ initial, onSave, onCancel }: CustomerFormProps) {
 
       <div className="space-y-1.5">
         <label className="text-sm font-medium">
-          Address <span className="font-normal text-slate-400">optional</span>
+          Address <span className="font-normal text-slate-500">optional</span>
         </label>
         <input
           type="text"
@@ -188,7 +188,7 @@ export function CustomerForm({ initial, onSave, onCancel }: CustomerFormProps) {
 
       <div className="space-y-1.5">
         <label className="text-sm font-medium">
-          Notes <span className="font-normal text-slate-400">optional</span>
+          Notes <span className="font-normal text-slate-500">optional</span>
         </label>
         <textarea
           value={fields.notes}

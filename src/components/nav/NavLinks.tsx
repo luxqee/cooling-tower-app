@@ -63,7 +63,7 @@ export function NavLinks({ visibleHrefs, user, onNavigate }: Props) {
         </ul>
       </nav>
 
-      <div className="border-t border-slate-200 dark:border-slate-800 p-3">
+      <div className="border-t border-slate-300 dark:border-slate-800 p-3">
         <div className="mb-2 flex items-center gap-3 rounded-md px-3 py-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900 text-xs font-medium text-amber-700 dark:text-amber-300">
             {user ? user.name.charAt(0).toUpperCase() : "?"}

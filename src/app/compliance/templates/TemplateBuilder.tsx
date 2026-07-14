@@ -169,7 +169,7 @@ export function TemplateBuilder({ templateId, initialData }: TemplateBuilderProp
       <div className="space-y-4">
         <p className="text-sm font-semibold">Sections</p>
         {sections.map((section, si) => (
-          <div key={section.id} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 space-y-3">
+          <div key={section.id} className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 space-y-3">
             <div className="flex items-center gap-2">
               <input
                 type="text"
@@ -178,8 +178,8 @@ export function TemplateBuilder({ templateId, initialData }: TemplateBuilderProp
                 placeholder="Section title"
                 className="flex-1 min-h-[36px] rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 px-3 text-sm font-medium"
               />
-              <button onClick={() => moveSectionUp(si)}   className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-lg leading-none px-1" title="Move up">↑</button>
-              <button onClick={() => moveSectionDown(si)} className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-lg leading-none px-1" title="Move down">↓</button>
+              <button onClick={() => moveSectionUp(si)}   className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 text-lg leading-none px-1" title="Move up">↑</button>
+              <button onClick={() => moveSectionDown(si)} className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 text-lg leading-none px-1" title="Move down">↓</button>
               <button onClick={() => deleteSection(section.id)} className="text-red-400 hover:text-red-600 text-sm px-1" title="Delete section">✕</button>
             </div>
 
@@ -193,12 +193,12 @@ export function TemplateBuilder({ templateId, initialData }: TemplateBuilderProp
                       value={field.label}
                       onChange={(e) => updateField(section.id, field.id, { label: e.target.value })}
                       placeholder="Field label"
-                      className="flex-1 min-h-[34px] rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 text-sm"
+                      className="flex-1 min-h-[34px] rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 text-sm"
                     />
                     <select
                       value={field.type}
                       onChange={(e) => updateField(section.id, field.id, { type: e.target.value as FieldType })}
-                      className="min-h-[34px] rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 text-sm"
+                      className="min-h-[34px] rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 text-sm"
                     >
                       {FIELD_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                     </select>
@@ -206,8 +206,8 @@ export function TemplateBuilder({ templateId, initialData }: TemplateBuilderProp
                       <input type="checkbox" checked={field.required} onChange={(e) => updateField(section.id, field.id, { required: e.target.checked })} className="w-4 h-4 rounded" />
                       Req.
                     </label>
-                    <button onClick={() => moveFieldUp(section.id, fi)}   className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-base leading-none" title="Move up">↑</button>
-                    <button onClick={() => moveFieldDown(section.id, fi)} className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-base leading-none" title="Move down">↓</button>
+                    <button onClick={() => moveFieldUp(section.id, fi)}   className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 text-base leading-none" title="Move up">↑</button>
+                    <button onClick={() => moveFieldDown(section.id, fi)} className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 text-base leading-none" title="Move down">↓</button>
                     <button onClick={() => deleteField(section.id, field.id)} className="text-red-400 hover:text-red-600 text-xs" title="Delete field">✕</button>
                   </div>
                   {field.type === "checklist" && (
@@ -218,7 +218,7 @@ export function TemplateBuilder({ templateId, initialData }: TemplateBuilderProp
                         onChange={(e) => updateChecklistOptions(section.id, field.id, e.target.value)}
                         rows={3}
                         placeholder={"Harness\nHelmet\nSafety glasses"}
-                        className="w-full rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs resize-none"
+                        className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs resize-none"
                       />
                     </div>
                   )}

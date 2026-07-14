@@ -48,7 +48,7 @@ export function PlaceholderPage({
           </p>
         </div>
 
-        <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800">
+        <div className="mt-6 pt-6 border-t border-slate-300 dark:border-slate-800">
           <div className="text-2xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-500 mb-3">
             Planned capabilities
           </div>

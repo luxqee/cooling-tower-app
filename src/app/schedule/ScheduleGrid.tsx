@@ -97,7 +97,7 @@ function AssignmentBlock({
             setConfirming(true);
           }}
           aria-label="Remove assignment"
-          className="absolute top-0.5 right-0.5 flex p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-400 hover:text-red-500"
+          className="absolute top-0.5 right-0.5 flex p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-slate-500 hover:text-red-500"
         >
           <Trash2 className="w-3 h-3" />
         </button>
@@ -150,7 +150,7 @@ function GridCell({
         if (assignments.length === 0) onCellClick(userId, dateStr);
       }}
       className={cn(
-        "min-h-[80px] border-r border-b border-slate-200 dark:border-slate-700 p-1 space-y-1",
+        "min-h-[80px] border-r border-b border-slate-300 dark:border-slate-700 p-1 space-y-1",
         "transition-colors",
         assignments.length === 0 && "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40",
         isOver && "bg-amber-50 dark:bg-amber-900/20 ring-1 ring-inset ring-amber-300 dark:ring-amber-700"
@@ -197,7 +197,7 @@ function MobileAssignmentCard({
             {assignment.job.customerName} — {assignment.job.siteName}
           </p>
           {assignment.endDate && (
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               until {new Date(assignment.endDate).toLocaleDateString("en-AU", { day: "numeric", month: "short" })}
             </p>
           )}
@@ -205,7 +205,7 @@ function MobileAssignmentCard({
         {!confirming ? (
           <button
             onClick={() => setConfirming(true)}
-            className="shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+            className="shrink-0 p-1.5 rounded-lg text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -280,7 +280,7 @@ function MobileList({
               </button>
             </div>
             {dayAssignments.length === 0 ? (
-              <p className="text-xs text-slate-400">No assignments</p>
+              <p className="text-xs text-slate-500">No assignments</p>
             ) : (
               <div className="space-y-2">
                 {dayAssignments.map((a) => (
@@ -471,18 +471,18 @@ export function ScheduleGrid({
       <div className="hidden md:block overflow-x-auto">
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
           <div
-            className="grid border-t border-l border-slate-200 dark:border-slate-700 min-w-[700px]"
+            className="grid border-t border-l border-slate-300 dark:border-slate-700 min-w-[700px]"
             style={{ gridTemplateColumns: `160px repeat(7, 1fr)` }}
           >
             {/* Header row */}
-            <div className="border-r border-b border-slate-200 dark:border-slate-700 px-3 py-2 bg-slate-50 dark:bg-slate-800/60" />
+            <div className="border-r border-b border-slate-300 dark:border-slate-700 px-3 py-2 bg-slate-50 dark:bg-slate-800/60" />
             {days.map((day) => {
               const dateStr = toDateString(day);
               return (
                 <div
                   key={dateStr}
                   className={cn(
-                    "border-r border-b border-slate-200 dark:border-slate-700 px-2 py-2 text-xs font-semibold text-center",
+                    "border-r border-b border-slate-300 dark:border-slate-700 px-2 py-2 text-xs font-semibold text-center",
                     "bg-slate-50 dark:bg-slate-800/60",
                     dateStr === todayStr && "text-amber-600 dark:text-amber-400"
                   )}
@@ -495,7 +495,7 @@ export function ScheduleGrid({
             {/* Technician rows */}
             {technicians.map((tech) => (
               <Fragment key={tech.id}>
-                <div className="border-r border-b border-slate-200 dark:border-slate-700 px-3 py-2 flex items-start">
+                <div className="border-r border-b border-slate-300 dark:border-slate-700 px-3 py-2 flex items-start">
                   <span className="text-sm font-medium truncate">{tech.name}</span>
                 </div>
                 {days.map((day) => {

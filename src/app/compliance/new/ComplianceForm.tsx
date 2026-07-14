@@ -118,7 +118,7 @@ export function ComplianceForm({ jobs, templates }: ComplianceFormProps) {
         <p className="text-sm font-medium">Select document type</p>
         <div className="space-y-2">
           {templates.map((t) => (
-            <div key={t.id} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-amber-400 dark:hover:border-amber-500 transition-colors">
+            <div key={t.id} className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-amber-400 dark:hover:border-amber-500 transition-colors">
               <button
                 onClick={() => { setTemplate(t); setValues({}); setStep("form"); }}
                 className="w-full text-left px-4 pt-4 pb-3"
@@ -135,7 +135,7 @@ export function ComplianceForm({ jobs, templates }: ComplianceFormProps) {
                   href={`/api/compliance/templates/${t.id}/preview`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 underline underline-offset-2"
+                  className="text-xs text-slate-500 hover:text-amber-600 dark:hover:text-amber-400 underline underline-offset-2"
                   onClick={(e) => e.stopPropagation()}
                 >
                   Preview PDF ↗
@@ -162,7 +162,7 @@ export function ComplianceForm({ jobs, templates }: ComplianceFormProps) {
     <div className="space-y-6">
       {sections.map((section) => (
         <div key={section.id} className="space-y-3">
-          <h3 className="font-semibold text-sm border-b border-slate-200 dark:border-slate-700 pb-2">{section.title}</h3>
+          <h3 className="font-semibold text-sm border-b border-slate-300 dark:border-slate-700 pb-2">{section.title}</h3>
           {section.fields.map((field) => (
             <div key={field.id} className="space-y-1">
               <label htmlFor={`field-${field.id}`} className="text-sm font-medium text-slate-700 dark:text-slate-300">

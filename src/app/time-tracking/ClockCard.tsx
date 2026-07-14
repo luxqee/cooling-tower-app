@@ -78,7 +78,7 @@ export function ClockCard({ jobs, activeEntry, usingFallback = false }: ClockCar
 
   if (currentEntry) {
     return (
-      <div className="flex flex-col gap-6 p-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+      <div className="flex flex-col gap-6 p-5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800">
         <div>
           <p className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Clocked in
@@ -109,7 +109,7 @@ export function ClockCard({ jobs, activeEntry, usingFallback = false }: ClockCar
   }
 
   return (
-    <div className="flex flex-col gap-4 p-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+    <div className="flex flex-col gap-4 p-5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800">
       <p className="text-xs font-mono uppercase tracking-wider text-slate-500 dark:text-slate-400">
         Not clocked in
       </p>

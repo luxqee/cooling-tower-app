@@ -135,9 +135,9 @@ export function ChatWidget({ inline = false }: ChatWidgetProps) {
   }
 
   const panel = (
-    <div className={inline ? "rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex flex-col h-[420px] max-h-[80vh]" : "w-80 sm:w-96 h-[480px] max-h-[80vh] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl flex flex-col"}>
+    <div className={inline ? "rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 flex flex-col h-[420px] max-h-[80vh]" : "w-80 sm:w-96 h-[480px] max-h-[80vh] rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-xl flex flex-col"}>
       {!inline && (
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-300 dark:border-slate-700">
           <p className="text-sm font-semibold">Assistant</p>
           <button onClick={() => setOpen(false)} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
             <X className="w-4 h-4" />
@@ -146,7 +146,7 @@ export function ChatWidget({ inline = false }: ChatWidgetProps) {
       )}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
         {messages.length === 0 && (
-          <p className="text-sm text-slate-400">Ask about jobs, compliance, assignments, or draft a variation/quote.</p>
+          <p className="text-sm text-slate-500">Ask about jobs, compliance, assignments, or draft a variation/quote.</p>
         )}
         {messages.map((m, i) => (
           <div key={i} className={`text-sm ${m.role === "user" ? "text-right" : "text-left"}`}>
@@ -155,7 +155,7 @@ export function ChatWidget({ inline = false }: ChatWidgetProps) {
             </span>
           </div>
         ))}
-        {sending && <p className="text-xs text-slate-400">Thinking…</p>}
+        {sending && <p className="text-xs text-slate-500">Thinking…</p>}
         {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
         {pendingAction && (
           <div className="flex gap-2 justify-end">
@@ -196,7 +196,7 @@ export function ChatWidget({ inline = false }: ChatWidgetProps) {
           This week&apos;s assignments
         </button>
       </div>
-      <div className="flex gap-2 p-3 border-t border-slate-200 dark:border-slate-700">
+      <div className="flex gap-2 p-3 border-t border-slate-300 dark:border-slate-700">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}

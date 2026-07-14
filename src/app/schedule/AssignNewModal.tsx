@@ -95,7 +95,7 @@ export function AssignNewModal({
           </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium">
-              End date <span className="font-normal text-slate-400">(optional — for multi-day)</span>
+              End date <span className="font-normal text-slate-500">(optional — for multi-day)</span>
             </label>
             <input
               type="date"

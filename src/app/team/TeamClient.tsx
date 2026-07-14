@@ -65,17 +65,17 @@ function UserRow({ user, canEdit }: { user: User; canEdit: boolean }) {
 
   return (
     <div className={`rounded-xl border px-4 py-4 bg-white dark:bg-slate-800 space-y-3 ${
-      isActive ? "border-slate-200 dark:border-slate-700" : "border-slate-200 dark:border-slate-700 opacity-50"
+      isActive ? "border-slate-300 dark:border-slate-700" : "border-slate-300 dark:border-slate-700 opacity-50"
     }`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 space-y-0.5">
           <div className="flex items-center gap-2">
             <p className="font-medium">{user.name}</p>
-            {!isActive && <span className="text-xs text-slate-400 font-mono">inactive</span>}
+            {!isActive && <span className="text-xs text-slate-500 font-mono">inactive</span>}
           </div>
           <p className="text-sm text-slate-500 truncate">{user.email}</p>
           {user.currentJob && (
-            <p className="text-xs text-slate-400 truncate">{user.currentJob}</p>
+            <p className="text-xs text-slate-500 truncate">{user.currentJob}</p>
           )}
         </div>
 

@@ -73,7 +73,7 @@ export default async function DevLoginPage() {
         </div>
 
         {/* Test credentials */}
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 divide-y divide-slate-100 dark:divide-slate-700">
+        <div className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 divide-y divide-slate-100 dark:divide-slate-700">
           <div className="px-4 py-3 flex items-center justify-between">
             <h2 className="font-semibold text-sm">Test accounts</h2>
             {seeded && (
@@ -103,7 +103,7 @@ export default async function DevLoginPage() {
               </span>
               <div className="min-w-0 flex-1 space-y-0.5">
                 <p className="text-xs font-mono text-slate-700 dark:text-slate-300">{u.email}</p>
-                <p className="text-xs text-slate-400">{ROLE_WHAT[u.role]}</p>
+                <p className="text-xs text-slate-500">{ROLE_WHAT[u.role]}</p>
               </div>
               <span className="shrink-0 text-xs text-emerald-600 dark:text-emerald-400 font-medium">✓ ready</span>
             </div>
@@ -111,7 +111,7 @@ export default async function DevLoginPage() {
         </div>
 
         {/* Clerk impersonation — useful when you can't receive the verification email */}
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-4 text-sm space-y-3">
+        <div className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-4 text-sm space-y-3">
           <h2 className="font-semibold">Can&apos;t receive the sign-in code?</h2>
           <p className="text-slate-500 text-xs">Use Clerk&apos;s Impersonate feature to sign in as any user from the dashboard — no email needed.</p>
           <ol className="space-y-1.5 text-slate-600 dark:text-slate-400 list-decimal list-inside">
@@ -123,21 +123,21 @@ export default async function DevLoginPage() {
         </div>
 
         {/* How to switch roles */}
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-4 text-sm space-y-3">
+        <div className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-4 text-sm space-y-3">
           <h2 className="font-semibold">How to switch roles</h2>
           <ol className="space-y-1.5 text-slate-600 dark:text-slate-400 list-decimal list-inside">
             <li>Click <strong>Sign Out</strong> above</li>
             <li>Click <strong>→ Go to Sign In</strong></li>
             <li>Enter the email + password for the role you want to test</li>
           </ol>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500">
             Tip: open separate Chrome profiles — one per role — so you can test two sides
             simultaneously without signing out.
           </p>
         </div>
 
         {/* Scenario guide */}
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-4 space-y-3">
+        <div className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-4 space-y-3">
           <h2 className="font-semibold text-sm">What to test per role</h2>
           <div className="grid gap-2 text-sm">
             {[
@@ -152,7 +152,7 @@ export default async function DevLoginPage() {
             ].map(({ scenario, role, path }) => (
               <div key={path + scenario} className="flex items-start gap-2">
                 <Link href={path} className="text-amber-600 hover:underline font-mono text-xs shrink-0 pt-0.5">{path}</Link>
-                <span className="text-slate-500">→ {scenario} <span className="text-slate-400">({role})</span></span>
+                <span className="text-slate-500">→ {scenario} <span className="text-slate-500">({role})</span></span>
               </div>
             ))}
           </div>
@@ -167,7 +167,7 @@ export default async function DevLoginPage() {
             {users.map((u) => (
               <div
                 key={u.id}
-                className={`rounded-xl border px-4 py-3 flex items-start justify-between gap-3 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 ${
+                className={`rounded-xl border px-4 py-3 flex items-start justify-between gap-3 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 ${
                   u.id === current?.id ? "ring-2 ring-amber-400" : ""
                 } ${!u.isActive ? "opacity-50" : ""}`}
               >

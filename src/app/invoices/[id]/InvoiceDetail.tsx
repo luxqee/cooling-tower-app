@@ -153,13 +153,13 @@ export function InvoiceDetail({ invoice: initial, job, variations, defaultHourly
         <p className="text-sm text-slate-500 dark:text-slate-400">
           {job.customerName} — {job.siteName}
         </p>
-        <p className="text-xs text-slate-400 mt-0.5">
+        <p className="text-xs text-slate-500 mt-0.5">
           Created {new Date(invoice.createdAt).toLocaleDateString("en-AU")}
         </p>
       </div>
 
       {/* Labour amount */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 space-y-4">
+      <div className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">Labour amount</h2>
           <div className="flex gap-1 text-xs">
@@ -201,7 +201,7 @@ export function InvoiceDetail({ invoice: initial, job, variations, defaultHourly
               </div>
               <div className="flex-1 space-y-1">
                 <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Calculated total</label>
-                <div className="min-h-[44px] rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3 flex items-center text-base font-semibold">
+                <div className="min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3 flex items-center text-base font-semibold">
                   {calculatedLabour != null ? `$${calculatedLabour.toFixed(2)}` : "—"}
                 </div>
               </div>
@@ -220,7 +220,7 @@ export function InvoiceDetail({ invoice: initial, job, variations, defaultHourly
       </div>
 
       {/* Line items */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 space-y-3">
+      <div className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 space-y-3">
         <h2 className="text-sm font-semibold">Line items</h2>
         <div className="space-y-2">
           <div className="flex justify-between text-sm py-2 border-b border-slate-100 dark:border-slate-700">
@@ -241,7 +241,7 @@ export function InvoiceDetail({ invoice: initial, job, variations, defaultHourly
       </div>
 
       {/* Notes */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 space-y-3">
+      <div className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 space-y-3">
         <h2 className="text-sm font-semibold">Notes</h2>
         <textarea
           value={notes}
@@ -258,7 +258,7 @@ export function InvoiceDetail({ invoice: initial, job, variations, defaultHourly
 
       {/* Send panel */}
       {invoice.status !== "paid" && (
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 space-y-4">
+        <div className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 space-y-4">
           <h2 className="text-sm font-semibold">Send invoice</h2>
           {invoice.sentAt && (
             <p className="text-sm text-slate-500 dark:text-slate-400">

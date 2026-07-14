@@ -48,7 +48,7 @@ export function CrewBoard() {
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold">Live Crew</h2>
         {lastUpdated && (
-          <span className="text-xs font-mono text-slate-400">
+          <span className="text-xs font-mono text-slate-500">
             {lastUpdated.toLocaleTimeString("en-AU", {
               hour: "2-digit",
               minute: "2-digit",
@@ -76,7 +76,7 @@ export function CrewBoard() {
           return (
             <li
               key={e.entryId}
-              className="flex items-start justify-between gap-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3"
+              className="flex items-start justify-between gap-4 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3"
             >
               <div className="min-w-0">
                 <p className="font-medium truncate">{e.technicianName}</p>

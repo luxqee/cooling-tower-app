@@ -106,7 +106,7 @@ export function SettingsForm({ initial, initialLogoUrl }: SettingsFormProps) {
   }
 
   const inputClass =
-    "w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent";
+    "w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent";
 
   return (
     <div className="space-y-8">
@@ -115,7 +115,7 @@ export function SettingsForm({ initial, initialLogoUrl }: SettingsFormProps) {
         <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Business Logo</h3>
         <div className="flex items-start gap-4">
           {logoUrl ? (
-            <div className="w-20 h-20 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 flex items-center justify-center overflow-hidden shrink-0">
+            <div className="w-20 h-20 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 flex items-center justify-center overflow-hidden shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={logoUrl} alt="Business logo" className="w-full h-full object-contain p-1" />
             </div>
@@ -153,7 +153,7 @@ export function SettingsForm({ initial, initialLogoUrl }: SettingsFormProps) {
                 </button>
               )}
             </div>
-            <p className="text-xs text-slate-400">PNG, JPG, or WebP — max 2 MB. Shown in PDF headers.</p>
+            <p className="text-xs text-slate-500">PNG, JPG, or WebP — max 2 MB. Shown in PDF headers.</p>
             {logoError && <p className="text-xs text-red-600 dark:text-red-400">{logoError}</p>}
           </div>
         </div>
@@ -237,13 +237,13 @@ export function SettingsForm({ initial, initialLogoUrl }: SettingsFormProps) {
             placeholder="e.g. cooling tower maintenance, HVAC servicing, electrical contracting"
             className={inputClass}
           />
-          <p className="mt-1 text-xs text-slate-400">Used by the AI assistant and voice-note summaries to understand your work — not shown on customer documents.</p>
+          <p className="mt-1 text-xs text-slate-500">Used by the AI assistant and voice-note summaries to understand your work — not shown on customer documents.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Hourly rate ($) <span className="font-normal text-slate-400">optional</span>
+              Hourly rate ($) <span className="font-normal text-slate-500">optional</span>
             </label>
             <input
               type="number"
@@ -255,11 +255,11 @@ export function SettingsForm({ initial, initialLogoUrl }: SettingsFormProps) {
               placeholder="145.00"
               className={inputClass}
             />
-            <p className="mt-1 text-xs text-slate-400">Used to pre-fill the labour calculator on invoices.</p>
+            <p className="mt-1 text-xs text-slate-500">Used to pre-fill the labour calculator on invoices.</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Payment terms <span className="font-normal text-slate-400">optional</span>
+              Payment terms <span className="font-normal text-slate-500">optional</span>
             </label>
             <input
               type="text"
@@ -269,7 +269,7 @@ export function SettingsForm({ initial, initialLogoUrl }: SettingsFormProps) {
               placeholder="Payment due 14 days from invoice date"
               className={inputClass}
             />
-            <p className="mt-1 text-xs text-slate-400">Shown in the footer of invoice PDFs.</p>
+            <p className="mt-1 text-xs text-slate-500">Shown in the footer of invoice PDFs.</p>
           </div>
         </div>
 

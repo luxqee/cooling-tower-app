@@ -41,7 +41,7 @@ export function InvoiceList({ invoices }: InvoiceListProps) {
   return (
     <div className="space-y-4">
       {/* Status tabs */}
-      <div className="flex gap-1 border-b border-slate-200 dark:border-slate-700">
+      <div className="flex gap-1 border-b border-slate-300 dark:border-slate-700">
         {tabs.map(({ key, label }) => (
           <button
             key={key}
@@ -66,7 +66,7 @@ export function InvoiceList({ invoices }: InvoiceListProps) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-200 dark:border-slate-700">
+              <tr className="border-b border-slate-300 dark:border-slate-700">
                 {["Invoice #", "Customer — Site", "Job type", "Total", "Status", "Date"].map((h) => (
                   <th key={h} className="pb-2 pr-4 text-left text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">
                     {h}

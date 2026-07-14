@@ -184,13 +184,13 @@ export function NewJobForm({ onClose }: { onClose: () => void }) {
               type="button"
               onClick={clearCustomer}
               aria-label="Clear customer"
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg leading-none"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-600 dark:hover:text-slate-200 text-lg leading-none"
             >
               ✕
             </button>
           )}
           {showDropdown && (
-            <ul className="absolute z-20 mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg max-h-48 overflow-y-auto">
+            <ul className="absolute z-20 mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg max-h-48 overflow-y-auto">
               {suggestions.map((s) => (
                 <li key={s.id}>
                   <button
@@ -277,7 +277,7 @@ export function NewJobForm({ onClose }: { onClose: () => void }) {
 
         <div className="space-y-1.5">
           <label className="text-sm font-medium">
-            Quoted cost ($) <span className="font-normal text-slate-400">optional</span>
+            Quoted cost ($) <span className="font-normal text-slate-500">optional</span>
           </label>
           <input
             type="number"

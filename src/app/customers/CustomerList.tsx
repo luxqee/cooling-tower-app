@@ -37,7 +37,7 @@ export function CustomerList({ customers }: { customers: CustomerRow[] }) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-200 dark:border-slate-700">
+              <tr className="border-b border-slate-300 dark:border-slate-700">
                 {["Name", "ABN", "Contact", "Email", "Phone", "Jobs"].map((h) => (
                   <th
                     key={h}

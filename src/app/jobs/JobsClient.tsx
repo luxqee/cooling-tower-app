@@ -79,7 +79,7 @@ function EditJobModal({ job, onClose }: { job: Job; onClose: () => void }) {
               <input type="number" value={fields.quotedHours} onChange={(e) => set("quotedHours", e.target.value)} className={inp} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Quoted cost ($) <span className="font-normal text-slate-400">optional</span></label>
+              <label className="text-sm font-medium">Quoted cost ($) <span className="font-normal text-slate-500">optional</span></label>
               <input type="number" inputMode="decimal" value={fields.quotedCost} onChange={(e) => set("quotedCost", e.target.value)} placeholder="1200" className={inp} />
             </div>
           </div>
@@ -170,18 +170,18 @@ function CommunicationLogModal({ job, onClose }: { job: Job; onClose: () => void
           {!loadError && entries === null && <p className="text-sm text-slate-500">Loading…</p>}
           {entries?.length === 0 && <p className="text-sm text-slate-500">No entries yet.</p>}
           {entries?.map((e) => (
-            <div key={e.id} className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 space-y-0.5">
+            <div key={e.id} className="rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 space-y-0.5">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-xs font-medium text-amber-600 dark:text-amber-400">{COMMUNICATION_TYPE_LABELS[e.type]}</span>
-                <span className="text-xs text-slate-400 shrink-0">{new Date(e.createdAt).toLocaleString()}</span>
+                <span className="text-xs text-slate-500 shrink-0">{new Date(e.createdAt).toLocaleString()}</span>
               </div>
               <p className="text-sm whitespace-pre-wrap">{e.body}</p>
-              {e.author?.name && <p className="text-xs text-slate-400">— {e.author.name}</p>}
+              {e.author?.name && <p className="text-xs text-slate-500">— {e.author.name}</p>}
             </div>
           ))}
         </div>
 
-        <div className="space-y-2 shrink-0 pt-2 border-t border-slate-200 dark:border-slate-700">
+        <div className="space-y-2 shrink-0 pt-2 border-t border-slate-300 dark:border-slate-700">
           <select value={type} onChange={(e) => setType(e.target.value as Communication["type"])} className={inp}>
             {(Object.keys(COMMUNICATION_TYPE_LABELS) as Communication["type"][]).map((t) => (
               <option key={t} value={t}>{COMMUNICATION_TYPE_LABELS[t]}</option>
@@ -288,7 +288,7 @@ function MaterialsModal({ job, canReconcile, onClose }: { job: Job; canReconcile
           {!loadError && entries === null && <p className="text-sm text-slate-500">Loading…</p>}
           {entries?.length === 0 && <p className="text-sm text-slate-500">No materials logged yet.</p>}
           {entries?.map((e) => (
-            <div key={e.id} className="rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 space-y-1">
+            <div key={e.id} className="rounded-lg border border-slate-300 dark:border-slate-700 px-3 py-2 space-y-1">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-sm font-medium truncate">{e.description}</p>
                 <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${
@@ -325,7 +325,7 @@ function MaterialsModal({ job, canReconcile, onClose }: { job: Job; canReconcile
           ))}
         </div>
 
-        <div className="space-y-2 shrink-0 pt-2 border-t border-slate-200 dark:border-slate-700">
+        <div className="space-y-2 shrink-0 pt-2 border-t border-slate-300 dark:border-slate-700">
           <input type="text" placeholder="Description (e.g. pump seal)" value={description} onChange={(e) => setDescription(e.target.value)} className={inp} />
           <input type="number" inputMode="decimal" placeholder="Estimated cost ($)" value={estimatedCost} onChange={(e) => setEstimatedCost(e.target.value)} className={inp} />
           {error && <p className="text-sm text-red-600">{error}</p>}
@@ -366,7 +366,7 @@ function JobActionButtons({ onMaterials, onLog, onEdit, onDelete }: {
       <button onClick={onEdit} aria-label="Edit job" title="Edit job" className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
         <Pencil className="w-3.5 h-3.5" />
       </button>
-      <button onClick={onDelete} aria-label="Delete job" title="Delete job" className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-600">
+      <button onClick={onDelete} aria-label="Delete job" title="Delete job" className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-500 hover:text-red-600">
         <Trash2 className="w-3.5 h-3.5" />
       </button>
     </>
@@ -421,7 +421,7 @@ function JobCard({ job, canEdit }: { job: Job; canEdit: boolean }) {
 
   return (
     <>
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-4 space-y-3">
+      <div className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-4 space-y-3">
         <div className="flex items-start justify-between gap-3">
           <Link href={`/jobs/${job.id}`} className="min-w-0 block hover:underline">
             <p className="font-semibold truncate">{job.customerName}</p>
@@ -579,10 +579,10 @@ export function JobsClient({ jobs, canCreate }: JobsClientProps) {
           </div>
 
           {/* Desktop: a real table instead of a stretched single-column list */}
-          <div className="hidden lg:block overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+          <div className="hidden lg:block overflow-x-auto rounded-xl border border-slate-300 dark:border-slate-700">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-700 text-left text-xs text-slate-500">
+                <tr className="border-b border-slate-300 dark:border-slate-700 text-left text-xs text-slate-500">
                   <th className="px-4 py-2.5 font-medium">Job</th>
                   <th className="px-4 py-2.5 font-medium">Status</th>
                   <th className="px-4 py-2.5 font-medium">Hours</th>

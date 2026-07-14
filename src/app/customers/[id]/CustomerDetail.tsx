@@ -89,7 +89,7 @@ function PortalLinkSection({ customerId, canShare }: { customerId: string; canSh
         </button>
       )}
       {link && (
-        <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 space-y-2">
+        <div className="rounded-lg border border-slate-300 dark:border-slate-700 p-3 space-y-2">
           <p className="text-xs text-slate-500">Valid for 30 days. Share this link with the customer:</p>
           <div className="flex gap-2">
             <input type="text" readOnly value={link} className="flex-1 min-h-[38px] rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 px-3 text-xs" />
@@ -160,7 +160,7 @@ function ContractsSection({ customerId, contracts, canManage }: { customerId: st
       </div>
 
       {adding && (
-        <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 space-y-2">
+        <div className="rounded-lg border border-slate-300 dark:border-slate-700 p-3 space-y-2">
           <input type="text" placeholder="Site name" value={siteName} onChange={(e) => setSiteName(e.target.value)} className={inp} />
           <div className="grid grid-cols-2 gap-2">
             <input type="number" inputMode="decimal" placeholder="Value ($)" value={value} onChange={(e) => setValue(e.target.value)} className={inp} />
@@ -190,7 +190,7 @@ function ContractsSection({ customerId, contracts, canManage }: { customerId: st
         <p className="text-sm text-slate-500 dark:text-slate-400">No maintenance contracts for this customer yet.</p>
       )}
       {contracts.length > 0 && (
-        <div className="rounded-lg border border-slate-200 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700">
+        <div className="rounded-lg border border-slate-300 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700">
           {contracts.map((c) => (
             <div key={c.id} className="px-4 py-2.5 text-sm flex items-center justify-between gap-3">
               <div className="min-w-0">
@@ -263,7 +263,7 @@ function AssetsSection({ customerId, assets, canManage }: { customerId: string; 
       </div>
 
       {adding && (
-        <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 space-y-2">
+        <div className="rounded-lg border border-slate-300 dark:border-slate-700 p-3 space-y-2">
           <input type="text" placeholder="Serial number" value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} className={inp} />
           <input type="text" placeholder="Asset type (e.g. BAC VT1-40)" value={assetType} onChange={(e) => setAssetType(e.target.value)} className={inp} />
           <input type="text" placeholder="Location (optional)" value={location} onChange={(e) => setLocation(e.target.value)} className={inp} />
@@ -286,7 +286,7 @@ function AssetsSection({ customerId, assets, canManage }: { customerId: string; 
         <p className="text-sm text-slate-500 dark:text-slate-400">No assets recorded for this customer yet.</p>
       )}
       {assets.length > 0 && (
-        <div className="rounded-lg border border-slate-200 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700">
+        <div className="rounded-lg border border-slate-300 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700">
           {assets.map((a) => (
             <div key={a.id} className="px-4 py-2.5 text-sm flex items-center justify-between gap-3">
               <div className="min-w-0">
@@ -352,7 +352,7 @@ export function CustomerDetail({ customer, jobs, assets, contracts, canEdit, can
       </div>
 
       {/* Contact details */}
-      <div className="rounded-lg border border-slate-200 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700">
+      <div className="rounded-lg border border-slate-300 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700">
         {contactFields.map(({ label, value }) => (
           <div key={label} className="flex px-4 py-3 text-sm">
             <span className="w-36 text-slate-500 dark:text-slate-400 shrink-0">{label}</span>
@@ -391,7 +391,7 @@ export function CustomerDetail({ customer, jobs, assets, contracts, canEdit, can
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-700">
+                <tr className="border-b border-slate-300 dark:border-slate-700">
                   {["Site", "Type", "Status", "Created"].map((h) => (
                     <th
                       key={h}

@@ -31,11 +31,11 @@ export function MobileNavClient({ visibleHrefs, user }: Props) {
       )}
 
       <aside
-        className={`lg:hidden fixed left-0 top-0 z-50 flex h-screen w-72 flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-transform duration-200 ${
+        className={`lg:hidden fixed left-0 top-0 z-50 flex h-screen w-72 flex-col border-r border-slate-300 dark:border-slate-800 bg-white dark:bg-slate-900 transition-transform duration-200 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex h-16 items-center justify-between border-b border-slate-200 dark:border-slate-800 px-6">
+        <div className="flex h-16 items-center justify-between border-b border-slate-300 dark:border-slate-800 px-6">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-amber-500 text-slate-950 font-mono text-sm font-bold">
               CT

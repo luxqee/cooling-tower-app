@@ -57,7 +57,7 @@ export default async function CustomerPortalPage({ params }: { params: { token: 
           <h2 className="text-sm font-medium text-slate-700">Job history</h2>
           {jobs.length === 0 && <p className="text-sm text-slate-500">No jobs on record yet.</p>}
           {jobs.length > 0 && (
-            <div className="rounded-lg border border-slate-200 bg-white divide-y divide-slate-200">
+            <div className="rounded-lg border border-slate-300 bg-white divide-y divide-slate-200">
               {jobs.map((j) => (
                 <div key={j.id} className="px-4 py-3 text-sm flex items-center justify-between gap-3">
                   <div className="min-w-0">
@@ -77,7 +77,7 @@ export default async function CustomerPortalPage({ params }: { params: { token: 
           <h2 className="text-sm font-medium text-slate-700">Invoices</h2>
           {invoices.length === 0 && <p className="text-sm text-slate-500">No invoices on record yet.</p>}
           {invoices.length > 0 && (
-            <div className="rounded-lg border border-slate-200 bg-white divide-y divide-slate-200">
+            <div className="rounded-lg border border-slate-300 bg-white divide-y divide-slate-200">
               {invoices.map((inv) => (
                 <div key={inv.id} className="px-4 py-3 text-sm flex items-center justify-between gap-3">
                   <div className="min-w-0">
@@ -95,7 +95,7 @@ export default async function CustomerPortalPage({ params }: { params: { token: 
           <h2 className="text-sm font-medium text-slate-700">Compliance documents</h2>
           {complianceDocs.length === 0 && <p className="text-sm text-slate-500">No compliance documents on record yet.</p>}
           {complianceDocs.length > 0 && (
-            <div className="rounded-lg border border-slate-200 bg-white divide-y divide-slate-200">
+            <div className="rounded-lg border border-slate-300 bg-white divide-y divide-slate-200">
               {complianceDocs.map((doc) => (
                 <div key={doc.id} className="px-4 py-3 text-sm">
                   <p className="font-medium">{doc.template.name}</p>

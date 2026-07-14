@@ -155,13 +155,13 @@ export function NewQuoteButton() {
                     type="button"
                     onClick={clearCustomer}
                     aria-label="Clear customer"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg leading-none"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-600 dark:hover:text-slate-200 text-lg leading-none"
                   >
                     ✕
                   </button>
                 )}
                 {showDropdown && (
-                  <ul className="absolute z-20 mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg max-h-48 overflow-y-auto">
+                  <ul className="absolute z-20 mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg max-h-48 overflow-y-auto">
                     {suggestions.map((s) => (
                       <li key={s.id}>
                         <button
@@ -187,7 +187,7 @@ export function NewQuoteButton() {
                     <input type="number" placeholder="Qty" value={line.qty} onChange={(e) => updateLine(i, "qty", e.target.value)} className={`${inp} w-16`} />
                     <input type="number" inputMode="decimal" placeholder="$/unit" value={line.unitPrice} onChange={(e) => updateLine(i, "unitPrice", e.target.value)} className={`${inp} w-24`} />
                     {lines.length > 1 && (
-                      <button onClick={() => setLines((p) => p.filter((_, idx) => idx !== i))} className="p-2 text-slate-400 hover:text-red-600">
+                      <button onClick={() => setLines((p) => p.filter((_, idx) => idx !== i))} className="p-2 text-slate-500 hover:text-red-600">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     )}

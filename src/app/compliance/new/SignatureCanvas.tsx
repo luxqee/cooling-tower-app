@@ -109,7 +109,7 @@ export function SignatureCanvas({ onChange }: SignatureCanvasProps) {
           onTouchEnd={end}
         />
         {isEmpty && (
-          <p className="absolute inset-0 flex items-center justify-center text-sm text-slate-400 pointer-events-none select-none">
+          <p className="absolute inset-0 flex items-center justify-center text-sm text-slate-500 pointer-events-none select-none">
             Sign here
           </p>
         )}

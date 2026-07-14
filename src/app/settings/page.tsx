@@ -30,7 +30,7 @@ export default async function SettingsPage() {
           <p className="text-sm text-slate-500 mt-1">Business profile shown on compliance PDFs and invoices.</p>
         </div>
 
-        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-6 py-6">
+        <div className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-6 py-6">
           <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-5">Business Profile</h2>
           <SettingsForm initial={initial} initialLogoUrl={profile?.logoUrl ?? null} />
         </div>

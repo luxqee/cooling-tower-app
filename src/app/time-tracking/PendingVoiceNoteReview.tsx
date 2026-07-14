@@ -138,7 +138,7 @@ export function PendingVoiceNoteReview({ jobId }: PendingVoiceNoteReviewProps) {
                   <img
                     src={`/api/photos?url=${encodeURIComponent(url)}`}
                     alt="Attached"
-                    className="w-16 h-16 object-cover rounded-lg border border-slate-200 dark:border-slate-700"
+                    className="w-16 h-16 object-cover rounded-lg border border-slate-300 dark:border-slate-700"
                   />
                   <button
                     type="button"

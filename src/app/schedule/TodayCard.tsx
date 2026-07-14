@@ -25,9 +25,9 @@ interface TodayCardProps {
 export function TodayCard({ assignments, todayLabel }: TodayCardProps) {
   if (assignments.length === 0) {
     return (
-      <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-8 text-center space-y-2">
+      <div className="rounded-2xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-8 text-center space-y-2">
         <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">{todayLabel}</p>
-        <p className="text-slate-400 dark:text-slate-500 text-sm">No jobs scheduled for today</p>
+        <p className="text-slate-500 dark:text-slate-500 text-sm">No jobs scheduled for today</p>
       </div>
     );
   }
@@ -43,7 +43,7 @@ export function TodayCard({ assignments, todayLabel }: TodayCardProps) {
             className={cn(
               "rounded-2xl border px-5 py-5 space-y-4",
               isInactive
-                ? "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50"
+                ? "border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50"
                 : "border-amber-200 dark:border-amber-700/50 bg-white dark:bg-slate-800"
             )}
           >

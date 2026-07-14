@@ -46,7 +46,7 @@ export default async function TemplatesPage() {
                 ? (t.sections as Array<{ fields?: unknown[] }>).reduce((sum, s) => sum + (s.fields?.length ?? 0), 0)
                 : 0;
               return (
-                <div key={t.id} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-4">
+                <div key={t.id} className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0 space-y-0.5">
                       <div className="flex items-center gap-2">
@@ -55,7 +55,7 @@ export default async function TemplatesPage() {
                         </span>
                         <p className="font-medium truncate">{t.name}</p>
                       </div>
-                      <p className="text-xs text-slate-400">{sectionCount} sections · {fieldCount} fields</p>
+                      <p className="text-xs text-slate-500">{sectionCount} sections · {fieldCount} fields</p>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       <a

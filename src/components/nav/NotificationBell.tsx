@@ -91,11 +91,11 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-72 sm:w-80 max-h-96 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg">
-          <p className="px-4 pt-3 pb-1 text-2xs font-mono uppercase tracking-wider text-slate-400">Notifications</p>
-          {loading && <p className="px-4 py-3 text-sm text-slate-400">Loading…</p>}
+        <div className="absolute right-0 mt-2 w-72 sm:w-80 max-h-96 overflow-y-auto rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg">
+          <p className="px-4 pt-3 pb-1 text-2xs font-mono uppercase tracking-wider text-slate-500">Notifications</p>
+          {loading && <p className="px-4 py-3 text-sm text-slate-500">Loading…</p>}
           {!loading && notifications.length === 0 && (
-            <p className="px-4 py-3 text-sm text-slate-400">No notifications yet.</p>
+            <p className="px-4 py-3 text-sm text-slate-500">No notifications yet.</p>
           )}
           {!loading &&
             notifications.map((n) => (
@@ -107,7 +107,7 @@ export function NotificationBell() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="font-medium text-slate-900 dark:text-slate-100">{n.title}</span>
-                  <span className="shrink-0 text-2xs text-slate-400">{timeAgo(n.createdAt)}</span>
+                  <span className="shrink-0 text-2xs text-slate-500">{timeAgo(n.createdAt)}</span>
                 </div>
                 <p className="text-slate-500 dark:text-slate-400 mt-0.5">{n.body}</p>
               </button>

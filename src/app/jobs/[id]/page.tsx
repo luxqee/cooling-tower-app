@@ -55,7 +55,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
           </div>
         </div>
 
-        <div className="rounded-lg border border-slate-200 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700">
+        <div className="rounded-lg border border-slate-300 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700">
           <div className="flex px-4 py-3 text-sm">
             <span className="w-36 text-slate-500 dark:text-slate-400 shrink-0">Job type</span>
             <span>{job.jobType}</span>
@@ -89,7 +89,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                 {invoice.invoiceNumber ?? "Draft"} — {invoice.status} — ${Number(invoice.totalAmount).toFixed(2)}
               </Link>
             ) : (
-              <span className="text-slate-400">No invoice yet</span>
+              <span className="text-slate-500">No invoice yet</span>
             )}
           </div>
         </div>
@@ -98,7 +98,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
           <h2 className="text-sm font-medium text-slate-700 dark:text-slate-300">Variations ({job.variations.length})</h2>
           {job.variations.length === 0 && <p className="text-sm text-slate-500">No variations submitted.</p>}
           {job.variations.length > 0 && (
-            <div className="rounded-lg border border-slate-200 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700">
+            <div className="rounded-lg border border-slate-300 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700">
               {job.variations.map((v) => (
                 <div key={v.id} className="px-4 py-3 text-sm flex items-center justify-between gap-3">
                   <div className="min-w-0">
@@ -116,7 +116,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
           <h2 className="text-sm font-medium text-slate-700 dark:text-slate-300">Assets serviced ({job.assets.length})</h2>
           {job.assets.length === 0 && <p className="text-sm text-slate-500">No assets linked to this job.</p>}
           {job.assets.length > 0 && (
-            <div className="rounded-lg border border-slate-200 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700">
+            <div className="rounded-lg border border-slate-300 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700">
               {job.assets.map((ja) => (
                 <div key={ja.asset.id} className="px-4 py-3 text-sm">
                   <p className="font-medium">{ja.asset.serialNumber}</p>
@@ -131,7 +131,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
           <h2 className="text-sm font-medium text-slate-700 dark:text-slate-300">Materials &amp; costs ({job.materialEntries.length})</h2>
           {job.materialEntries.length === 0 && <p className="text-sm text-slate-500">No materials logged.</p>}
           {job.materialEntries.length > 0 && (
-            <div className="rounded-lg border border-slate-200 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700">
+            <div className="rounded-lg border border-slate-300 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700">
               {job.materialEntries.map((m) => (
                 <div key={m.id} className="px-4 py-3 text-sm flex items-center justify-between gap-3">
                   <div className="min-w-0">
@@ -152,15 +152,15 @@ export default async function JobDetailPage({ params }: { params: { id: string }
           <h2 className="text-sm font-medium text-slate-700 dark:text-slate-300">Communication log ({job.communications.length})</h2>
           {job.communications.length === 0 && <p className="text-sm text-slate-500">No entries yet.</p>}
           {job.communications.length > 0 && (
-            <div className="rounded-lg border border-slate-200 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700">
+            <div className="rounded-lg border border-slate-300 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700">
               {job.communications.map((c) => (
                 <div key={c.id} className="px-4 py-3 text-sm">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-medium text-amber-600 dark:text-amber-400 capitalize">{c.type.replace("_", " ")}</span>
-                    <span className="text-xs text-slate-400">{new Date(c.createdAt).toLocaleDateString("en-AU")}</span>
+                    <span className="text-xs text-slate-500">{new Date(c.createdAt).toLocaleDateString("en-AU")}</span>
                   </div>
                   <p className="mt-0.5">{c.body}</p>
-                  {c.author?.name && <p className="text-xs text-slate-400 mt-0.5">— {c.author.name}</p>}
+                  {c.author?.name && <p className="text-xs text-slate-500 mt-0.5">— {c.author.name}</p>}
                 </div>
               ))}
             </div>
@@ -171,7 +171,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
           <h2 className="text-sm font-medium text-slate-700 dark:text-slate-300">Voice notes ({job.voiceNotes.length})</h2>
           {job.voiceNotes.length === 0 && <p className="text-sm text-slate-500">No voice notes recorded.</p>}
           {job.voiceNotes.length > 0 && (
-            <div className="rounded-lg border border-slate-200 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700">
+            <div className="rounded-lg border border-slate-300 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700">
               {job.voiceNotes.map((note) => (
                 <div key={note.id} className="px-4 py-3 text-sm space-y-1">
                   <div className="flex items-center justify-between gap-2">
@@ -205,7 +205,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                           <img
                             src={`/api/photos?url=${encodeURIComponent(photo.photoUrl)}`}
                             alt="Attached"
-                            className="w-16 h-16 object-cover rounded-lg border border-slate-200 dark:border-slate-700"
+                            className="w-16 h-16 object-cover rounded-lg border border-slate-300 dark:border-slate-700"
                           />
                         </a>
                       ))}
@@ -216,7 +216,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                       {(note.actionItems as string[]).map((item, i) => <li key={i}>{item}</li>)}
                     </ul>
                   )}
-                  {note.status === "pending" && <p className="text-xs text-slate-400">Transcribing…</p>}
+                  {note.status === "pending" && <p className="text-xs text-slate-500">Transcribing…</p>}
                   {note.status === "failed" && <p className="text-xs text-red-500">Transcription failed for this recording.</p>}
                   {note.status === "awaiting_review" && <p className="text-xs text-amber-600 dark:text-amber-400">Waiting for the technician to review and send.</p>}
                 </div>
@@ -229,7 +229,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
           <h2 className="text-sm font-medium text-slate-700 dark:text-slate-300">Compliance documents ({job.complianceDocuments.length})</h2>
           {job.complianceDocuments.length === 0 && <p className="text-sm text-slate-500">No compliance documents submitted.</p>}
           {job.complianceDocuments.length > 0 && (
-            <div className="rounded-lg border border-slate-200 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700">
+            <div className="rounded-lg border border-slate-300 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700">
               {job.complianceDocuments.map((doc) => (
                 <div key={doc.id} className="px-4 py-3 text-sm flex items-center justify-between gap-3">
                   <div className="min-w-0">

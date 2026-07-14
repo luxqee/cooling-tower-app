@@ -59,7 +59,7 @@ export function VariationCard({ variation, onDecided }: VariationCardProps) {
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">
+    <div className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">
       <div className="px-4 py-4 space-y-2">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -73,7 +73,7 @@ export function VariationCard({ variation, onDecided }: VariationCardProps) {
           </p>
         </div>
         <p className="text-sm leading-relaxed">{variation.description}</p>
-        <p className="text-xs text-slate-400 font-mono">
+        <p className="text-xs text-slate-500 font-mono">
           {new Date(variation.submittedAt).toLocaleString("en-AU")}
         </p>
       </div>
@@ -103,7 +103,7 @@ export function VariationCard({ variation, onDecided }: VariationCardProps) {
                     : a === "rejected"
                       ? "bg-red-600 text-white border-red-600"
                       : "bg-slate-600 text-white border-slate-600"
-                  : "border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 bg-transparent"
+                  : "border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 bg-transparent"
               )}
             >
               {a === "queried" ? "Send back" : a}
