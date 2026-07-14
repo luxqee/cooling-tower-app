@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { getSessionUser } from "@/lib/auth/clerk";
+import { getJobsAssignableToUser } from "@/lib/jobs/queries";
 import { db } from "@/lib/db/client";
 import { redirect } from "next/navigation";
 import { ComplianceForm } from "./ComplianceForm";
@@ -9,11 +10,7 @@ export default async function NewComplianceDocumentPage() {
   if (!user) redirect("/");
 
   const [jobs, templates] = await Promise.all([
-    db.job.findMany({
-      where: { status: { in: ["scheduled", "active"] } },
-      select: { id: true, customerName: true, siteName: true },
-      orderBy: [{ customerName: "asc" }, { siteName: "asc" }],
-    }),
+    getJobsAssignableToUser(user),
     db.complianceTemplate.findMany({
       where: { isActive: true },
       select: { id: true, name: true, type: true, sections: true },
