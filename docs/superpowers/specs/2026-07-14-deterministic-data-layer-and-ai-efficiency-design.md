@@ -23,9 +23,11 @@
 
 17 files call `db.job.findMany`/`findFirst` directly; there is no `src/lib/jobs/` or `src/lib/customers/` query module today. At least 6 of those independently write `status: { in: ["active", "scheduled"] } }` (or the same filter with the array order flipped), and they don't all mean the same thing by it:
 
-- **`schedule/page.tsx:103`, `variations/submit/page.tsx:13`, `compliance/new/page.tsx:13`, `time-tracking/page.tsx:55`** are all job **pickers** — a human choosing a job to act on (assign a technician, log a variation, submit a compliance doc, clock in). For a technician, this should mean *jobs I'm assigned to*; for office roles, *all workable jobs*. Today none of them make that distinction — they all show every active/scheduled job to everyone. This is exactly the bug already fixed once this session (a technician's variation-submit dropdown showed jobs they weren't assigned to, which is also why the office-only `schedule/page.tsx` needs the "all jobs" branch to keep working unchanged).
-- **`dashboard/HoursOverview.tsx:7`, `api/jobs/hours/route.ts:10`** are company-wide aggregate reports (hours across every active job) — no user-scoping needed, just the plain status filter.
+- **`schedule/page.tsx:103`, `variations/submit/page.tsx:13`, `compliance/new/page.tsx:13`** are all job **pickers** — a human choosing a job to act on (assign a technician, log a variation, submit a compliance doc). For a technician, this should mean *jobs I'm assigned to*; for office roles, *all workable jobs*. Today none of them make that distinction — they all show every active/scheduled job to everyone. This is exactly the bug already fixed once this session (a technician's variation-submit dropdown showed jobs they weren't assigned to, which is also why the office-only `schedule/page.tsx` needs the "all jobs" branch to keep working unchanged).
+- **`dashboard/HoursOverview.tsx:6-19`, `api/jobs/hours/route.ts:9-22`** are a genuine, exact duplicate of each other — same `where`, same `select` (including `quotedHours` and nested `timeEntries`), same `orderBy`, byte-for-byte — for a company-wide hours-vs-quoted report. Not a fit for the plain job-picker shape above (they need hours data the pickers don't), so this gets its own function.
 - **`api/jobs/[id]/voice-notes/route.ts:19`, `src/lib/assistant/tools/draft.ts:29`** each independently do a single-record lookup: `db.job.findFirst({ where: { id, status: { in: [...] } } })`, then a separate assignment check. Same filter, single record instead of a list.
+
+**Investigated and deliberately excluded: `time-tracking/page.tsx`.** Its job-list query (line 55) matches the `status: { in: [...] } }` string, which is why the initial code-audit flagged it as a 4th picker duplicate — but reading the full file shows it isn't. Lines 17-62 implement genuinely different, already-correct logic: today's assignments first (single- or multi-day spanning today), and only for technicians with zero assignments today, a fallback to their full historical active/scheduled assignments (directors/service managers get no fallback at all). Routing this through `getJobsAssignableToUser` would collapse that date-awareness and change real behavior (e.g. an office user clocking in would go from "only today's assigned jobs" to "every active/scheduled job company-wide"). Left untouched.
 
 ### New module: `src/lib/jobs/queries.ts`
 
@@ -78,6 +80,24 @@ export async function getJobsAssignableToUser(user: CallingUser) {
 export async function getActiveJobById(id: string): Promise<Job | null> {
   return db.job.findFirst({ where: { id, status: { in: ["active", "scheduled"] } } });
 }
+
+/** Active/scheduled jobs with quoted vs. logged hours, for company-wide hours reporting. */
+export async function getActiveJobsWithHours() {
+  return db.job.findMany({
+    where: { status: { in: ["active", "scheduled"] } },
+    select: {
+      id: true,
+      customerName: true,
+      siteName: true,
+      quotedHours: true,
+      timeEntries: {
+        where: { status: "complete" },
+        select: { durationMinutes: true },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
 ```
 
 `getJobsAssignableToUser` relies on `Job.assignments` (`Assignment[]`, confirmed at `prisma/schema.prisma` — `model Job { ... assignments Assignment[] ... }`), filtering via `assignments: { some: { userId: user.id } }`.
@@ -103,9 +123,8 @@ Small on purpose — the only real duplication found on the customer side is the
 | `src/app/schedule/page.tsx:102-106` | inline `db.job.findMany({ status: {in:[...]} })` | `getJobsAssignableToUser(user)` (office roles only reach this page, so this resolves to the same "all active/scheduled" list as before — no behavior change here) |
 | `src/app/variations/submit/page.tsx:12-16` | inline query | `getJobsAssignableToUser(user)` — **behavior change**: technicians now see only their assigned jobs, closing the gap flagged during the earlier variation-submit bug fix |
 | `src/app/compliance/new/page.tsx:12-16` | inline query (`["scheduled","active"]` order) | `getJobsAssignableToUser(user)` — same behavior change as above, for consistency |
-| `src/app/time-tracking/page.tsx:54-58` | inline query | `getJobsAssignableToUser(user)` — same behavior change |
-| `src/app/dashboard/HoursOverview.tsx:6-9` | inline query | `getActiveJobs()` — no behavior change |
-| `src/app/api/jobs/hours/route.ts:9-12` | inline query | `getActiveJobs()` — no behavior change |
+| `src/app/dashboard/HoursOverview.tsx:6-19` | inline query, wrapped in `.catch(() => [])` | `getActiveJobsWithHours()`, keep the `.catch` wrapper at the call site — no behavior change |
+| `src/app/api/jobs/hours/route.ts:9-22` | inline query, unwrapped (errors surface as a 500) | `getActiveJobsWithHours()`, no `.catch` — no behavior change |
 | `src/app/api/jobs/[id]/voice-notes/route.ts:19` | `db.job.findFirst({ id, status:{in:[...]} })` | `getActiveJobById(id)` — no behavior change |
 | `src/lib/assistant/tools/draft.ts:29` | same pattern | `getActiveJobById(id)` — no behavior change |
 | `src/app/api/jobs/route.ts:29-31` | inline `db.customer.findUnique` + manual 404 | `getCustomerById(customerId)` — no behavior change |
@@ -115,6 +134,7 @@ Small on purpose — the only real duplication found on the customer side is the
 
 **Explicitly out of scope, left as-is:**
 - `src/app/jobs/page.tsx:17-22` — its query is a genuinely different, wider concern (active/scheduled OR completed-within-30-days, for the main jobs list view) and isn't duplicated anywhere else. Forcing it into `getActiveJobs()` would change its behavior for no benefit; it stays a page-local query.
+- `src/app/time-tracking/page.tsx` — see above; different, already-correct, date-aware logic.
 - `src/lib/assistant/tools/read.ts`'s `findJobs` tool — this is a deliberately flexible, filter-combinable search tool the AI uses for free-text-driven questions ("overdue jobs at Site X for customer Y"). It serves a different purpose than the fixed "give me the canonical picker list" functions above and isn't a good fit for migration; keeping it separate preserves that flexibility. (This was floated differently earlier in discussion, before its actual implementation was read — this is the corrected, code-grounded call.)
 
 ---
@@ -142,15 +162,19 @@ Free-typed chat messages and the `semanticSearchTool` (inherently natural-langua
 
 ### Prompt caching
 
-`route.ts`'s `systemPrompt` (built from `businessProfile.industryDescription`, effectively static per business) and the `ASSISTANT_TOOLS` array (fully static) are sent fresh on every one of up to 5 calls per turn. Mark both with Anthropic's `cache_control: { type: "ephemeral" }` per the current SDK's prompt-caching pattern — verify the exact request shape against the installed `@anthropic-ai/sdk` version at implementation time rather than assuming a remembered syntax. This doesn't change behavior, only cost, and applies regardless of the quick-action work above.
+`route.ts`'s `systemPrompt` (built from `businessProfile.industryDescription`, effectively static per business) is sent fresh, as a plain string, on every one of up to 5 calls per turn — and `ASSISTANT_TOOLS` (fully static) precedes it in the request. Confirmed against the installed `@anthropic-ai/sdk` (`^0.110.0`) type definitions: `messages.create`'s `system` param accepts `string | Array<TextBlockParam>`, and `TextBlockParam` carries an optional `cache_control?: CacheControlEphemeral | null`. Anthropic's prefix caching covers everything up to and including a marked block, so a single breakpoint on the system block also covers the preceding static `tools` array — no need to separately mark `ASSISTANT_TOOLS`. Change `system: systemPrompt` to:
+```ts
+system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],
+```
+This doesn't change behavior, only cost, and applies regardless of the quick-action work above.
 
 ---
 
 ## Testing
 
-- `src/lib/jobs/__tests__/queries.test.ts` — one test per function: `getActiveJobs` excludes completed jobs; `getJobsAssignableToUser` returns only assigned jobs for a technician and all active/scheduled jobs for a director; `getActiveJobById` returns null for a completed job and for a missing id.
+- `src/lib/jobs/__tests__/queries.test.ts` — one test per function: `getActiveJobs` excludes completed jobs; `getJobsAssignableToUser` returns only assigned jobs for a technician and all active/scheduled jobs for a director; `getActiveJobById` returns null for a completed job and for a missing id; `getActiveJobsWithHours` returns the hours-shaped rows.
 - `src/lib/customers/__tests__/queries.test.ts` — `getCustomerById` returns the customer or null.
-- Every migrated call site's existing test suite must still pass unchanged (these are refactors with identified behavior changes only where explicitly marked above) — the 3 marked "real bug fix" sites need a new test case each (contracts/assets POST now 404s on a bad `customerId` instead of throwing).
+- Every migrated call site's existing test suite must still pass unchanged (these are refactors with identified behavior changes only where explicitly marked above) — the 2 marked "real bug fix" sites (`contracts/route.ts`, `assets/route.ts`) need a new test case each (POST now 404s on a bad `customerId` instead of throwing a raw FK error).
 - New quick-action route gets a route test following this repo's existing route-test pattern (mock `db`, assert the response shape, assert no Claude client is invoked).
 - Prompt caching: no new test needed beyond the existing chat route tests continuing to pass — this is a request-shape change, not a logic change.
 
