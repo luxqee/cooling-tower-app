@@ -12,6 +12,22 @@ const withSerwist = withSerwistInit({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Content-Security-Policy is set by clerkMiddleware() in src/middleware.ts
+  // (Clerk's own recommended approach — it knows its own Frontend API /
+  // Turnstile domains). Vercel already sets Strict-Transport-Security at the
+  // edge for this deployment, so it's not duplicated here.
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        ],
+      },
+    ];
+  },
 };
 
 export default withSerwist(nextConfig);
