@@ -84,6 +84,26 @@ describe("POST /api/compliance/templates", () => {
     const res = await createTemplate(makeReq({ name: "SWMS", type: "swms", sections: [] }));
     expect(res.status).toBe(400);
   });
+
+  it("accepts whs_management_plan and induction as valid types", async () => {
+    mockRequireRole.mockResolvedValue(mockAdmin as any);
+    vi.mocked(db.complianceTemplate.create).mockResolvedValue(mockTemplate as any);
+    const whsRes = await createTemplate(makeReq({ name: "WHS Plan", type: "whs_management_plan", sections: [{ title: "Section 1" }] }));
+    expect(whsRes.status).toBe(201);
+    const inductionRes = await createTemplate(makeReq({ name: "Induction", type: "induction", sections: [{ title: "Section 1" }] }));
+    expect(inductionRes.status).toBe(201);
+  });
+
+  it("returns 400 when a custom field ID uses the reserved statutory_ prefix", async () => {
+    mockRequireRole.mockResolvedValue(mockAdmin as any);
+    const res = await createTemplate(makeReq({
+      name: "SWMS",
+      type: "swms",
+      sections: [{ id: "s1", title: "Extra", fields: [{ id: "statutory_sneaky", label: "x", type: "text", required: false }] }],
+    }));
+    expect(res.status).toBe(400);
+    expect(db.complianceTemplate.create).not.toHaveBeenCalled();
+  });
 });
 
 describe("PATCH /api/compliance/templates/[id]", () => {
@@ -105,6 +125,21 @@ describe("PATCH /api/compliance/templates/[id]", () => {
       { params: { id: "tmpl-1" } }
     );
     expect(res.status).toBe(200);
+  });
+
+  it("returns 400 when a custom field ID uses the reserved statutory_ prefix", async () => {
+    mockRequireRole.mockResolvedValue(mockAdmin as any);
+    vi.mocked(db.complianceTemplate.findUnique).mockResolvedValue(mockTemplate as any);
+    const res = await updateTemplate(
+      new Request("http://localhost", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sections: [{ id: "s1", title: "Extra", fields: [{ id: "statutory_sneaky", label: "x", type: "text", required: false }] }] }),
+      }),
+      { params: { id: "tmpl-1" } }
+    );
+    expect(res.status).toBe(400);
+    expect(db.complianceTemplate.update).not.toHaveBeenCalled();
   });
 });
 

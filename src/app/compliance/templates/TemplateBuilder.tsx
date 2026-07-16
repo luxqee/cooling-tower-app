@@ -4,22 +4,20 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { v4 as uuid } from "uuid";
 import type { TemplateSections, TemplateField, TemplateSection, FieldType } from "@/lib/compliance/types";
+import { getStatutorySections, RESERVED_FIELD_PREFIX } from "@/lib/compliance/statutorySections";
+import { DOCUMENT_TYPES } from "@/lib/compliance/documentTypes";
 
 // ─── TemplateBuilder ────────────────────────────────────────────────────────
 
 const FIELD_TYPES: { value: FieldType; label: string }[] = [
-  { value: "text",      label: "Short text"  },
-  { value: "textarea",  label: "Long text"   },
-  { value: "date",      label: "Date"        },
-  { value: "checkbox",  label: "Checkbox"    },
-  { value: "checklist", label: "Checklist"   },
-  { value: "signature", label: "Signature"   },
-];
-
-const DOC_TYPES = [
-  { value: "swms", label: "SWMS" },
-  { value: "jsa",  label: "JSA"  },
-  { value: "whs",  label: "WHS"  },
+  { value: "text",           label: "Short text"       },
+  { value: "textarea",       label: "Long text"        },
+  { value: "date",           label: "Date"             },
+  { value: "checkbox",       label: "Checkbox"         },
+  { value: "checklist",      label: "Checklist"        },
+  { value: "signature",      label: "Signature"        },
+  { value: "table",          label: "Table"            },
+  { value: "signature-list", label: "Signature list"   },
 ];
 
 interface TemplateBuilderProps {
@@ -108,6 +106,13 @@ export function TemplateBuilder({ templateId, initialData }: TemplateBuilderProp
     updateField(sectionId, fieldId, { options: rawOptions.split("\n").map((o) => o.trim()).filter(Boolean) });
   }
 
+  function updateTableColumns(sectionId: string, fieldId: string, rawColumns: string) {
+    const columns = rawColumns.split("\n").map((c) => c.trim()).filter(Boolean).map((label) => ({ id: uuid(), label }));
+    updateField(sectionId, fieldId, { columns });
+  }
+
+  const statutorySections = getStatutorySections(type);
+
   async function handleSave() {
     setError(null);
     setSaved(false);
@@ -118,6 +123,11 @@ export function TemplateBuilder({ templateId, initialData }: TemplateBuilderProp
     }
     if (sections.some(s => !s.title.trim())) {
       setError("All sections must have a title."); return;
+    }
+    const reservedFieldUsed = sections.some((s) => s.fields.some((f) => f.id.startsWith(RESERVED_FIELD_PREFIX)));
+    if (reservedFieldUsed) {
+      setError("Field IDs starting with \"statutory_\" are reserved for legally-mandated content and can't be used here.");
+      return;
     }
     setIsSubmitting(true);
     startTransition(async () => {
@@ -160,14 +170,38 @@ export function TemplateBuilder({ templateId, initialData }: TemplateBuilderProp
         <div className="space-y-1">
           <label className="text-xs font-medium text-slate-500">Document type</label>
           <select value={type} onChange={(e) => setType(e.target.value)} className={inputCls}>
-            {DOC_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+            {DOCUMENT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
         </div>
       </div>
 
+      {/* Statutory (locked) content preview */}
+      {statutorySections && (
+        <div className="rounded-xl border-2 border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/10 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">
+              Required by law — cannot be edited here
+            </span>
+          </div>
+          <p className="text-xs text-slate-600 dark:text-slate-400">
+            Every document of this type automatically includes the following, ahead of the sections you build below.
+          </p>
+          <div className="space-y-2">
+            {statutorySections.map((section) => (
+              <div key={section.id}>
+                <p className="text-sm font-medium">{section.title}</p>
+                <ul className="text-xs text-slate-500 dark:text-slate-400 list-disc pl-5">
+                  {section.fields.map((f) => <li key={f.id}>{f.label}</li>)}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Sections */}
       <div className="space-y-4">
-        <p className="text-sm font-semibold">Sections</p>
+        <p className="text-sm font-semibold">{statutorySections ? "Additional sections" : "Sections"}</p>
         {sections.map((section, si) => (
           <div key={section.id} className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 space-y-3">
             <div className="flex items-center gap-2">
@@ -218,6 +252,18 @@ export function TemplateBuilder({ templateId, initialData }: TemplateBuilderProp
                         onChange={(e) => updateChecklistOptions(section.id, field.id, e.target.value)}
                         rows={3}
                         placeholder={"Harness\nHelmet\nSafety glasses"}
+                        className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs resize-none"
+                      />
+                    </div>
+                  )}
+                  {field.type === "table" && (
+                    <div className="space-y-1">
+                      <label className="text-xs text-slate-500">Columns (one per line)</label>
+                      <textarea
+                        value={(field.columns ?? []).map((c) => c.label).join("\n")}
+                        onChange={(e) => updateTableColumns(section.id, field.id, e.target.value)}
+                        rows={3}
+                        placeholder={"Task\nHazard\nControl Measure"}
                         className="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-xs resize-none"
                       />
                     </div>

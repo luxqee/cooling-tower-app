@@ -2,12 +2,22 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireRole, getSessionUser } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
+import { RESERVED_FIELD_PREFIX } from "@/lib/compliance/statutorySections";
+import type { TemplateSections } from "@/lib/compliance/types";
 
 const updateSchema = z.object({
   name:     z.string().min(1).optional(),
-  type:     z.enum(["swms", "jsa", "whs"]).optional(),
+  type:     z.enum(["swms", "jsa", "whs_management_plan", "induction"]).optional(),
   sections: z.array(z.any()).min(1, "At least one section is required").optional(),
 });
+
+// See templates/route.ts for why this exists.
+function usesReservedFieldId(sections: unknown): boolean {
+  if (!Array.isArray(sections)) return false;
+  return (sections as TemplateSections).some((s) =>
+    Array.isArray(s?.fields) && s.fields.some((f) => typeof f?.id === "string" && f.id.startsWith(RESERVED_FIELD_PREFIX))
+  );
+}
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const user = await getSessionUser();
@@ -30,6 +40,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
+  }
+  if (usesReservedFieldId(parsed.data.sections)) {
+    return NextResponse.json({ error: `Field IDs starting with "${RESERVED_FIELD_PREFIX}" are reserved` }, { status: 400 });
   }
 
   const updated = await db.complianceTemplate.update({ where: { id: params.id }, data: parsed.data });
