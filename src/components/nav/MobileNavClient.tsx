@@ -4,13 +4,15 @@ import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { NavLinks } from "./NavLinks";
 import type { UserRole } from "@/lib/nav-config";
+import { getInitials } from "@/lib/utils/initials";
 
 interface Props {
   visibleHrefs: string[];
   user: { name: string; role: UserRole } | null;
+  businessName: string;
 }
 
-export function MobileNavClient({ visibleHrefs, user }: Props) {
+export function MobileNavClient({ visibleHrefs, user, businessName }: Props) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -38,14 +40,14 @@ export function MobileNavClient({ visibleHrefs, user }: Props) {
         <div className="flex h-16 items-center justify-between border-b border-slate-300 dark:border-slate-800 px-6">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-amber-500 text-slate-950 font-mono text-sm font-bold">
-              CT
+              {getInitials(businessName)}
             </div>
             <div className="flex flex-col">
               <span className="text-sm font-semibold leading-tight text-slate-900 dark:text-slate-100">
                 Field Ops
               </span>
               <span className="text-2xs leading-tight text-slate-500 dark:text-slate-400 font-mono uppercase tracking-wider">
-                CT Field Ops
+                {businessName}
               </span>
             </div>
           </div>

@@ -171,7 +171,7 @@ export function SettingsForm({ initial, initialLogoUrl }: SettingsFormProps) {
             onChange={set("name")}
             required
             maxLength={100}
-            placeholder="CT Field Ops"
+            placeholder="Your Business"
             className={inputClass}
           />
         </div>

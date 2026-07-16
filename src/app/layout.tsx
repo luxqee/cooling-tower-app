@@ -8,13 +8,13 @@ import { PushRegistrar } from "@/components/PushRegistrar";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Field Operations | Cooling Tower Sales and Service",
-  description: "Field operations platform for cooling tower service teams",
+  title: "Field Ops | Job & Service Management",
+  description: "Field operations platform for service and maintenance teams",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "CT Field Ops",
+    title: "Field Ops",
   },
 };
 

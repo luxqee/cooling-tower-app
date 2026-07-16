@@ -214,7 +214,7 @@ export function NewJobForm({ onClose }: { onClose: () => void }) {
           type="text"
           value={fields.siteName}
           onChange={(e) => set("siteName", e.target.value)}
-          placeholder="North cooling tower"
+          placeholder="North wing"
           className={inputClass}
         />
         {errors.siteName && <p className="text-sm text-red-600">{errors.siteName}</p>}

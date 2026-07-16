@@ -1,7 +1,7 @@
 {
-  "name": "Cooling Tower Field Ops",
-  "short_name": "CT Field Ops",
-  "description": "Field operations platform for cooling tower service teams",
+  "name": "Field Ops",
+  "short_name": "Field Ops",
+  "description": "Field operations platform for service and maintenance teams",
   "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#0a0e14",

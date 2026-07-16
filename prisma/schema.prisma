@@ -258,7 +258,7 @@ model Invoice {
 
 model BusinessProfile {
   id                  String   @id @default(uuid())
-  name                String   @default("CT Field Ops")
+  name                String   @default("Your Business")
   abn                 String   @default("")
   phone               String   @default("")
   email               String   @default("")

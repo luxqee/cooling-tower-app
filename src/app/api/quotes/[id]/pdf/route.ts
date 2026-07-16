@@ -24,7 +24,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       createdAt: quote.createdAt.toISOString(),
     },
     businessProfile: {
-      name: businessProfile?.name ?? "CT Field Ops",
+      name: businessProfile?.name ?? "Your Business",
       abn: businessProfile?.abn ?? "",
       address: businessProfile?.address ?? "",
       logoUrl: businessProfile?.logoUrl ?? null,

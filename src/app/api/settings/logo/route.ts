@@ -39,7 +39,7 @@ export async function POST(req: Request) {
 
   const profile = existing
     ? await db.businessProfile.update({ where: { id: existing.id }, data: { logoUrl: blob.url } })
-    : await db.businessProfile.create({ data: { name: "CT Field Ops", abn: "", phone: "", email: "", address: "", logoUrl: blob.url } });
+    : await db.businessProfile.create({ data: { name: "Your Business", abn: "", phone: "", email: "", address: "", logoUrl: blob.url } });
 
   return NextResponse.json({ logoUrl: profile.logoUrl });
 }

@@ -9,7 +9,7 @@ export async function GET() {
 
   const profile = await db.businessProfile.findFirst();
   return NextResponse.json(profile ?? {
-    name: "CT Field Ops", abn: "", phone: "", email: "", address: "",
+    name: "Your Business", abn: "", phone: "", email: "", address: "",
     logoUrl: null, hourlyRate: null, paymentTerms: null,
     industryDescription: "field service maintenance",
   });
@@ -46,7 +46,7 @@ export async function PATCH(req: Request) {
   const existing = await db.businessProfile.findFirst();
   const profile = existing
     ? await db.businessProfile.update({ where: { id: existing.id }, data: parsed.data })
-    : await db.businessProfile.create({ data: { name: "CT Field Ops", abn: "", phone: "", email: "", address: "", ...parsed.data } });
+    : await db.businessProfile.create({ data: { name: "Your Business", abn: "", phone: "", email: "", address: "", ...parsed.data } });
 
   return NextResponse.json(profile);
 }

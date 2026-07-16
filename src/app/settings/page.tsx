@@ -12,7 +12,7 @@ export default async function SettingsPage() {
   const profile = await db.businessProfile.findFirst();
 
   const initial = {
-    name:                profile?.name                ?? "CT Field Ops",
+    name:                profile?.name                ?? "Your Business",
     abn:                 profile?.abn                 ?? "",
     phone:               profile?.phone               ?? "",
     email:               profile?.email                ?? "",

@@ -61,7 +61,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     variations: job.variations.map((v) => ({ description: v.description, costEstimate: v.costEstimate.toNumber() })),
     job: { customerName: job.customerName, siteName: job.siteName, siteAddress: job.siteAddress, jobType: job.jobType },
     businessProfile: {
-      name: businessProfile?.name ?? "CT Field Ops",
+      name: businessProfile?.name ?? "Your Business",
       abn: businessProfile?.abn ?? "",
       address: businessProfile?.address ?? "",
       logoUrl: businessProfile?.logoUrl ?? null,
@@ -78,7 +78,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     jobDescription: `${job.jobType} — ${job.siteName}`,
     totalAmount: invoice.totalAmount.toNumber(),
     pdfBuffer,
-    businessName: businessProfile?.name ?? "CT Field Ops",
+    businessName: businessProfile?.name ?? "Your Business",
   });
 
   // Step 3: Single write to record send — no transaction needed
