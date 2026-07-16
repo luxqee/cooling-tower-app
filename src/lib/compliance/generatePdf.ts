@@ -1,7 +1,8 @@
 import { Document, Page, View, Text, Image, StyleSheet, renderToBuffer } from "@react-pdf/renderer";
 import { createElement } from "react";
 import type { ComplianceDocument, ComplianceTemplate, Job, User } from "@prisma/client";
-import type { TemplateSections, DocumentValues } from "./types";
+import type { TemplateField, TemplateSections, DocumentValues, TableRowValue, SignatureListEntry } from "./types";
+import { mergeSections, hasStatutoryContent } from "./statutorySections";
 
 const styles = StyleSheet.create({
   page:          { padding: 40, fontSize: 10, fontFamily: "Helvetica", color: "#1e293b" },
@@ -19,8 +20,21 @@ const styles = StyleSheet.create({
   fieldValue:    { width: "65%", color: "#1e293b" },
   signatureImage:{ width: 160, height: 60, marginTop: 2 },
   footer:        { position: "absolute", bottom: 20, left: 40, right: 40, textAlign: "center", fontSize: 8, color: "#94a3b8", borderTopWidth: 0.5, borderTopColor: "#e2e8f0", paddingTop: 6 },
+  disclaimer:    { position: "absolute", bottom: 34, left: 40, right: 40, textAlign: "center", fontSize: 7, color: "#94a3b8" },
   companyName:   { fontSize: 11, fontFamily: "Helvetica-Bold", color: "#1e293b", marginBottom: 6 },
+  fullWidthField:{ marginBottom: 10 },
+  fullWidthLabel:{ fontFamily: "Helvetica-Bold", color: "#475569", marginBottom: 4 },
+  table:         { borderWidth: 0.5, borderColor: "#cbd5e1" },
+  tableHeaderRow:{ flexDirection: "row", backgroundColor: "#f1f5f9", borderBottomWidth: 0.5, borderBottomColor: "#cbd5e1" },
+  tableHeaderCell:{ flex: 1, padding: 4, fontFamily: "Helvetica-Bold", fontSize: 8, borderRightWidth: 0.5, borderRightColor: "#cbd5e1" },
+  tableRow:      { flexDirection: "row", borderBottomWidth: 0.5, borderBottomColor: "#e2e8f0" },
+  tableCell:     { flex: 1, padding: 4, fontSize: 8, borderRightWidth: 0.5, borderRightColor: "#e2e8f0" },
+  signatureListEntry: { marginBottom: 8 },
+  signatureListName:  { fontSize: 9, fontFamily: "Helvetica-Bold", marginBottom: 2 },
 });
+
+const DISCLAIMER_TEXT =
+  "This document was generated using a template based on published WorkSafe Queensland guidance and the Work Health and Safety Regulation 2011 (Qld). It has not been reviewed by a qualified WHS professional. Your business is responsible for verifying this document meets its current legal obligations before relying on it.";
 
 export interface GeneratePdfArgs {
   document: ComplianceDocument;
@@ -53,9 +67,89 @@ export function FieldValue({ type, value }: { type: string; value: unknown }) {
   return createElement(Text, { style: styles.fieldValue }, String(value));
 }
 
+export function TableFieldPdf({ field, value }: { field: TemplateField; value: unknown }) {
+  const columns = field.columns ?? [];
+  const rows = Array.isArray(value) ? (value as TableRowValue[]) : [];
+
+  if (rows.length === 0) {
+    return createElement(Text, { style: styles.fieldValue }, "—");
+  }
+
+  return createElement(
+    View,
+    { style: styles.table },
+    createElement(
+      View,
+      { style: styles.tableHeaderRow },
+      ...columns.map((col) => createElement(Text, { key: col.id, style: styles.tableHeaderCell }, col.label)),
+    ),
+    ...rows.map((row, i) =>
+      createElement(
+        View,
+        { key: i, style: styles.tableRow },
+        ...columns.map((col) => createElement(Text, { key: col.id, style: styles.tableCell }, row[col.id] || "—")),
+      )
+    ),
+  );
+}
+
+export function SignatureListPdf({ value }: { value: unknown }) {
+  const entries = Array.isArray(value) ? (value as SignatureListEntry[]) : [];
+
+  if (entries.length === 0) {
+    return createElement(Text, { style: styles.fieldValue }, "—");
+  }
+
+  return createElement(
+    View,
+    null,
+    ...entries.map((entry, i) =>
+      createElement(
+        View,
+        { key: i, style: styles.signatureListEntry },
+        createElement(Text, { style: styles.signatureListName }, entry.name || "—"),
+        entry.signature
+          ? createElement(Image, { src: entry.signature, style: styles.signatureImage })
+          : createElement(Text, { style: styles.fieldValue }, "No signature"),
+      )
+    ),
+  );
+}
+
+function renderField(field: TemplateField, values: DocumentValues) {
+  const value = values[field.id] ?? null;
+
+  if (field.type === "table") {
+    return createElement(
+      View,
+      { key: field.id, style: styles.fullWidthField },
+      createElement(Text, { style: styles.fullWidthLabel }, field.label),
+      createElement(TableFieldPdf, { field, value }),
+    );
+  }
+
+  if (field.type === "signature-list") {
+    return createElement(
+      View,
+      { key: field.id, style: styles.fullWidthField },
+      createElement(Text, { style: styles.fullWidthLabel }, field.label),
+      createElement(SignatureListPdf, { value }),
+    );
+  }
+
+  return createElement(
+    View,
+    { key: field.id, style: styles.fieldRow },
+    createElement(Text, { style: styles.fieldLabel }, field.label),
+    createElement(FieldValue, { type: field.type, value }),
+  );
+}
+
 export async function generatePdf({ document, template, job, createdBy, businessName, logoUrl }: GeneratePdfArgs): Promise<Buffer> {
-  const sections = template.sections as unknown as TemplateSections;
+  const customSections = (template.sections as unknown as TemplateSections) ?? [];
+  const sections = mergeSections(template.type, customSections);
   const values   = (document.values ?? {}) as DocumentValues;
+  const showDisclaimer = hasStatutoryContent(template.type);
 
   const headerContent = [
     createElement(Text, { style: styles.typeBadge }, template.type.toUpperCase()),
@@ -102,16 +196,13 @@ export async function generatePdf({ document, template, job, createdBy, business
           View,
           { key: section.id, style: styles.section },
           createElement(Text, { style: styles.sectionTitle }, section.title),
-          ...section.fields.map((field) =>
-            createElement(
-              View,
-              { key: field.id, style: styles.fieldRow },
-              createElement(Text, { style: styles.fieldLabel }, field.label),
-              createElement(FieldValue, { type: field.type, value: values[field.id] ?? null }),
-            )
-          ),
+          ...section.fields.map((field) => renderField(field, values)),
         )
       ),
+      // Disclaimer (SWMS / WHS Management Plan only)
+      ...(showDisclaimer
+        ? [createElement(Text, { style: styles.disclaimer, fixed: true }, DISCLAIMER_TEXT)]
+        : []),
       // Footer
       createElement(
         Text,

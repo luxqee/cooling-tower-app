@@ -10,8 +10,8 @@ vi.mock("@react-pdf/renderer", () => ({
   StyleSheet: { create: (s: any) => s },
 }));
 
-import { generatePdf, FieldValue } from "../generatePdf";
-import { Text, Image } from "@react-pdf/renderer";
+import { generatePdf, FieldValue, TableFieldPdf, SignatureListPdf } from "../generatePdf";
+import { Text, Image, View } from "@react-pdf/renderer";
 
 const baseTemplate = {
   id: "tmpl-1",
@@ -152,5 +152,82 @@ describe("FieldValue component", () => {
     const el = FieldValue({ type: "textarea", value: "Replace fill media on unit 3" }) as any;
     expect(el.type).toBe(Text);
     expect(el.props.children).toBe("Replace fill media on unit 3");
+  });
+});
+
+describe("TableFieldPdf component", () => {
+  const field = {
+    id: "f-table",
+    label: "Tasks",
+    type: "table" as const,
+    required: false,
+    columns: [{ id: "task", label: "Task" }, { id: "hazard", label: "Hazard" }],
+  };
+
+  it("renders em-dash for an empty table", () => {
+    const el = TableFieldPdf({ field, value: [] }) as any;
+    expect(el.type).toBe(Text);
+    expect(el.props.children).toBe("—");
+  });
+
+  it("renders one header row and one row per entry", () => {
+    const rows = [{ task: "Isolate power", hazard: "Electrical" }, { task: "Remove fill", hazard: "Manual handling" }];
+    const el = TableFieldPdf({ field, value: rows }) as any;
+    expect(el.type).toBe(View);
+    // first child is the header row, remaining children are one per data row
+    expect(el.props.children.length).toBe(1 + rows.length);
+  });
+});
+
+describe("SignatureListPdf component", () => {
+  it("renders em-dash for an empty list", () => {
+    const el = SignatureListPdf({ value: [] }) as any;
+    expect(el.type).toBe(Text);
+    expect(el.props.children).toBe("—");
+  });
+
+  it("renders one entry per signature, with an image when present", () => {
+    const entries = [
+      { name: "Jake Morrison", signature: "data:image/png;base64,abc" },
+      { name: "Sarah Chen", signature: "" },
+    ];
+    const el = SignatureListPdf({ value: entries }) as any;
+    expect(el.props.children.length).toBe(2);
+    const [first, second] = el.props.children;
+    expect(first.props.children[1].type).toBe(Image);
+    expect(second.props.children[1].type).toBe(Text);
+    expect(second.props.children[1].props.children).toBe("No signature");
+  });
+});
+
+describe("generatePdf statutory content", () => {
+  const swmsTemplate = { ...baseTemplate, type: "swms", sections: [] };
+  const jsaTemplate = { ...baseTemplate, type: "jsa" };
+
+  it("does not throw for a SWMS template with an empty custom sections array (statutory content still merges in)", async () => {
+    await expect(
+      generatePdf({ document: baseDocument as any, template: swmsTemplate as any, job: baseJob as any, createdBy: baseUser as any })
+    ).resolves.not.toThrow();
+  });
+
+  it("includes the WHS disclaimer text for a SWMS document", async () => {
+    const businessName = "Test Co";
+    // Render without the react-pdf mock's flattening masking the disclaimer — inspect via the
+    // mocked renderToBuffer call argument tree instead of the returned Buffer.
+    const { renderToBuffer } = await import("@react-pdf/renderer");
+    await generatePdf({ document: baseDocument as any, template: swmsTemplate as any, job: baseJob as any, createdBy: baseUser as any, businessName });
+    const docElement = vi.mocked(renderToBuffer).mock.calls[0][0] as any;
+    const pageChildren = docElement.props.children.props.children as any[];
+    const disclaimerText = pageChildren.find((c) => typeof c?.props?.children === "string" && c.props.children.includes("WorkSafe Queensland"));
+    expect(disclaimerText).toBeTruthy();
+  });
+
+  it("omits the WHS disclaimer for a JSA document", async () => {
+    const { renderToBuffer } = await import("@react-pdf/renderer");
+    await generatePdf({ document: baseDocument as any, template: jsaTemplate as any, job: baseJob as any, createdBy: baseUser as any });
+    const docElement = vi.mocked(renderToBuffer).mock.calls[0][0] as any;
+    const pageChildren = docElement.props.children.props.children as any[];
+    const disclaimerText = pageChildren.find((c) => typeof c?.props?.children === "string" && c.props.children.includes("WorkSafe Queensland"));
+    expect(disclaimerText).toBeFalsy();
   });
 });
