@@ -490,6 +490,10 @@ async function main() {
   console.log("  ✓ Invoices (INV-2026-0001 paid, INV-2026-0002 sent, Stanwell draft)");
 
   // ─── Compliance templates ─────────────────────────────────────────────────
+  // SWMS and WHS Management Plan get a minimal custom section — their real,
+  // legally-mandated content is code-injected via getStatutorySections() in
+  // src/lib/compliance/statutorySections.ts, never stored here. JSA and
+  // Induction have no statutory core, so their full content lives here.
   await db.complianceTemplate.upsert({
     where: { id: "seed-tmpl-jsa" },
     update: {},
@@ -499,22 +503,28 @@ async function main() {
       type: "jsa",
       isActive: true,
       sections: [
-        { id: "hazards", title: "Hazard Identification", fields: [
-          { id: "working_at_height", label: "Working at height", type: "checkbox" },
-          { id: "electrical_hazards", label: "Electrical hazards present", type: "checkbox" },
-          { id: "chemical_exposure", label: "Chemical exposure risk", type: "checkbox" },
-          { id: "confined_space", label: "Confined space entry", type: "checkbox" },
+        { id: "jsa_details", title: "Job Details", fields: [
+          { id: "jsa_task_description", label: "Task description", type: "textarea", required: true },
+          { id: "jsa_location", label: "Location", type: "text", required: true },
+          { id: "jsa_date", label: "Date", type: "date", required: true },
+          { id: "jsa_prepared_by", label: "Prepared by", type: "text", required: true },
         ]},
-        { id: "ppe", title: "PPE Required", fields: [
-          { id: "hard_hat", label: "Hard hat", type: "checkbox" },
-          { id: "safety_glasses", label: "Safety glasses", type: "checkbox" },
-          { id: "gloves", label: "Chemical resistant gloves", type: "checkbox" },
-          { id: "harness", label: "Fall arrest harness", type: "checkbox" },
+        { id: "jsa_risk_assessment", title: "Risk Assessment", fields: [
+          { id: "jsa_risk_table", label: "Task steps, hazards, and control measures", type: "table", required: true,
+            columns: [
+              { id: "step", label: "Task Step" },
+              { id: "hazard", label: "Hazard" },
+              { id: "risk_rating", label: "Risk Rating" },
+              { id: "control", label: "Control Measure" },
+            ] },
         ]},
-        { id: "sign_off", title: "Sign Off", fields: [
-          { id: "site_briefing", label: "Site safety briefing completed", type: "checkbox" },
-          { id: "supervisor_name", label: "Site supervisor name", type: "text" },
-          { id: "emergency_contact", label: "Emergency contact number", type: "text" },
+        { id: "jsa_ppe", title: "PPE Required", fields: [
+          { id: "jsa_ppe_checklist", label: "PPE required for this task", type: "checklist", required: false,
+            options: ["Hard hat", "Safety glasses", "Gloves", "Hi-vis clothing", "Steel-cap boots", "Hearing protection", "Respiratory protection", "Fall-arrest harness"] },
+        ]},
+        { id: "jsa_signoff", title: "Sign-off", fields: [
+          { id: "jsa_worker_signatures", label: "Workers involved", type: "signature-list", required: true },
+          { id: "jsa_supervisor_signature", label: "Supervisor name & signature", type: "signature", required: false },
         ]},
       ],
     },
@@ -529,20 +539,55 @@ async function main() {
       type: "swms",
       isActive: true,
       sections: [
-        { id: "scope", title: "Scope of Work", fields: [
-          { id: "work_description", label: "Description of work", type: "textarea" },
-          { id: "location", label: "Exact work location", type: "text" },
-          { id: "estimated_duration", label: "Estimated duration (hours)", type: "text" },
-        ]},
-        { id: "controls", title: "Risk Controls", fields: [
-          { id: "permit_obtained", label: "Permit to work obtained", type: "checkbox" },
-          { id: "isolation_complete", label: "Electrical isolation complete", type: "checkbox" },
-          { id: "lockout_tagout", label: "Lockout/tagout applied", type: "checkbox" },
+        { id: "swms_notes", title: "Additional Notes", fields: [
+          { id: "swms_additional_notes", label: "Additional site-specific notes (optional)", type: "textarea", required: false },
         ]},
       ],
     },
   });
-  console.log("  ✓ Compliance templates (JSA, SWMS)");
+
+  await db.complianceTemplate.upsert({
+    where: { id: "seed-tmpl-whsmp" },
+    update: {},
+    create: {
+      id: "seed-tmpl-whsmp",
+      name: "WHS Management Plan",
+      type: "whs_management_plan",
+      isActive: true,
+      sections: [
+        { id: "whsmp_notes", title: "Additional Notes", fields: [
+          { id: "whsmp_additional_notes", label: "Additional project-specific notes (optional)", type: "textarea", required: false },
+        ]},
+      ],
+    },
+  });
+
+  await db.complianceTemplate.upsert({
+    where: { id: "seed-tmpl-induction" },
+    update: {},
+    create: {
+      id: "seed-tmpl-induction",
+      name: "Site Safety Induction",
+      type: "induction",
+      isActive: true,
+      sections: [
+        { id: "induction_details", title: "Site Details", fields: [
+          { id: "induction_site", label: "Site / location", type: "text", required: true },
+          { id: "induction_date", label: "Date", type: "date", required: true },
+          { id: "induction_conducted_by", label: "Person conducting induction", type: "text", required: true },
+        ]},
+        { id: "induction_topics", title: "Topics Covered", fields: [
+          { id: "induction_topics_checklist", label: "Topics covered in this induction", type: "checklist", required: false,
+            options: ["Site-specific hazards", "Emergency procedures & muster point", "Emergency contact numbers", "PPE requirements", "Amenities/facilities location", "Permit-to-work requirements", "Hazard/incident reporting procedure"] },
+        ]},
+        { id: "induction_ack", title: "Worker Acknowledgment", fields: [
+          { id: "induction_attendee_signatures", label: "Attendees", type: "signature-list", required: true },
+          { id: "induction_date_acknowledged", label: "Date acknowledged", type: "date", required: false },
+        ]},
+      ],
+    },
+  });
+  console.log("  ✓ Compliance templates (JSA, SWMS, WHS Management Plan, Induction)");
 
   // ─── Compliance documents (submitted, not just templates) ─────────────────
   await db.complianceDocument.deleteMany({ where: { jobId: { in: SEED_JOB_IDS } } });
@@ -552,19 +597,42 @@ async function main() {
       {
         jobId: "8d30c260-1f99-4280-af15-4c802866c526", templateId: "seed-tmpl-jsa", createdById: jakeId,
         values: {
-          working_at_height: true, electrical_hazards: false, chemical_exposure: true, confined_space: false,
-          hard_hat: true, safety_glasses: true, gloves: true, harness: true,
-          site_briefing: true, supervisor_name: "Priya Nathan", emergency_contact: "0400 111 222",
+          jsa_task_description: "Quarterly inspection of cooling tower fan assembly and fill media.",
+          jsa_location: "Weipa Processing Plant — Fan Deck",
+          jsa_date: "2026-06-10",
+          jsa_prepared_by: "Jake Morrison",
+          jsa_risk_table: [
+            { step: "Isolate fan motor and lock out", hazard: "Electrical shock, unexpected start-up", risk_rating: "High", control: "LOTO applied, isolation tested before work begins" },
+            { step: "Access fan deck via ladder", hazard: "Fall from height", risk_rating: "Medium", control: "3-point contact maintained, fall-arrest harness anchored" },
+            { step: "Inspect and clean fill media", hazard: "Chemical exposure (biocide residue)", risk_rating: "Medium", control: "Chemical-resistant gloves and safety glasses worn" },
+          ],
+          jsa_ppe_checklist: ["Hard hat", "Safety glasses", "Gloves", "Fall-arrest harness"],
+          jsa_worker_signatures: [{ name: "Jake Morrison", signature: "" }],
+          jsa_supervisor_signature: "",
         },
         submittedAt: d("2026-06-10T06:45:00Z"),
       },
       {
         jobId: "c3f79548-f16b-4d32-b937-51cf7d42cb34", templateId: "seed-tmpl-swms", createdById: mikeId,
         values: {
-          work_description: "Quarterly inspection and chemical descaling of cooling tower heat exchanger.",
-          location: "Terminal block C, ground level",
-          estimated_duration: "16",
-          permit_obtained: true, isolation_complete: true, lockout_tagout: true,
+          statutory_pcbu_name: "CT Field Ops Pty Ltd",
+          statutory_pcbu_contact: "(07) 3123 4567",
+          statutory_works_manager: "Tom Wilson",
+          statutory_works_manager_phone: "0445 678 901",
+          statutory_work_activity: "Quarterly inspection and chemical descaling of cooling tower heat exchanger.",
+          statutory_workplace_location: "Terminal block C, ground level — Hay Point Coal Terminal",
+          statutory_hrcw_confined_space: true,
+          statutory_hrcw_chemical_lines: true,
+          statutory_task_table: [
+            { task: "Isolate and lock out chemical dosing lines", hazards: "Chemical exposure, electrical isolation failure", controls: "LOTO applied, PPE worn, isolation verified before work begins" },
+            { task: "Descale heat exchanger", hazards: "Chemical exposure, confined space entry", controls: "Confined space permit, forced ventilation, continuous gas monitoring" },
+          ],
+          statutory_compliance_person: "Mike Davis",
+          statutory_compliance_measures: "Daily toolbox talk and visual inspection of isolation points before work resumes each shift.",
+          statutory_review_person: "Tom Wilson",
+          statutory_review_method: "Reviewed at completion of each shift against actual site conditions.",
+          statutory_review_date: "2026-06-22",
+          statutory_worker_signatures: [{ name: "Mike Davis", signature: "" }],
         },
         submittedAt: d("2026-06-22T07:15:00Z"),
       },
