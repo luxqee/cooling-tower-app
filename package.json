@@ -25,6 +25,8 @@
     "@prisma/client": "^7.8.0",
     "@react-pdf/renderer": "^4.5.1",
     "@serwist/next": "^9.5.11",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
     "@vercel/blob": "^2.4.1",
     "clsx": "^2.1.1",
     "geist": "^1.3.1",

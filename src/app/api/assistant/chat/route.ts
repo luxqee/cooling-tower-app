@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/clerk";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { db } from "@/lib/db/client";
 import { getAnthropicClient } from "@/lib/ai/client";
 import { AI_MODELS } from "@/lib/ai/models";
@@ -50,6 +51,10 @@ async function dispatchTool(name: string, input: Record<string, unknown>, callin
 export async function POST(req: Request) {
   const user = await requireRole(["director", "service_manager", "admin", "sales_engineer"]).catch(() => null);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (!(await checkRateLimit(`chat:${user.id}`))) {
+    return NextResponse.json({ error: "Too many requests — please slow down." }, { status: 429 });
+  }
 
   const body = await req.json();
   const parsed = validateChatInput(body);

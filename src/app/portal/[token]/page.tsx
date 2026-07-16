@@ -1,8 +1,24 @@
+import { headers } from "next/headers";
 import { db } from "@/lib/db/client";
 import { getCustomerForToken } from "@/lib/portal/getCustomerForToken";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
 export default async function CustomerPortalPage({ params }: { params: { token: string } }) {
+  const ip = headers().get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const allowed = await checkRateLimit(`portal:${ip}`);
+
+  if (!allowed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+        <div className="max-w-sm text-center space-y-2">
+          <h1 className="text-lg font-semibold text-slate-900">Too many requests</h1>
+          <p className="text-sm text-slate-500">Please wait a moment and try again.</p>
+        </div>
+      </div>
+    );
+  }
+
   const customer = await getCustomerForToken(params.token);
 
   if (!customer) {
