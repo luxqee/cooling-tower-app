@@ -53,6 +53,9 @@ async function main() {
   await db.jobCommunication.deleteMany({ where: { jobId: { notIn: SEED_JOB_IDS } } });
   await db.materialEntry.deleteMany({ where: { jobId: { notIn: SEED_JOB_IDS } } });
   await db.jobAsset.deleteMany({ where: { jobId: { notIn: SEED_JOB_IDS } } });
+  await db.voiceNotePhoto.deleteMany({ where: { voiceNote: { jobId: { notIn: SEED_JOB_IDS } } } });
+  await db.voiceNote.deleteMany({ where: { jobId: { notIn: SEED_JOB_IDS } } });
+  await db.documentChunk.deleteMany({ where: { jobId: { notIn: SEED_JOB_IDS } } });
   await db.job.deleteMany({ where: { id: { notIn: SEED_JOB_IDS } } });
 
   // Remove test/placeholder user accounts — identified by having a clerkId that
