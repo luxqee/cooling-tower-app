@@ -34,6 +34,22 @@ export default async function SettingsPage() {
           <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-5">Business Profile</h2>
           <SettingsForm initial={initial} initialLogoUrl={profile?.logoUrl ?? null} />
         </div>
+
+        <div className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-6 py-6">
+          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-1">Export data</h2>
+          <p className="text-sm text-slate-500 mb-5">Download your data as CSV.</p>
+          <div className="flex flex-wrap gap-3">
+            <a href="/api/export/customers" className="text-sm font-medium text-amber-600 dark:text-amber-400 hover:underline">
+              Customers (.csv)
+            </a>
+            <a href="/api/export/jobs" className="text-sm font-medium text-amber-600 dark:text-amber-400 hover:underline">
+              Jobs (.csv)
+            </a>
+            <a href="/api/export/invoices" className="text-sm font-medium text-amber-600 dark:text-amber-400 hover:underline">
+              Invoices (.csv)
+            </a>
+          </div>
+        </div>
       </div>
     </AppShell>
   );
