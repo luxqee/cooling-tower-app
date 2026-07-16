@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { v4 as uuid } from "uuid";
 import type { TemplateSections, TemplateField, TemplateSection, FieldType } from "@/lib/compliance/types";
-import { getStatutorySections, RESERVED_FIELD_PREFIX } from "@/lib/compliance/statutorySections";
+import { getStatutorySections, RESERVED_FIELD_PREFIX, WHS_DISCLAIMER_TEXT } from "@/lib/compliance/statutorySections";
 import { DOCUMENT_TYPES } from "@/lib/compliance/documentTypes";
 
 // ─── TemplateBuilder ────────────────────────────────────────────────────────
@@ -196,6 +196,9 @@ export function TemplateBuilder({ templateId, initialData }: TemplateBuilderProp
               </div>
             ))}
           </div>
+          <p className="text-xs text-slate-600 dark:text-slate-400 border-t border-amber-200 dark:border-amber-800 pt-3">
+            {WHS_DISCLAIMER_TEXT}
+          </p>
         </div>
       )}
 

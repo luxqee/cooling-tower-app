@@ -497,98 +497,82 @@ async function main() {
   // legally-mandated content is code-injected via getStatutorySections() in
   // src/lib/compliance/statutorySections.ts, never stored here. JSA and
   // Induction have no statutory core, so their full content lives here.
+  // NOTE: `update` mirrors `create` on every one of these upserts (rather than
+  // `update: {}`) so that re-running the seed script against a database that
+  // already has these rows always brings them up to the current content —
+  // an empty update object is a silent no-op that leaves stale data in place.
+  const jsaSections = [
+    { id: "jsa_details", title: "Job Details", fields: [
+      { id: "jsa_task_description", label: "Task description", type: "textarea", required: true },
+      { id: "jsa_location", label: "Location", type: "text", required: true },
+      { id: "jsa_date", label: "Date", type: "date", required: true },
+      { id: "jsa_prepared_by", label: "Prepared by", type: "text", required: true },
+    ]},
+    { id: "jsa_risk_assessment", title: "Risk Assessment", fields: [
+      { id: "jsa_risk_table", label: "Task steps, hazards, and control measures", type: "table", required: true,
+        columns: [
+          { id: "step", label: "Task Step" },
+          { id: "hazard", label: "Hazard" },
+          { id: "risk_rating", label: "Risk Rating" },
+          { id: "control", label: "Control Measure" },
+        ] },
+    ]},
+    { id: "jsa_ppe", title: "PPE Required", fields: [
+      { id: "jsa_ppe_checklist", label: "PPE required for this task", type: "checklist", required: false,
+        options: ["Hard hat", "Safety glasses", "Gloves", "Hi-vis clothing", "Steel-cap boots", "Hearing protection", "Respiratory protection", "Fall-arrest harness"] },
+    ]},
+    { id: "jsa_signoff", title: "Sign-off", fields: [
+      { id: "jsa_worker_signatures", label: "Workers involved", type: "signature-list", required: true },
+      { id: "jsa_supervisor_signature", label: "Supervisor name & signature", type: "signature", required: false },
+    ]},
+  ];
   await db.complianceTemplate.upsert({
     where: { id: "seed-tmpl-jsa" },
-    update: {},
-    create: {
-      id: "seed-tmpl-jsa",
-      name: "Job Safety Analysis (JSA)",
-      type: "jsa",
-      isActive: true,
-      sections: [
-        { id: "jsa_details", title: "Job Details", fields: [
-          { id: "jsa_task_description", label: "Task description", type: "textarea", required: true },
-          { id: "jsa_location", label: "Location", type: "text", required: true },
-          { id: "jsa_date", label: "Date", type: "date", required: true },
-          { id: "jsa_prepared_by", label: "Prepared by", type: "text", required: true },
-        ]},
-        { id: "jsa_risk_assessment", title: "Risk Assessment", fields: [
-          { id: "jsa_risk_table", label: "Task steps, hazards, and control measures", type: "table", required: true,
-            columns: [
-              { id: "step", label: "Task Step" },
-              { id: "hazard", label: "Hazard" },
-              { id: "risk_rating", label: "Risk Rating" },
-              { id: "control", label: "Control Measure" },
-            ] },
-        ]},
-        { id: "jsa_ppe", title: "PPE Required", fields: [
-          { id: "jsa_ppe_checklist", label: "PPE required for this task", type: "checklist", required: false,
-            options: ["Hard hat", "Safety glasses", "Gloves", "Hi-vis clothing", "Steel-cap boots", "Hearing protection", "Respiratory protection", "Fall-arrest harness"] },
-        ]},
-        { id: "jsa_signoff", title: "Sign-off", fields: [
-          { id: "jsa_worker_signatures", label: "Workers involved", type: "signature-list", required: true },
-          { id: "jsa_supervisor_signature", label: "Supervisor name & signature", type: "signature", required: false },
-        ]},
-      ],
-    },
+    update: { name: "Job Safety Analysis (JSA)", type: "jsa", isActive: true, sections: jsaSections },
+    create: { id: "seed-tmpl-jsa", name: "Job Safety Analysis (JSA)", type: "jsa", isActive: true, sections: jsaSections },
   });
 
+  const swmsSections = [
+    { id: "swms_notes", title: "Additional Notes", fields: [
+      { id: "swms_additional_notes", label: "Additional site-specific notes (optional)", type: "textarea", required: false },
+    ]},
+  ];
   await db.complianceTemplate.upsert({
     where: { id: "seed-tmpl-swms" },
-    update: {},
-    create: {
-      id: "seed-tmpl-swms",
-      name: "Safe Work Method Statement (SWMS)",
-      type: "swms",
-      isActive: true,
-      sections: [
-        { id: "swms_notes", title: "Additional Notes", fields: [
-          { id: "swms_additional_notes", label: "Additional site-specific notes (optional)", type: "textarea", required: false },
-        ]},
-      ],
-    },
+    update: { name: "Safe Work Method Statement (SWMS)", type: "swms", isActive: true, sections: swmsSections },
+    create: { id: "seed-tmpl-swms", name: "Safe Work Method Statement (SWMS)", type: "swms", isActive: true, sections: swmsSections },
   });
 
+  const whsmpSections = [
+    { id: "whsmp_notes", title: "Additional Notes", fields: [
+      { id: "whsmp_additional_notes", label: "Additional project-specific notes (optional)", type: "textarea", required: false },
+    ]},
+  ];
   await db.complianceTemplate.upsert({
     where: { id: "seed-tmpl-whsmp" },
-    update: {},
-    create: {
-      id: "seed-tmpl-whsmp",
-      name: "WHS Management Plan",
-      type: "whs_management_plan",
-      isActive: true,
-      sections: [
-        { id: "whsmp_notes", title: "Additional Notes", fields: [
-          { id: "whsmp_additional_notes", label: "Additional project-specific notes (optional)", type: "textarea", required: false },
-        ]},
-      ],
-    },
+    update: { name: "WHS Management Plan", type: "whs_management_plan", isActive: true, sections: whsmpSections },
+    create: { id: "seed-tmpl-whsmp", name: "WHS Management Plan", type: "whs_management_plan", isActive: true, sections: whsmpSections },
   });
 
+  const inductionSections = [
+    { id: "induction_details", title: "Site Details", fields: [
+      { id: "induction_site", label: "Site / location", type: "text", required: true },
+      { id: "induction_date", label: "Date", type: "date", required: true },
+      { id: "induction_conducted_by", label: "Person conducting induction", type: "text", required: true },
+    ]},
+    { id: "induction_topics", title: "Topics Covered", fields: [
+      { id: "induction_topics_checklist", label: "Topics covered in this induction", type: "checklist", required: false,
+        options: ["Site-specific hazards", "Emergency procedures & muster point", "Emergency contact numbers", "PPE requirements", "Amenities/facilities location", "Permit-to-work requirements", "Hazard/incident reporting procedure"] },
+    ]},
+    { id: "induction_ack", title: "Worker Acknowledgment", fields: [
+      { id: "induction_attendee_signatures", label: "Attendees", type: "signature-list", required: true },
+      { id: "induction_date_acknowledged", label: "Date acknowledged", type: "date", required: false },
+    ]},
+  ];
   await db.complianceTemplate.upsert({
     where: { id: "seed-tmpl-induction" },
-    update: {},
-    create: {
-      id: "seed-tmpl-induction",
-      name: "Site Safety Induction",
-      type: "induction",
-      isActive: true,
-      sections: [
-        { id: "induction_details", title: "Site Details", fields: [
-          { id: "induction_site", label: "Site / location", type: "text", required: true },
-          { id: "induction_date", label: "Date", type: "date", required: true },
-          { id: "induction_conducted_by", label: "Person conducting induction", type: "text", required: true },
-        ]},
-        { id: "induction_topics", title: "Topics Covered", fields: [
-          { id: "induction_topics_checklist", label: "Topics covered in this induction", type: "checklist", required: false,
-            options: ["Site-specific hazards", "Emergency procedures & muster point", "Emergency contact numbers", "PPE requirements", "Amenities/facilities location", "Permit-to-work requirements", "Hazard/incident reporting procedure"] },
-        ]},
-        { id: "induction_ack", title: "Worker Acknowledgment", fields: [
-          { id: "induction_attendee_signatures", label: "Attendees", type: "signature-list", required: true },
-          { id: "induction_date_acknowledged", label: "Date acknowledged", type: "date", required: false },
-        ]},
-      ],
-    },
+    update: { name: "Site Safety Induction", type: "induction", isActive: true, sections: inductionSections },
+    create: { id: "seed-tmpl-induction", name: "Site Safety Induction", type: "induction", isActive: true, sections: inductionSections },
   });
   console.log("  ✓ Compliance templates (JSA, SWMS, WHS Management Plan, Induction)");
 

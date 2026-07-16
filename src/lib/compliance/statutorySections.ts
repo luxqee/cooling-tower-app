@@ -188,3 +188,9 @@ export function mergeSections(templateType: string, customSections: TemplateSect
 export function hasStatutoryContent(templateType: string): boolean {
   return getStatutorySections(templateType) !== null;
 }
+
+// Shown on every SWMS/WHS Management Plan PDF footer (generatePdf.ts) and on
+// the Templates admin page wherever a locked statutory section is previewed
+// (TemplateBuilder.tsx) — same wording in both places, per spec.
+export const WHS_DISCLAIMER_TEXT =
+  "This document was generated using a template based on published WorkSafe Queensland guidance and the Work Health and Safety Regulation 2011 (Qld). It has not been reviewed by a qualified WHS professional. Your business is responsible for verifying this document meets its current legal obligations before relying on it.";

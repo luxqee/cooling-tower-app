@@ -2,7 +2,8 @@ import { Document, Page, View, Text, Image, StyleSheet, renderToBuffer } from "@
 import { createElement } from "react";
 import type { ComplianceDocument, ComplianceTemplate, Job, User } from "@prisma/client";
 import type { TemplateField, TemplateSections, DocumentValues, TableRowValue, SignatureListEntry } from "./types";
-import { mergeSections, hasStatutoryContent } from "./statutorySections";
+import { mergeSections, hasStatutoryContent, WHS_DISCLAIMER_TEXT } from "./statutorySections";
+import { DOCUMENT_TYPE_LABELS } from "./documentTypes";
 
 const styles = StyleSheet.create({
   page:          { padding: 40, fontSize: 10, fontFamily: "Helvetica", color: "#1e293b" },
@@ -32,9 +33,6 @@ const styles = StyleSheet.create({
   signatureListEntry: { marginBottom: 8 },
   signatureListName:  { fontSize: 9, fontFamily: "Helvetica-Bold", marginBottom: 2 },
 });
-
-const DISCLAIMER_TEXT =
-  "This document was generated using a template based on published WorkSafe Queensland guidance and the Work Health and Safety Regulation 2011 (Qld). It has not been reviewed by a qualified WHS professional. Your business is responsible for verifying this document meets its current legal obligations before relying on it.";
 
 export interface GeneratePdfArgs {
   document: ComplianceDocument;
@@ -152,7 +150,7 @@ export async function generatePdf({ document, template, job, createdBy, business
   const showDisclaimer = hasStatutoryContent(template.type);
 
   const headerContent = [
-    createElement(Text, { style: styles.typeBadge }, template.type.toUpperCase()),
+    createElement(Text, { style: styles.typeBadge }, (DOCUMENT_TYPE_LABELS[template.type] ?? template.type).toUpperCase()),
     createElement(Text, { style: styles.docTitle }, template.name),
     createElement(Text, { style: styles.headerMeta }, `Job: ${job.customerName} — ${job.siteName}`),
     createElement(Text, { style: styles.headerMeta }, `Submitted by: ${createdBy.name}`),
@@ -201,7 +199,7 @@ export async function generatePdf({ document, template, job, createdBy, business
       ),
       // Disclaimer (SWMS / WHS Management Plan only)
       ...(showDisclaimer
-        ? [createElement(Text, { style: styles.disclaimer, fixed: true }, DISCLAIMER_TEXT)]
+        ? [createElement(Text, { style: styles.disclaimer, fixed: true }, WHS_DISCLAIMER_TEXT)]
         : []),
       // Footer
       createElement(
