@@ -496,7 +496,7 @@ async function main() {
     create: {
       id: "seed-tmpl-jsa",
       name: "Job Safety Analysis (JSA)",
-      type: "JSA",
+      type: "jsa",
       isActive: true,
       sections: [
         { id: "hazards", title: "Hazard Identification", fields: [
@@ -526,7 +526,7 @@ async function main() {
     create: {
       id: "seed-tmpl-swms",
       name: "Safe Work Method Statement (SWMS)",
-      type: "SWMS",
+      type: "swms",
       isActive: true,
       sections: [
         { id: "scope", title: "Scope of Work", fields: [
