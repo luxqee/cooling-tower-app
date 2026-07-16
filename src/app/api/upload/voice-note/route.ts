@@ -1,5 +1,6 @@
 import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { requireRole } from "@/lib/auth/clerk";
 
 const ALLOWED_TYPES = [
@@ -43,6 +44,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ url: blob.url }, { status: 201 });
   } catch (err) {
     console.error("Blob upload error:", err);
+    Sentry.captureException(err);
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }
 }

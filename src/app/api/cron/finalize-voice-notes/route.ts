@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { db } from "@/lib/db/client";
 import { summarizeTranscript } from "@/lib/ai/voice-note";
 import { AI_MODELS } from "@/lib/ai/models";
@@ -47,6 +48,7 @@ export async function GET(req: Request) {
       ]);
     } catch (err) {
       console.error(`Failed to auto-finalize voice note ${note.id}:`, err);
+      Sentry.captureException(err);
       await db.voiceNote.update({ where: { id: note.id }, data: { status: "transcribed" } });
     }
     finalized++;

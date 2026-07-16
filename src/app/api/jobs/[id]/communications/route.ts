@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
 import { validateCommunicationInput } from "@/lib/communications/validate";
@@ -61,6 +62,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     await indexDocument("JobCommunication", communication.id, jobId, communication.body);
   } catch (err) {
     console.error("Failed to index job communication for semantic search:", err);
+    Sentry.captureException(err);
   }
 
   return NextResponse.json(communication, { status: 201 });

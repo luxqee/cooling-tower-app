@@ -1,4 +1,5 @@
 import withSerwistInit from "@serwist/next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const withSerwist = withSerwistInit({
   swSrc: "src/app/sw.ts",
@@ -30,4 +31,17 @@ const nextConfig = {
   },
 };
 
-export default withSerwist(nextConfig);
+const configWithServiceWorker = withSerwist(nextConfig);
+
+// Inert by default: withSentryConfig's build-time work (source map upload,
+// server/edge instrumentation) needs an auth token to do anything useful,
+// so it's only applied when one is configured. Without SENTRY_AUTH_TOKEN
+// the exported config is exactly configWithServiceWorker, unmodified.
+export default process.env.SENTRY_AUTH_TOKEN
+  ? withSentryConfig(configWithServiceWorker, {
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      silent: !process.env.CI,
+    })
+  : configWithServiceWorker;

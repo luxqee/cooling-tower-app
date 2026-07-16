@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { requireRole } from "@/lib/auth/clerk";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { db } from "@/lib/db/client";
@@ -201,6 +202,7 @@ export async function POST(req: Request) {
     });
   } catch (err) {
     console.error("Assistant chat turn failed:", err);
+    Sentry.captureException(err);
     finalText = FALLBACK_MESSAGE;
     pendingAction = null;
   }

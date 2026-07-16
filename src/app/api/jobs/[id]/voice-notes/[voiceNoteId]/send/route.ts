@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
 import { validateSendVoiceNoteInput } from "@/lib/voice-notes/validate";
@@ -68,6 +69,7 @@ export async function POST(
     ]);
   } catch (err) {
     console.error("Voice note summarization failed:", err);
+    Sentry.captureException(err);
     // Same graceful-degradation contract as before: never lose the
     // technician-confirmed transcript even if the summarization step fails.
     await db.voiceNote.update({
@@ -83,6 +85,7 @@ export async function POST(
     await indexDocument("VoiceNote", voiceNote.id, params.id, transcript);
   } catch (err) {
     console.error("Failed to index voice note for semantic search:", err);
+    Sentry.captureException(err);
   }
 
   return NextResponse.json({ ok: true });

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
 import { getActiveJobById } from "@/lib/jobs/queries";
@@ -49,6 +50,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     await db.voiceNote.update({ where: { id: voiceNote.id }, data: { assemblyaiId } });
   } catch (err) {
     console.error("AssemblyAI submission failed:", err);
+    Sentry.captureException(err);
     await db.voiceNote.update({ where: { id: voiceNote.id }, data: { status: "failed" } });
   }
 
