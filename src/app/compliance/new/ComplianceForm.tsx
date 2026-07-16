@@ -3,7 +3,11 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { SignatureCanvas } from "./SignatureCanvas";
-import type { TemplateSections, DocumentValues } from "@/lib/compliance/types";
+import { TableFieldInput } from "./TableFieldInput";
+import { SignatureListFieldInput } from "./SignatureListFieldInput";
+import { mergeSections } from "@/lib/compliance/statutorySections";
+import { DOCUMENT_TYPE_LABELS, DOCUMENT_TYPE_COLOURS } from "@/lib/compliance/documentTypes";
+import type { TemplateSections, DocumentValues, TableRowValue, SignatureListEntry } from "@/lib/compliance/types";
 
 interface Job      { id: string; customerName: string; siteName: string; }
 interface Template { id: string; name: string; type: string; sections: unknown; }
@@ -15,12 +19,6 @@ interface ComplianceFormProps {
 
 type Step = "job" | "template" | "form";
 
-const TYPE_LABELS: Record<string, string>  = { swms: "SWMS", jsa: "JSA", whs: "WHS" };
-const TYPE_COLOURS: Record<string, string> = {
-  swms: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  jsa:  "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-  whs:  "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
-};
 
 export function ComplianceForm({ jobs, templates }: ComplianceFormProps) {
   const router = useRouter();
@@ -41,7 +39,8 @@ export function ComplianceForm({ jobs, templates }: ComplianceFormProps) {
     setError(null);
 
     // Fix 3: Validate required fields before submitting
-    const sections = Array.isArray(template?.sections) ? (template.sections as TemplateSections) : [];
+    const customSections = Array.isArray(template?.sections) ? (template.sections as TemplateSections) : [];
+    const sections = mergeSections(template.type, customSections);
     const missingRequired = sections.flatMap(s => s.fields)
       .filter(f => f.required)
       .filter(f => {
@@ -124,8 +123,8 @@ export function ComplianceForm({ jobs, templates }: ComplianceFormProps) {
                 className="w-full text-left px-4 pt-4 pb-3"
               >
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${TYPE_COLOURS[t.type] ?? ""}`}>
-                    {TYPE_LABELS[t.type] ?? t.type}
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${DOCUMENT_TYPE_COLOURS[t.type] ?? ""}`}>
+                    {DOCUMENT_TYPE_LABELS[t.type] ?? t.type}
                   </span>
                   <span className="font-medium">{t.name}</span>
                 </div>
@@ -156,7 +155,8 @@ export function ComplianceForm({ jobs, templates }: ComplianceFormProps) {
 
   // Step 3 — fill in form
   // Fix 4: guard against non-array JSON values from DB
-  const sections = Array.isArray(template?.sections) ? (template.sections as TemplateSections) : [];
+  const customSections = Array.isArray(template?.sections) ? (template.sections as TemplateSections) : [];
+  const sections = mergeSections(template?.type ?? "", customSections);
 
   return (
     <div className="space-y-6">
@@ -235,6 +235,21 @@ export function ComplianceForm({ jobs, templates }: ComplianceFormProps) {
 
               {field.type === "signature" && (
                 <SignatureCanvas onChange={(dataUrl) => setValue(field.id, dataUrl)} />
+              )}
+
+              {field.type === "table" && (
+                <TableFieldInput
+                  columns={field.columns ?? []}
+                  rows={(values[field.id] as TableRowValue[]) ?? []}
+                  onChange={(rows) => setValue(field.id, rows)}
+                />
+              )}
+
+              {field.type === "signature-list" && (
+                <SignatureListFieldInput
+                  entries={(values[field.id] as SignatureListEntry[]) ?? []}
+                  onChange={(entries) => setValue(field.id, entries)}
+                />
               )}
             </div>
           ))}

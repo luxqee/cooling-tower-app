@@ -4,13 +4,7 @@ import { PAGE_ACCESS } from "@/lib/permissions";
 import { db } from "@/lib/db/client";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-
-const TYPE_LABELS: Record<string, string> = { swms: "SWMS", jsa: "JSA", whs: "WHS" };
-const TYPE_COLOURS: Record<string, string> = {
-  swms: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  jsa:  "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-  whs:  "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
-};
+import { DOCUMENT_TYPE_LABELS, DOCUMENT_TYPE_COLOURS } from "@/lib/compliance/documentTypes";
 
 export default async function CompliancePage() {
   const user = await requireRole(PAGE_ACCESS.compliance).catch(() => null);
@@ -62,8 +56,8 @@ export default async function CompliancePage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 space-y-0.5">
                     <div className="flex items-center gap-2">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${TYPE_COLOURS[doc.template.type] ?? ""}`}>
-                        {TYPE_LABELS[doc.template.type] ?? doc.template.type}
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${DOCUMENT_TYPE_COLOURS[doc.template.type] ?? ""}`}>
+                        {DOCUMENT_TYPE_LABELS[doc.template.type] ?? doc.template.type}
                       </span>
                       <p className="font-medium truncate">{doc.template.name}</p>
                     </div>
