@@ -2,6 +2,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { requireRole } from "@/lib/auth/clerk";
 import { PAGE_ACCESS } from "@/lib/permissions";
 import { db } from "@/lib/db/client";
+import { getPendingVariations } from "@/lib/variations/queries";
 import { VariationsList } from "./VariationsList";
 import { redirect } from "next/navigation";
 
@@ -10,14 +11,7 @@ export default async function VariationsPage() {
   if (!user) redirect("/sign-in");
 
   const [pendingRows, decidedRows] = await Promise.all([
-    db.variation.findMany({
-      where: { status: "pending" },
-      include: {
-        technician: { select: { name: true } },
-        job: { select: { customerName: true, siteName: true } },
-      },
-      orderBy: { submittedAt: "asc" },
-    }),
+    getPendingVariations(),
     db.variation.findMany({
       where: { status: { in: ["approved", "rejected", "queried"] } },
       include: {

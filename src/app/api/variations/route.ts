@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/clerk";
 import { db } from "@/lib/db/client";
 import { getActiveJobById } from "@/lib/jobs/queries";
+import { getPendingVariations } from "@/lib/variations/queries";
 import { validateVariationInput } from "@/lib/variations/validate";
 import { sendPushToUser } from "@/lib/push/vapid";
 import { notifyUsers } from "@/lib/notifications/create";
@@ -10,15 +11,7 @@ export async function GET() {
   const user = await requireRole(["director", "admin"]).catch(() => null);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const variations = await db.variation.findMany({
-    where: { status: "pending" },
-    include: {
-      technician: { select: { name: true } },
-      job: { select: { customerName: true, siteName: true } },
-    },
-    orderBy: { submittedAt: "desc" },
-    take: 100,
-  });
+  const variations = await getPendingVariations({ order: "desc", take: 100 });
 
   return NextResponse.json(
     variations.map((v) => ({

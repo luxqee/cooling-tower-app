@@ -1,7 +1,7 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { requireRole } from "@/lib/auth/clerk";
 import { PAGE_ACCESS } from "@/lib/permissions";
-import { db } from "@/lib/db/client";
+import { getComplianceDocumentsForUser } from "@/lib/compliance/queries";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { DOCUMENT_TYPE_LABELS, DOCUMENT_TYPE_COLOURS } from "@/lib/compliance/documentTypes";
@@ -10,22 +10,7 @@ export default async function CompliancePage() {
   const user = await requireRole(PAGE_ACCESS.compliance).catch(() => null);
   if (!user) redirect("/sign-in");
 
-  let where;
-  if (user.role === "technician") {
-    const assignments = await db.assignment.findMany({ where: { userId: user.id } });
-    where = { jobId: { in: assignments.map((a) => a.jobId) } };
-  }
-
-  const docs = await db.complianceDocument.findMany({
-    where,
-    include: {
-      template:  { select: { name: true, type: true } },
-      job:       { select: { customerName: true, siteName: true } },
-      createdBy: { select: { name: true } },
-    },
-    orderBy: { submittedAt: "desc" },
-    take: 200,
-  });
+  const docs = await getComplianceDocumentsForUser(user);
 
   return (
     <AppShell>

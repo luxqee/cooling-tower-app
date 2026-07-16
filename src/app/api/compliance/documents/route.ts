@@ -4,6 +4,7 @@ import { put } from "@vercel/blob";
 import { requireRole } from "@/lib/auth/clerk";
 import { PAGE_ACCESS } from "@/lib/permissions";
 import { db } from "@/lib/db/client";
+import { getComplianceDocumentsForUser } from "@/lib/compliance/queries";
 import { generatePdf } from "@/lib/compliance/generatePdf";
 
 const docSchema = z.object({
@@ -16,23 +17,7 @@ export async function GET() {
   const user = await requireRole(PAGE_ACCESS.compliance).catch(() => null);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  let where;
-  if (user.role === "technician") {
-    const assignments = await db.assignment.findMany({ where: { userId: user.id } });
-    const jobIds = assignments.map((a) => a.jobId);
-    where = { jobId: { in: jobIds } };
-  }
-
-  const docs = await db.complianceDocument.findMany({
-    where,
-    include: {
-      template:  { select: { name: true, type: true } },
-      job:       { select: { customerName: true, siteName: true } },
-      createdBy: { select: { name: true } },
-    },
-    orderBy: { submittedAt: "desc" },
-    take: 200,
-  });
+  const docs = await getComplianceDocumentsForUser(user);
 
   return NextResponse.json(docs);
 }

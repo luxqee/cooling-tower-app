@@ -1,7 +1,7 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { requireRole } from "@/lib/auth/clerk";
 import { PAGE_ACCESS } from "@/lib/permissions";
-import { db } from "@/lib/db/client";
+import { getAllInvoicesWithJob } from "@/lib/invoicing/queries";
 import { redirect } from "next/navigation";
 import { InvoiceList } from "./InvoiceList";
 
@@ -9,12 +9,7 @@ export default async function InvoicesPage() {
   const user = await requireRole(PAGE_ACCESS.invoices).catch(() => null);
   if (!user) redirect("/");
 
-  const invoices = await db.invoice.findMany({
-    include: {
-      job: { select: { id: true, customerName: true, siteName: true, jobType: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  const invoices = await getAllInvoicesWithJob();
 
   const rows = invoices.map((inv) => ({
     id: inv.id,
