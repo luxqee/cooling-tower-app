@@ -110,7 +110,7 @@ export function ChatWidget({ inline = false }: ChatWidgetProps) {
     }
   }
 
-  async function sendQuickAction(action: "activeJobs" | "weekAssignments") {
+  async function sendQuickAction(action: "activeJobs" | "weekAssignments" | "overdueJobs" | "pendingVariations" | "unpaidInvoices") {
     if (sending) return;
     setError(null);
     setSending(true);
@@ -178,12 +178,12 @@ export function ChatWidget({ inline = false }: ChatWidgetProps) {
           </div>
         )}
       </div>
-      <div className="flex gap-2 px-3 pt-2">
+      <div className="grid grid-cols-2 gap-2 px-3 pt-2">
         <button
           type="button"
           onClick={() => sendQuickAction("activeJobs")}
           disabled={sending || !!pendingAction}
-          className="flex-1 min-h-[32px] rounded-lg border border-slate-300 dark:border-slate-600 text-xs font-medium disabled:opacity-40"
+          className="min-h-[32px] rounded-lg border border-slate-300 dark:border-slate-600 text-xs font-medium disabled:opacity-40"
         >
           Active jobs
         </button>
@@ -191,9 +191,33 @@ export function ChatWidget({ inline = false }: ChatWidgetProps) {
           type="button"
           onClick={() => sendQuickAction("weekAssignments")}
           disabled={sending || !!pendingAction}
-          className="flex-1 min-h-[32px] rounded-lg border border-slate-300 dark:border-slate-600 text-xs font-medium disabled:opacity-40"
+          className="min-h-[32px] rounded-lg border border-slate-300 dark:border-slate-600 text-xs font-medium disabled:opacity-40"
         >
           This week&apos;s assignments
+        </button>
+        <button
+          type="button"
+          onClick={() => sendQuickAction("overdueJobs")}
+          disabled={sending || !!pendingAction}
+          className="min-h-[32px] rounded-lg border border-slate-300 dark:border-slate-600 text-xs font-medium disabled:opacity-40"
+        >
+          Overdue jobs
+        </button>
+        <button
+          type="button"
+          onClick={() => sendQuickAction("pendingVariations")}
+          disabled={sending || !!pendingAction}
+          className="min-h-[32px] rounded-lg border border-slate-300 dark:border-slate-600 text-xs font-medium disabled:opacity-40"
+        >
+          Pending variations
+        </button>
+        <button
+          type="button"
+          onClick={() => sendQuickAction("unpaidInvoices")}
+          disabled={sending || !!pendingAction}
+          className="col-span-2 min-h-[32px] rounded-lg border border-slate-300 dark:border-slate-600 text-xs font-medium disabled:opacity-40"
+        >
+          Unpaid invoices
         </button>
       </div>
       <div className="flex gap-2 p-3 border-t border-slate-300 dark:border-slate-700">

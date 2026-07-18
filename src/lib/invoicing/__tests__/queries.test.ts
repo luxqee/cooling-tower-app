@@ -5,7 +5,7 @@ vi.mock("@/lib/db/client", () => ({
 }));
 
 import { db } from "@/lib/db/client";
-import { getAllInvoicesWithJob } from "../queries";
+import { getAllInvoicesWithJob, getUnpaidInvoices } from "../queries";
 
 const INCLUDE = {
   job: { select: { id: true, customerName: true, siteName: true, jobType: true } },
@@ -30,6 +30,29 @@ describe("getAllInvoicesWithJob", () => {
       include: INCLUDE,
       orderBy: { createdAt: "desc" },
       take: 100,
+    });
+  });
+});
+
+describe("getUnpaidInvoices", () => {
+  it("queries sent (not yet paid) invoices, oldest first, no take by default", async () => {
+    vi.mocked(db.invoice.findMany).mockResolvedValue([]);
+    await getUnpaidInvoices();
+    expect(db.invoice.findMany).toHaveBeenCalledWith({
+      where: { status: "sent" },
+      include: { job: { select: { customerName: true, siteName: true } } },
+      orderBy: { sentAt: "asc" },
+    });
+  });
+
+  it("supports a take limit", async () => {
+    vi.mocked(db.invoice.findMany).mockResolvedValue([]);
+    await getUnpaidInvoices({ take: 20 });
+    expect(db.invoice.findMany).toHaveBeenCalledWith({
+      where: { status: "sent" },
+      include: { job: { select: { customerName: true, siteName: true } } },
+      orderBy: { sentAt: "asc" },
+      take: 20,
     });
   });
 });

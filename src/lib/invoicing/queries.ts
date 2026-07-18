@@ -10,3 +10,15 @@ export async function getAllInvoicesWithJob(opts?: { take?: number }) {
     ...(opts?.take ? { take: opts.take } : {}),
   });
 }
+
+/** Invoices sent but not yet paid — oldest first (longest overdue surfaces first). */
+export async function getUnpaidInvoices(opts?: { take?: number }) {
+  return db.invoice.findMany({
+    where: { status: "sent" },
+    include: {
+      job: { select: { customerName: true, siteName: true } },
+    },
+    orderBy: { sentAt: "asc" },
+    ...(opts?.take ? { take: opts.take } : {}),
+  });
+}
