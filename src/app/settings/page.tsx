@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { AppShell } from "@/components/layout/AppShell";
 import { requireRole } from "@/lib/auth/clerk";
 import { PAGE_ACCESS } from "@/lib/permissions";
@@ -50,6 +51,16 @@ export default async function SettingsPage() {
             </a>
           </div>
         </div>
+
+        {user.role === "director" || user.role === "admin" ? (
+          <div className="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-6 py-6">
+            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-1">System health</h2>
+            <p className="text-sm text-slate-500 mb-3">Database size, file storage, and AI usage.</p>
+            <Link href="/settings/monitoring" className="text-sm font-medium text-amber-600 dark:text-amber-400 hover:underline">
+              View system health →
+            </Link>
+          </div>
+        ) : null}
       </div>
     </AppShell>
   );

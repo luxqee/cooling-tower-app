@@ -41,4 +41,5 @@ export const PAGE_ACCESS: Record<string, readonly UserRole[]> = {
   quotes: ["sales_engineer", "director", "admin"],
   invoices: ["admin", "director"],
   customers: ["admin", "director", "sales_engineer"],
+  monitoring: ["director", "admin"],
 };
