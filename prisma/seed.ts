@@ -1,7 +1,28 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { del } from "@vercel/blob";
+import { randomUUID } from "crypto";
 import { indexDocument } from "../src/lib/ai/semanticSearch";
+
+// Deterministic pseudo-random generator (fixed seed) so which bulk-generated
+// job gets a variation/invoice/etc. stays structurally consistent across
+// reseeds, even though the row IDs themselves (crypto.randomUUID(), below)
+// are fresh every run — IDs don't need to be stable, only valid UUIDs
+// (see prisma/__tests__/seed-ids.test.ts), and the old generated rows get
+// swept up by the existing "notIn: SEED_JOB_IDS" cleanup regardless.
+function mulberry32(seed: number) {
+  return function random() {
+    seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const GENERATED_CUSTOMER_COUNT = 13;
+const GENERATED_JOB_COUNT = 45;
+const GENERATED_CUSTOMER_IDS = Array.from({ length: GENERATED_CUSTOMER_COUNT }, () => randomUUID());
+const GENERATED_JOB_IDS = Array.from({ length: GENERATED_JOB_COUNT }, () => randomUUID());
 
 const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL! });
 const db = new PrismaClient({ adapter });
@@ -26,6 +47,7 @@ export const SEED_JOB_IDS = [
   "25173781-06ee-45b6-af24-416a08b28108", // seed-job-glencore2 (previous quarterly visit, before the current active one)
   "c0390a2a-ff0a-4ea5-a814-b76d72dc46c0", // seed-job-stanwell2 (second, currently active, engagement)
   "56906a71-bfe9-47a6-95e0-918d524fb102", // seed-job-capricorn (new customer's first job)
+  ...GENERATED_JOB_IDS, // bulk-generated jobs for volume — see GENERATED_JOB_COUNT above
 ];
 
 const SEED_USER_IDS = [
@@ -46,7 +68,13 @@ export const SEED_CUSTOMER_IDS = [
   "b2ddddcb-35a0-46a1-b0ef-f221d2571438", // seed-customer-incitec
   "ba6843fe-3e1b-482d-b4c9-c6a1a21a8c6b", // seed-customer-qal
   "e57c9861-0db7-4093-b449-267915c90ec3", // seed-customer-capricorn
+  ...GENERATED_CUSTOMER_IDS, // bulk-generated customers for volume — see GENERATED_CUSTOMER_COUNT above
 ];
+
+// Fixed-id hero quotes — quotes have no per-row cleanup analogous to
+// SEED_JOB_IDS/SEED_CUSTOMER_IDS, so this list is how the top-of-script
+// cleanup knows which quotes to keep before regenerating the bulk ones.
+const HERO_QUOTE_IDS = ["seed-quote-1", "seed-quote-2", "seed-quote-3", "seed-quote-4", "1b32b1f8-8852-4c03-9598-dd3a4830a7f8"];
 
 async function main() {
   console.log("🧹 Cleaning up old data...");
@@ -78,6 +106,20 @@ async function main() {
   await db.voiceNote.deleteMany({ where: { jobId: { notIn: SEED_JOB_IDS } } });
   await db.documentChunk.deleteMany({ where: { jobId: { notIn: SEED_JOB_IDS } } });
   await db.job.deleteMany({ where: { id: { notIn: SEED_JOB_IDS } } });
+
+  // Customers have no per-row cleanup analogous to the above — before the
+  // bulk-generated customers (fresh random IDs every run, see
+  // GENERATED_CUSTOMER_IDS) were added, this never mattered because every
+  // customer used a fixed id and upsert never grows the table. Now it does:
+  // without this, every reseed would add another 13 customers on top of the
+  // last run's, forever. Quote/Asset/Contract/CustomerPortalToken all carry
+  // an optional customerId FK, so anything still pointing at a stale
+  // customer must be cleared first — Jobs already were, above; Quotes are
+  // the only other place bulk-generated (fresh-id) rows can reference a
+  // stale customer, so clear those here too. Assets/Contracts/portal tokens
+  // only ever use fixed hero ids, so they're never stale.
+  await db.quote.deleteMany({ where: { id: { notIn: HERO_QUOTE_IDS } } });
+  await db.customer.deleteMany({ where: { id: { notIn: SEED_CUSTOMER_IDS } } });
 
   // Remove test/placeholder user accounts — identified by having a clerkId that
   // contains "seed" or "placeholder" (i.e. not a real Clerk ID like user_2xxx).
@@ -428,8 +470,10 @@ async function main() {
       { userId: mikeId, jobId: "c3f79548-f16b-4d32-b937-51cf7d42cb34", assignedDate: d("2026-06-22T00:00:00Z") },
       // Stanwell — 1 day, Mike
       { userId: mikeId, jobId: "67e75b3b-9505-4028-b41f-1a706ba891c2", assignedDate: d("2026-07-01T00:00:00Z") },
-      // Glencore — 3 days Jake, 2 days Sarah (active)
-      { userId: jakeId,  jobId: "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6", assignedDate: d("2026-07-07T00:00:00Z"), endDate: d("2026-07-09T00:00:00Z") },
+      // Glencore — Jake's run extended (parts delayed — see his voice note),
+      // through today so /time-tracking has a live "today" assignment to
+      // demo clock-in/out against. Sarah's original 2-day stint is unchanged.
+      { userId: jakeId,  jobId: "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6", assignedDate: d("2026-07-07T00:00:00Z"), endDate: d("2026-07-19T00:00:00Z") },
       { userId: sarahId, jobId: "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6", assignedDate: d("2026-07-07T00:00:00Z"), endDate: d("2026-07-08T00:00:00Z") },
       // Incitec — upcoming Thu 10 Jul
       { userId: sarahId, jobId: "ef78d400-db40-4b4c-96fb-819ed060aa34", assignedDate: d("2026-07-10T00:00:00Z") },
@@ -1135,6 +1179,227 @@ async function main() {
     },
   });
   console.log("  ✓ Customer portal token (Rio Tinto — /portal/demo-portal-token-riotinto)");
+
+  // ─── Bulk-generated data ────────────────────────────────────────────────────
+  // Volume for scrolling/pagination demos, on top of the hand-crafted jobs
+  // above. Templated rather than individually hand-written — the 11 jobs
+  // above remain the rich, narratively-detailed examples; these exist for
+  // realistic scale (multiple customers, months of history, enough rows in
+  // every list to actually need scrolling).
+  console.log("\n🌱 Generating bulk demo data for scale...");
+
+  const rand = mulberry32(20260718);
+  const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(rand() * arr.length)];
+  const chance = (p: number) => rand() < p;
+
+  const GENERATED_CUSTOMER_NAMES = [
+    "Boulder Creek Mining", "Torres Basin Energy", "Callide Power Trust", "Norwest Alumina",
+    "Ridgeline Resources", "Southbank Industrial", "Fitzroy River Minerals", "Whitsunday Ore Co",
+    "Burnett Valley Processing", "Kestrel Coal Holdings", "Amberley Chemicals", "Diamantina Metals",
+    "Coral Sea Refining",
+  ];
+  const QLD_TOWNS = ["Gladstone", "Mackay", "Townsville", "Rockhampton", "Bundaberg", "Toowoomba", "Cairns", "Mount Isa", "Emerald", "Roma", "Gympie", "Maryborough", "Ayr"];
+  const FIRST_NAMES = ["Liam", "Chloe", "Ethan", "Grace", "Noah", "Isla", "Mason", "Zoe", "Lucas", "Ruby", "Oliver", "Ivy", "Jack"];
+  const LAST_NAMES = ["Turner", "Bishop", "Hale", "Reid", "Doyle", "Whitfield", "Sloan", "Carver", "Merrick", "Voss"];
+
+  const generatedCustomers = GENERATED_CUSTOMER_IDS.map((id, i) => {
+    const name = GENERATED_CUSTOMER_NAMES[i];
+    const town = QLD_TOWNS[i % QLD_TOWNS.length];
+    return {
+      id, name,
+      abn: `${10 + Math.floor(rand() * 89)} ${100 + Math.floor(rand() * 899)} ${100 + Math.floor(rand() * 899)} ${100 + Math.floor(rand() * 899)}`,
+      contactPerson: `${pick(FIRST_NAMES)} ${pick(LAST_NAMES)}`,
+      email: `contact@${name.toLowerCase().replace(/[^a-z]+/g, "")}.com.au`,
+      phone: `(07) 4${900 + Math.floor(rand() * 99)} ${1000 + Math.floor(rand() * 8999)}`,
+      address: `${10 + Math.floor(rand() * 90)} Industrial Rd, ${town} QLD ${4000 + Math.floor(rand() * 900)}`,
+      notes: null as string | null,
+    };
+  });
+  for (const c of generatedCustomers) {
+    await db.customer.upsert({ where: { id: c.id }, update: c, create: c });
+  }
+  console.log(`  ✓ ${generatedCustomers.length} additional customers (bulk)`);
+
+  // Repeat business skews toward the 7 hand-crafted customers; the rest goes
+  // to the newly-generated ones — mirrors a real customer base where a
+  // handful of contract customers account for most of the work.
+  const customerPool = [...customers, ...generatedCustomers];
+
+  const JOB_TYPES_POOL = ["Annual Service", "Quarterly Inspection", "Emergency Repair", "Fill Pack Replacement", "Chemical Descaling", "Fan Motor Replacement", "Basin Clean & Inspection", "Water Treatment Audit", "Drift Eliminator Replacement", "Corrosion Survey"];
+  const SITE_DESCRIPTORS = ["North Plant", "Processing Facility", "Refinery Block C", "Site 2", "Main Works", "Terminal Yard", "Cooling Bank 4", "Operations Centre", "South Wing", "Utilities Block"];
+  const TECH_IDS = [jakeId, sarahId, mikeId];
+  const TODAY = new Date("2026-07-18T00:00:00Z");
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
+  type GenJobStatus = "scheduled" | "active" | "complete" | "cancelled";
+  interface GenJob {
+    id: string; customerId: string; customerName: string; siteName: string; siteAddress: string;
+    status: GenJobStatus; jobType: string; quotedHours: number; quotedCost: number; date: Date; techId: string;
+  }
+
+  const generatedJobs: GenJob[] = GENERATED_JOB_IDS.map((id) => {
+    const cust = pick(customerPool);
+    const dayOffset = Math.floor(rand() * 210) - 175; // spread ~mid-Jan to mid-Aug 2026
+    const date = new Date(TODAY.getTime() + dayOffset * DAY_MS);
+    const daysAgo = (TODAY.getTime() - date.getTime()) / DAY_MS;
+
+    let status: GenJobStatus;
+    if (date > TODAY) status = "scheduled";
+    else if (daysAgo < 4) status = chance(0.5) ? "active" : "complete";
+    else status = chance(0.06) ? "cancelled" : "complete";
+
+    const quotedHours = 8 + Math.floor(rand() * 28);
+    return {
+      id, customerId: cust.id, customerName: cust.name,
+      siteName: `${cust.name} — ${pick(SITE_DESCRIPTORS)}`,
+      siteAddress: cust.address ?? `${cust.name} site, QLD`,
+      status, jobType: pick(JOB_TYPES_POOL), quotedHours,
+      quotedCost: Math.round(quotedHours * 145 * (1 + rand() * 0.25)),
+      date, techId: pick(TECH_IDS),
+    };
+  });
+
+  for (const j of generatedJobs) {
+    const data = {
+      customerName: j.customerName, customerId: j.customerId, siteName: j.siteName, siteAddress: j.siteAddress,
+      status: j.status, jobType: j.jobType, quotedHours: j.quotedHours, quotedCost: j.quotedCost,
+    };
+    await db.job.upsert({ where: { id: j.id }, update: data, create: { id: j.id, ...data } });
+  }
+  console.log(`  ✓ ${generatedJobs.length} additional jobs (bulk, spread across ~7 months)`);
+
+  // Child records for the generated jobs — collected into arrays and
+  // inserted with createMany rather than looped individual creates.
+  const genAssignments: { userId: string; jobId: string; assignedDate: Date; endDate: Date | null }[] = [];
+  const genTimeEntries: { userId: string; jobId: string; clockInTime: Date; clockOutTime: Date; durationMinutes: number; status: "complete" }[] = [];
+  type VariationGenStatus = "approved" | "rejected" | "pending" | "queried";
+  type MaterialGenStatus = "pending" | "received" | "reconciled";
+  type CommGenType = "client_call" | "internal_note" | "field_instruction";
+  const genVariations: { jobId: string; technicianId: string; description: string; costEstimate: number; status: VariationGenStatus; directorDecision: VariationGenStatus | null; decisionReason: string | null; submittedAt: Date; decidedAt: Date | null }[] = [];
+  const genInvoices: { jobId: string; invoiceNumber: string; status: "draft" | "sent" | "paid"; baseAmount: number; variationsTotal: number; totalAmount: number; notes: null; sentAt: Date | null; sentToEmail: string | null; paidAt: Date | null }[] = [];
+  const genMaterials: { jobId: string; createdById: string; description: string; supplierName: string | null; quantity: number; estimatedCost: number; actualCost: number | null; status: MaterialGenStatus; createdAt: Date; reconciledAt: Date | null }[] = [];
+  const genCommunications: { jobId: string; authorId: string; type: CommGenType; body: string; createdAt: Date }[] = [];
+
+  const VARIATION_ISSUES = [
+    "Replace corroded bolts on access platform", "Reseal leaking basin joint", "Replace worn pump coupling",
+    "Clean and re-balance fan blades", "Replace degraded sump strainer", "Repair damaged handrail section",
+    "Replace faulty level sensor", "Touch up corrosion protection coating",
+  ];
+  const MATERIAL_DESCRIPTIONS = [
+    "Replacement gasket set", "Corrosion-resistant fasteners", "Sump strainer", "Level sensor assembly",
+    "Touch-up coating kit", "Pump coupling", "Handrail bracket set", "Chemical dosing supplies",
+  ];
+  const SUPPLIERS = ["CoolTower Parts Co", "ChemTreat Australia", null];
+  const COMM_BODIES: Record<string, string[]> = {
+    client_call: ["Confirmed site access arrangements for the visit.", "Discussed invoice payment timing with site contact.", "Customer requested a follow-up quote for additional works."],
+    internal_note: ["Site running low on visitor PPE — bring spares next visit.", "Customer mentioned budget constraints this quarter.", "Recommend flagging this site for the next contract renewal cycle."],
+    field_instruction: ["Do not isolate plant without a signed permit.", "Use alternate access route while repairs are pending.", "Confirm parts delivery before starting the replacement."],
+  };
+  let invoiceCounter = 5;
+
+  let paidCount = 0, sentCount = 0, draftCount = 0;
+  for (const j of generatedJobs) {
+    const daysAgo = (TODAY.getTime() - j.date.getTime()) / DAY_MS;
+    const multiDay = j.quotedHours > 20;
+    const assignedDate = j.date;
+    const endDate = multiDay ? new Date(j.date.getTime() + DAY_MS) : null;
+    genAssignments.push({ userId: j.techId, jobId: j.id, assignedDate, endDate });
+
+    if (j.status === "complete" || j.status === "active") {
+      const clockInTime = new Date(j.date.getTime() + 7 * 60 * 60 * 1000);
+      const durationMinutes = Math.round(Math.min(j.quotedHours, multiDay ? j.quotedHours / 2 : j.quotedHours) * 60 * (0.85 + rand() * 0.3));
+      const clockOutTime = new Date(clockInTime.getTime() + durationMinutes * 60 * 1000);
+      genTimeEntries.push({ userId: j.techId, jobId: j.id, clockInTime, clockOutTime, durationMinutes, status: "complete" });
+    }
+
+    let approvedVariationCost = 0;
+    if (chance(0.35)) {
+      const canBeUnresolved = daysAgo < 14;
+      const r = rand();
+      const status: VariationGenStatus = canBeUnresolved && r < 0.15 ? "pending" : canBeUnresolved && r < 0.23 ? "queried" : r < 0.85 ? "approved" : "rejected";
+      const costEstimate = 200 + Math.floor(rand() * 1800);
+      const submittedAt = new Date(j.date.getTime() + 6 * 60 * 60 * 1000);
+      const decided = status === "approved" || status === "rejected";
+      if (status === "approved") approvedVariationCost = costEstimate;
+      genVariations.push({
+        jobId: j.id, technicianId: j.techId, description: pick(VARIATION_ISSUES), costEstimate,
+        status, directorDecision: decided ? status : status === "queried" ? "queried" : null,
+        decisionReason: decided ? (status === "approved" ? "Approved." : "Deferred — not urgent this visit.") : status === "queried" ? "Need more detail before approving." : null,
+        submittedAt, decidedAt: decided || status === "queried" ? new Date(submittedAt.getTime() + DAY_MS) : null,
+      });
+    }
+
+    if (j.status === "complete" && chance(0.85)) {
+      const baseAmount = Math.round(j.quotedHours * 145 * (0.9 + rand() * 0.2));
+      const totalAmount = baseAmount + approvedVariationCost;
+      const status: "draft" | "sent" | "paid" = daysAgo > 21 ? (chance(0.85) ? "paid" : "sent") : daysAgo > 7 ? (chance(0.7) ? "sent" : "paid") : (chance(0.6) ? "draft" : "sent");
+      if (status === "paid") paidCount++; else if (status === "sent") sentCount++; else draftCount++;
+      const sentAt = status === "draft" ? null : new Date(j.date.getTime() + 5 * DAY_MS);
+      genInvoices.push({
+        jobId: j.id, invoiceNumber: `INV-2026-${String(invoiceCounter++).padStart(4, "0")}`,
+        status, baseAmount, variationsTotal: approvedVariationCost, totalAmount, notes: null,
+        sentAt, sentToEmail: sentAt ? "accounts@example.com.au" : null,
+        paidAt: status === "paid" ? new Date(j.date.getTime() + 12 * DAY_MS) : null,
+      });
+    }
+
+    if (chance(0.25)) {
+      const estimatedCost = 80 + Math.floor(rand() * 1120);
+      const materialStatus: MaterialGenStatus = daysAgo > 14 ? "reconciled" : daysAgo > 5 ? (chance(0.5) ? "reconciled" : "received") : "pending";
+      genMaterials.push({
+        jobId: j.id, createdById: j.techId, description: pick(MATERIAL_DESCRIPTIONS), supplierName: pick(SUPPLIERS),
+        quantity: 1 + Math.floor(rand() * 3), estimatedCost,
+        actualCost: materialStatus === "pending" ? null : Math.round(estimatedCost * (0.95 + rand() * 0.15)),
+        status: materialStatus, createdAt: new Date(j.date.getTime() + 8 * 60 * 60 * 1000),
+        reconciledAt: materialStatus === "reconciled" ? new Date(j.date.getTime() + 3 * DAY_MS) : null,
+      });
+    }
+
+    if (chance(0.2)) {
+      const type = pick(["client_call", "internal_note", "field_instruction"] satisfies readonly CommGenType[]);
+      genCommunications.push({
+        jobId: j.id, authorId: tomId, type, body: pick(COMM_BODIES[type]),
+        createdAt: new Date(j.date.getTime() - 6 * 60 * 60 * 1000),
+      });
+    }
+  }
+
+  await db.assignment.createMany({ data: genAssignments });
+  await db.timeEntry.createMany({ data: genTimeEntries });
+  await db.variation.createMany({ data: genVariations });
+  await db.invoice.createMany({ data: genInvoices });
+  await db.materialEntry.createMany({ data: genMaterials });
+  await db.jobCommunication.createMany({ data: genCommunications });
+
+  console.log(`  ✓ ${genAssignments.length} assignments, ${genTimeEntries.length} time entries, ${genVariations.length} variations (bulk)`);
+  console.log(`  ✓ ${genInvoices.length} invoices (bulk — ${paidCount} paid, ${sentCount} sent, ${draftCount} draft)`);
+  console.log(`  ✓ ${genMaterials.length} material entries, ${genCommunications.length} job communications (bulk)`);
+
+  // Quotes aren't tied to a specific job, so generate them independently —
+  // same customer pool, same volume logic. Stale ones already cleared by
+  // the top-of-script cleanup (see HERO_QUOTE_IDS, module level).
+  const GENERATED_QUOTE_COUNT = 20;
+  const genQuotes = Array.from({ length: GENERATED_QUOTE_COUNT }, () => {
+    const cust = pick(customerPool);
+    const hours = 6 + Math.floor(rand() * 24);
+    const rate = 145;
+    const travel = 150 + Math.floor(rand() * 300);
+    const totalAmount = hours * rate + travel;
+    const status = pick(["draft", "sent", "accepted", "declined"] satisfies readonly ("draft" | "sent" | "accepted" | "declined")[]);
+    const dayOffset = Math.floor(rand() * 90) - 60;
+    return {
+      id: randomUUID(), createdById: tomId, customerId: cust.id,
+      customerName: cust.name, siteName: `${cust.name} — ${pick(SITE_DESCRIPTORS)}`, jobType: pick(JOB_TYPES_POOL),
+      lineItems: [
+        { description: `Labour — ${hours} hrs`, qty: hours, unitPrice: rate },
+        { description: "Travel", qty: 1, unitPrice: travel },
+      ],
+      totalAmount, status,
+      validUntil: status === "draft" ? null : new Date(TODAY.getTime() + (30 + dayOffset) * DAY_MS),
+    };
+  });
+  await db.quote.createMany({ data: genQuotes });
+  console.log(`  ✓ ${genQuotes.length} additional quotes (bulk)`);
 
   // ─── Summary ──────────────────────────────────────────────────────────────
   console.log("\n✅ Seed complete!\n");
