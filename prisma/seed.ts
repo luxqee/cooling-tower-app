@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
+import { del } from "@vercel/blob";
+import { indexDocument } from "../src/lib/ai/semanticSearch";
 
 const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL! });
 const db = new PrismaClient({ adapter });
@@ -19,6 +21,11 @@ export const SEED_JOB_IDS = [
   "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6", // seed-job-glencore
   "ef78d400-db40-4b4c-96fb-819ed060aa34", // seed-job-incitec
   "cb4aef5a-a7e8-4411-bd89-a9b9e086bfce", // seed-job-qal
+  "518fcc62-0409-4f47-960b-844b0732dcef", // seed-job-riotinto2 (earlier completed job — repeat-customer history)
+  "b2024ae1-ec76-4dde-8a7c-952726c63970", // seed-job-bhp-cancelled
+  "25173781-06ee-45b6-af24-416a08b28108", // seed-job-glencore2 (previous quarterly visit, before the current active one)
+  "c0390a2a-ff0a-4ea5-a814-b76d72dc46c0", // seed-job-stanwell2 (second, currently active, engagement)
+  "56906a71-bfe9-47a6-95e0-918d524fb102", // seed-job-capricorn (new customer's first job)
 ];
 
 const SEED_USER_IDS = [
@@ -38,6 +45,7 @@ export const SEED_CUSTOMER_IDS = [
   "b22b7ca9-2025-444d-a5bf-59308220f8eb", // seed-customer-glencore
   "b2ddddcb-35a0-46a1-b0ef-f221d2571438", // seed-customer-incitec
   "ba6843fe-3e1b-482d-b4c9-c6a1a21a8c6b", // seed-customer-qal
+  "e57c9861-0db7-4093-b449-267915c90ec3", // seed-customer-capricorn
 ];
 
 async function main() {
@@ -45,6 +53,19 @@ async function main() {
 
   // Remove all data for jobs that are not part of the seed (test/dev leftovers).
   // Must delete child records first because there are no cascade deletes in the schema.
+  //
+  // ComplianceDocument PDFs are uploaded to Vercel Blob storage (see
+  // api/compliance/documents/route.ts) — their blob files must be deleted
+  // alongside the DB row, or every reseed leaves another orphaned PDF behind
+  // (exactly the "old PDF of an old safety document" problem this was added
+  // to fix).
+  const staleDocsWithPdfs = await db.complianceDocument.findMany({
+    where: { jobId: { notIn: SEED_JOB_IDS }, pdfUrl: { not: null } },
+    select: { pdfUrl: true },
+  });
+  for (const doc of staleDocsWithPdfs) {
+    if (doc.pdfUrl) await del(doc.pdfUrl).catch(() => {});
+  }
   await db.complianceDocument.deleteMany({ where: { jobId: { notIn: SEED_JOB_IDS } } });
   await db.timeEntry.deleteMany({ where: { jobId: { notIn: SEED_JOB_IDS } } });
   await db.variation.deleteMany({ where: { jobId: { notIn: SEED_JOB_IDS } } });
@@ -163,12 +184,22 @@ async function main() {
       address: "1 Parsons Rd, Gladstone QLD 4680",
       notes: null,
     },
+    {
+      id: "e57c9861-0db7-4093-b449-267915c90ec3",
+      name: "Capricorn Minerals Ltd",
+      abn: "84 617 235 990",
+      contactPerson: "Naomi Falk",
+      email: "facilities@capricornminerals.com.au",
+      phone: "(07) 4972 5560",
+      address: "88 Boyne Rd, Gladstone QLD 4680",
+      notes: "New customer — first job quoted via referral from QAL.",
+    },
   ];
 
   for (const c of customers) {
     await db.customer.upsert({ where: { id: c.id }, update: c, create: c });
   }
-  console.log("  ✓ Customers (6, matching the seed jobs' companies)");
+  console.log("  ✓ Customers (7, matching the seed jobs' companies)");
 
   // ─── Demo users ───────────────────────────────────────────────────────────
   // Two loginable aliases — sign in with email/password (not Google OAuth):
@@ -305,12 +336,70 @@ async function main() {
       quotedHours: 24,
       quotedCost: 5200,
     },
+    // ── Additional jobs: repeat-customer history, a cancellation, a second
+    // active job, and a brand-new customer's first job — so the app reads
+    // like it's had several weeks of real activity, not a single snapshot.
+    {
+      id: "518fcc62-0409-4f47-960b-844b0732dcef",
+      customerName: "Rio Tinto",
+      customerId: "6f1e32aa-f961-468e-96fd-9336dc2c34d5",
+      siteName: "Weipa Processing Plant",
+      siteAddress: "1 Bauxite Rd, Weipa QLD 4874",
+      status: "complete" as const,
+      jobType: "Quarterly Inspection",
+      quotedHours: 14,
+      quotedCost: 2950,
+    },
+    {
+      id: "b2024ae1-ec76-4dde-8a7c-952726c63970",
+      customerName: "BHP",
+      customerId: "69c31a1c-e330-44a3-9af6-a1cc2bef7abf",
+      siteName: "Hay Point Coal Terminal",
+      siteAddress: "Port Road, Hay Point QLD 4740",
+      status: "cancelled" as const,
+      jobType: "Emergency Repair",
+      quotedHours: 6,
+      quotedCost: 1100,
+    },
+    {
+      id: "25173781-06ee-45b6-af24-416a08b28108",
+      customerName: "Glencore",
+      customerId: "b22b7ca9-2025-444d-a5bf-59308220f8eb",
+      siteName: "Mt Isa Copper Operations",
+      siteAddress: "22 Marian St, Mount Isa QLD 4825",
+      status: "complete" as const,
+      jobType: "Annual Service",
+      quotedHours: 38,
+      quotedCost: 8200,
+    },
+    {
+      id: "c0390a2a-ff0a-4ea5-a814-b76d72dc46c0",
+      customerName: "Stanwell Corporation",
+      customerId: "98cf136c-bd96-4933-ae98-fad4f9ce31c9",
+      siteName: "Stanwell Power Station",
+      siteAddress: "Stanwell Rd, Stanwell QLD 4702",
+      status: "active" as const,
+      jobType: "Annual Service",
+      quotedHours: 28,
+      quotedCost: 6100,
+    },
+    {
+      id: "56906a71-bfe9-47a6-95e0-918d524fb102",
+      customerName: "Capricorn Minerals Ltd",
+      customerId: "e57c9861-0db7-4093-b449-267915c90ec3",
+      siteName: "Boyne Island Site",
+      siteAddress: "88 Boyne Rd, Gladstone QLD 4680",
+      status: "scheduled" as const,
+      jobType: "Initial Site Assessment",
+      quotedHours: 10,
+      quotedCost: 2100,
+    },
   ];
 
   for (const j of jobs) {
     await db.job.upsert({ where: { id: j.id }, update: j, create: j });
   }
-  console.log("  ✓ Jobs (6 jobs: 3 complete, 1 active, 2 scheduled)");
+  console.log("  ✓ Jobs (11 jobs: 5 complete, 2 active, 3 scheduled, 1 cancelled)");
 
   // Resolve the actual user IDs to use in assignments / time entries / variations.
   // After a real login the record may live under a different ID (the real Clerk user's id).
@@ -348,9 +437,19 @@ async function main() {
       // QAL — upcoming Mon 14 Jul
       { userId: jakeId, jobId: "cb4aef5a-a7e8-4411-bd89-a9b9e086bfce", assignedDate: d("2026-07-14T00:00:00Z"), endDate: d("2026-07-15T00:00:00Z") },
       { userId: mikeId, jobId: "cb4aef5a-a7e8-4411-bd89-a9b9e086bfce", assignedDate: d("2026-07-14T00:00:00Z"), endDate: d("2026-07-15T00:00:00Z") },
+      // Rio Tinto — earlier quarterly inspection, 1 day, Sarah
+      { userId: sarahId, jobId: "518fcc62-0409-4f47-960b-844b0732dcef", assignedDate: d("2026-05-20T00:00:00Z") },
+      // Glencore — contract-commencement service, 2 days, Jake + Mike
+      { userId: jakeId, jobId: "25173781-06ee-45b6-af24-416a08b28108", assignedDate: d("2026-05-05T00:00:00Z"), endDate: d("2026-05-06T00:00:00Z") },
+      { userId: mikeId, jobId: "25173781-06ee-45b6-af24-416a08b28108", assignedDate: d("2026-05-05T00:00:00Z"), endDate: d("2026-05-06T00:00:00Z") },
+      // Stanwell — second engagement, ongoing since 16 Jul, Mike + Sarah
+      { userId: mikeId,  jobId: "c0390a2a-ff0a-4ea5-a814-b76d72dc46c0", assignedDate: d("2026-07-16T00:00:00Z"), endDate: d("2026-07-19T00:00:00Z") },
+      { userId: sarahId, jobId: "c0390a2a-ff0a-4ea5-a814-b76d72dc46c0", assignedDate: d("2026-07-16T00:00:00Z"), endDate: d("2026-07-19T00:00:00Z") },
+      // Capricorn Minerals — first job, upcoming 28 Jul, Jake
+      { userId: jakeId, jobId: "56906a71-bfe9-47a6-95e0-918d524fb102", assignedDate: d("2026-07-28T00:00:00Z") },
     ],
   });
-  console.log("  ✓ Assignments (12 across all jobs)");
+  console.log("  ✓ Assignments (19 across all jobs)");
 
   // ─── Time entries ─────────────────────────────────────────────────────────
   await db.timeEntry.deleteMany({ where: { jobId: { in: SEED_JOB_IDS } } });
@@ -375,9 +474,19 @@ async function main() {
       // Glencore day 2 — Sarah done (8.5h), Jake still clocked in (active)
       { userId: sarahId, jobId: "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6", clockInTime: d("2026-07-08T07:00:00Z"), clockOutTime: d("2026-07-08T15:30:00Z"), durationMinutes: 510, status: "complete" },
       { userId: jakeId,  jobId: "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6", clockInTime: d("2026-07-07T21:00:00Z"), clockOutTime: null, durationMinutes: null, status: "active" },
+      // Rio Tinto earlier inspection — Sarah 7.5h
+      { userId: sarahId, jobId: "518fcc62-0409-4f47-960b-844b0732dcef", clockInTime: d("2026-05-20T07:00:00Z"), clockOutTime: d("2026-05-20T14:30:00Z"), durationMinutes: 450, status: "complete" },
+      // Glencore contract-commencement service — Jake 9.5h + 9h, Mike 9h + 8.5h
+      { userId: jakeId, jobId: "25173781-06ee-45b6-af24-416a08b28108", clockInTime: d("2026-05-05T07:00:00Z"), clockOutTime: d("2026-05-05T16:30:00Z"), durationMinutes: 570, status: "complete" },
+      { userId: mikeId, jobId: "25173781-06ee-45b6-af24-416a08b28108", clockInTime: d("2026-05-05T07:00:00Z"), clockOutTime: d("2026-05-05T16:00:00Z"), durationMinutes: 540, status: "complete" },
+      { userId: jakeId, jobId: "25173781-06ee-45b6-af24-416a08b28108", clockInTime: d("2026-05-06T07:00:00Z"), clockOutTime: d("2026-05-06T16:00:00Z"), durationMinutes: 540, status: "complete" },
+      { userId: mikeId, jobId: "25173781-06ee-45b6-af24-416a08b28108", clockInTime: d("2026-05-06T07:00:00Z"), clockOutTime: d("2026-05-06T15:30:00Z"), durationMinutes: 510, status: "complete" },
+      // Stanwell second engagement — Sarah day 1 complete (8h), Mike still clocked in (active)
+      { userId: sarahId, jobId: "c0390a2a-ff0a-4ea5-a814-b76d72dc46c0", clockInTime: d("2026-07-16T07:00:00Z"), clockOutTime: d("2026-07-16T15:00:00Z"), durationMinutes: 480, status: "complete" },
+      { userId: mikeId,  jobId: "c0390a2a-ff0a-4ea5-a814-b76d72dc46c0", clockInTime: d("2026-07-18T06:45:00Z"), clockOutTime: null, durationMinutes: null, status: "active" },
     ],
   });
-  console.log("  ✓ Time entries (12 — Jake active on Glencore)");
+  console.log("  ✓ Time entries (20 — Jake active on Glencore, Mike active on Stanwell)");
 
   // ─── Variations ───────────────────────────────────────────────────────────
   await db.variation.deleteMany({ where: { jobId: { in: SEED_JOB_IDS } } });
@@ -437,9 +546,33 @@ async function main() {
         decisionReason: "Please provide a photo of the damage before I approve — need to confirm it's the valve and not the inlet pipe.",
         submittedAt: d("2026-07-07T16:00:00Z"), decidedAt: d("2026-07-08T08:00:00Z"),
       },
+      // Rio Tinto earlier inspection — 1 approved ($260)
+      {
+        jobId: "518fcc62-0409-4f47-960b-844b0732dcef", technicianId: sarahId,
+        description: "Re-torque loose access panel bolts — vibration noted during operation, panel was working loose",
+        costEstimate: 260, status: "approved", directorDecision: "approved",
+        decisionReason: "Approved — quick fix while on site.",
+        submittedAt: d("2026-05-20T12:00:00Z"), decidedAt: d("2026-05-20T13:00:00Z"),
+      },
+      // Glencore contract-commencement service — 1 approved ($1,650)
+      {
+        jobId: "25173781-06ee-45b6-af24-416a08b28108", technicianId: mikeId,
+        description: "Replace corroded drift eliminators — original units past service life, causing excess water carryover",
+        costEstimate: 1650, status: "approved", directorDecision: "approved",
+        decisionReason: "Approved — good to address at contract start.",
+        submittedAt: d("2026-05-05T13:30:00Z"), decidedAt: d("2026-05-06T08:00:00Z"),
+      },
+      // Stanwell second engagement — 1 pending
+      {
+        jobId: "c0390a2a-ff0a-4ea5-a814-b76d72dc46c0", technicianId: mikeId,
+        description: "Replace corroded access ladder rungs — 2 rungs show significant corrosion, fall risk",
+        costEstimate: 540, status: "pending", directorDecision: null,
+        decisionReason: null,
+        submittedAt: d("2026-07-18T07:30:00Z"), decidedAt: null,
+      },
     ],
   });
-  console.log("  ✓ Variations (7: 4 approved, 1 rejected, 1 pending, 1 queried)");
+  console.log("  ✓ Variations (10: 6 approved, 1 rejected, 2 pending, 1 queried)");
 
   // ─── Invoices ─────────────────────────────────────────────────────────────
   // Rio Tinto: 46h actual × $145 = $6,670 — director rounded to $6,700
@@ -488,9 +621,33 @@ async function main() {
         sentToEmail: null,
         paidAt: null,
       },
+      {
+        jobId: "518fcc62-0409-4f47-960b-844b0732dcef",
+        invoiceNumber: "INV-2026-0003",
+        status: "paid",
+        baseAmount: 1100,
+        variationsTotal: 260,
+        totalAmount: 1360,
+        notes: null,
+        sentAt: d("2026-05-25T02:00:00Z"),
+        sentToEmail: "procurement@riotinto.com",
+        paidAt: d("2026-06-03T04:00:00Z"),
+      },
+      {
+        jobId: "25173781-06ee-45b6-af24-416a08b28108",
+        invoiceNumber: "INV-2026-0004",
+        status: "sent",
+        baseAmount: 5300,
+        variationsTotal: 1650,
+        totalAmount: 6950,
+        notes: "First invoice under the new quarterly contract.",
+        sentAt: d("2026-05-10T02:00:00Z"),
+        sentToEmail: "sitemaintenance@glencore.com.au",
+        paidAt: null,
+      },
     ],
   });
-  console.log("  ✓ Invoices (INV-2026-0001 paid, INV-2026-0002 sent, Stanwell draft)");
+  console.log("  ✓ Invoices (5 — 2 paid, 2 sent, 1 draft)");
 
   // ─── Compliance templates ─────────────────────────────────────────────────
   // SWMS and WHS Management Plan get a minimal custom section — their real,
@@ -623,11 +780,73 @@ async function main() {
         },
         submittedAt: d("2026-06-22T07:15:00Z"),
       },
+      {
+        jobId: "25173781-06ee-45b6-af24-416a08b28108", templateId: "seed-tmpl-whsmp", createdById: tomId,
+        values: {
+          statutory_client_name: "Glencore",
+          statutory_whsmp_pc_name: "CT Field Ops Pty Ltd",
+          statutory_major_subcontractors: "None — all works performed by CT Field Ops directly.",
+          statutory_project_location: "Mt Isa Copper Operations, Processing Building West Wing",
+          statutory_start_date: "2026-05-05",
+          statutory_duration: "Ongoing — quarterly service contract",
+          statutory_scope_of_works: "Quarterly cooling tower servicing, inspection, and minor component replacement under a 12-month maintenance contract.",
+          statutory_responsible_persons_table: [
+            { name: "Tom Wilson", position: "Service Manager", responsibility: "Overall WHS compliance for the contract" },
+            { name: "Jake Morrison", position: "Lead Technician", responsibility: "Day-to-day site safety, toolbox talks" },
+          ],
+          statutory_consultation_arrangements: "Pre-start toolbox talk each site visit; site WHS issues raised directly with Glencore's site maintenance coordinator.",
+          statutory_incident_management: "Any incident reported to Glencore site control room immediately and to CT Field Ops service manager within 1 hour, logged in the incident register.",
+          statutory_site_rules: "Full PPE mandatory site-wide; sign in/out at site security; no isolation of plant without a permit signed by the Glencore shift supervisor.",
+          statutory_pc_signature: "",
+          statutory_pc_signature_date: "2026-05-05",
+          statutory_review_provisions: "Reviewed at the start of each quarterly visit and after any incident or change in scope.",
+          whsmp_additional_notes: "First visit under the new contract — see also the site induction completed by Glencore's HSE team on arrival.",
+        },
+        submittedAt: d("2026-05-05T06:30:00Z"),
+      },
+      {
+        jobId: "c0390a2a-ff0a-4ea5-a814-b76d72dc46c0", templateId: "seed-tmpl-induction", createdById: mikeId,
+        values: {
+          induction_site: "Stanwell Power Station — Cooling Tower Bank 1",
+          induction_date: "2026-07-16",
+          induction_conducted_by: "Stanwell Site HSE Officer",
+          induction_topics_checklist: ["Site-specific hazards", "Emergency procedures & muster point", "Emergency contact numbers", "PPE requirements", "Permit-to-work requirements"],
+          induction_attendee_signatures: [
+            { name: "Mike Davis", signature: "" },
+            { name: "Sarah Chen", signature: "" },
+          ],
+          induction_date_acknowledged: "2026-07-16",
+        },
+        submittedAt: d("2026-07-16T06:15:00Z"),
+      },
+      {
+        jobId: "518fcc62-0409-4f47-960b-844b0732dcef", templateId: "seed-tmpl-jsa", createdById: sarahId,
+        values: {
+          jsa_task_description: "Quarterly inspection and access panel re-torque on cooling tower structure.",
+          jsa_location: "Weipa Processing Plant — Fan Deck",
+          jsa_date: "2026-05-20",
+          jsa_prepared_by: "Sarah Chen",
+          jsa_risk_table: [
+            { step: "Access fan deck via ladder", hazard: "Fall from height", risk_rating: "Medium", control: "3-point contact maintained, fall-arrest harness anchored" },
+            { step: "Re-torque access panel bolts", hazard: "Pinch points, dropped tools", risk_rating: "Low", control: "Tool lanyards used, gloves worn" },
+          ],
+          jsa_ppe_checklist: ["Hard hat", "Safety glasses", "Gloves", "Fall-arrest harness"],
+          jsa_worker_signatures: [{ name: "Sarah Chen", signature: "" }],
+          jsa_supervisor_signature: "",
+        },
+        submittedAt: d("2026-05-20T06:30:00Z"),
+      },
     ],
   });
-  console.log("  ✓ Compliance documents (2 submitted — JSA for Rio Tinto, SWMS for BHP)");
+  console.log("  ✓ Compliance documents (5 submitted — JSA×2, SWMS, WHS Management Plan, Induction — all 4 types represented)");
 
   // ─── Job communications (Phase 3 batch a) ─────────────────────────────────
+  // DocumentChunk rows for these communications must be cleared first —
+  // jobCommunication.deleteMany + createMany assigns fresh random ids each
+  // run, so any previously-indexed chunk would otherwise become permanently
+  // orphaned (pointing at a sourceId that no longer exists), polluting
+  // semantic search with stale, unreachable results.
+  await db.documentChunk.deleteMany({ where: { jobId: { in: SEED_JOB_IDS }, sourceType: "JobCommunication" } });
   await db.jobCommunication.deleteMany({ where: { jobId: { in: SEED_JOB_IDS } } });
 
   await db.jobCommunication.createMany({
@@ -657,9 +876,89 @@ async function main() {
         body: "Craig Ferris confirmed invoice INV-2026-0002 is in this week's payment run.",
         createdAt: d("2026-06-26T03:00:00Z"),
       },
+      {
+        jobId: "b2024ae1-ec76-4dde-8a7c-952726c63970", authorId: tomId, type: "client_call",
+        body: "Craig Ferris called to cancel — BHP's own maintenance crew resolved the issue internally before we could attend. No callout fee charged.",
+        createdAt: d("2026-06-15T04:00:00Z"),
+      },
+      {
+        jobId: "25173781-06ee-45b6-af24-416a08b28108", authorId: tomId, type: "internal_note",
+        body: "First visit under the new quarterly contract went smoothly. Naomi at Glencore mentioned they may want to add a second tower to the contract scope — follow up next quarter.",
+        createdAt: d("2026-05-06T05:00:00Z"),
+      },
+      {
+        jobId: "c0390a2a-ff0a-4ea5-a814-b76d72dc46c0", authorId: tomId, type: "field_instruction",
+        body: "Ladder rung variation is pending approval — do not use the affected ladder section until it's signed off, use the alternate access stair instead.",
+        createdAt: d("2026-07-18T07:45:00Z"),
+      },
+      {
+        jobId: "56906a71-bfe9-47a6-95e0-918d524fb102", authorId: tomId, type: "client_call",
+        body: "Naomi Falk confirmed site access for the 28th — Jake to bring his own PPE, Capricorn doesn't stock visitor gear yet.",
+        createdAt: d("2026-07-17T05:30:00Z"),
+      },
     ],
   });
-  console.log("  ✓ Job communications (5 across 3 jobs — client calls, internal notes, a field instruction)");
+  console.log("  ✓ Job communications (9 across 6 jobs — client calls, internal notes, field instructions)");
+
+  // ─── Voice notes ────────────────────────────────────────────────────────────
+  // Reuses real audio recordings already sitting in Blob storage from earlier
+  // manual testing (never referenced by a DB row until now) rather than
+  // uploading new placeholder files — so playback in the UI actually works.
+  // Same orphaned-embedding risk as job communications above: clear any
+  // DocumentChunk pointing at a voice note this cleanup is about to remove.
+  await db.documentChunk.deleteMany({ where: { jobId: { in: SEED_JOB_IDS }, sourceType: "VoiceNote" } });
+  await db.voiceNotePhoto.deleteMany({ where: { voiceNote: { jobId: { in: SEED_JOB_IDS } } } });
+  await db.voiceNote.deleteMany({ where: { jobId: { in: SEED_JOB_IDS } } });
+
+  const voiceNotes = [
+    {
+      id: "seed-vn-riotinto2", jobId: "518fcc62-0409-4f47-960b-844b0732dcef", technicianId: sarahId,
+      audioUrl: "https://fcklf2vxlrwgthln.private.blob.vercel-storage.com/voice-notes/f5b67a7d-5c61-4404-8ce9-c52ac3af77fa/1783558714816.webm",
+      durationSeconds: 35,
+      transcript: "Quick note on the Rio Tinto inspection — found the access panel bolts on the north tower were working loose, probably from vibration. Re-torqued them and logged a variation. Otherwise fan assembly and fill media look good for this quarter, no other concerns.",
+      summary: "Access panel bolts re-torqued on north tower after vibration loosening — variation logged. Fan and fill media otherwise in good condition.",
+      actionItems: ["Monitor access panel bolts next visit for re-loosening"],
+      status: "transcribed" as const,
+    },
+    {
+      id: "seed-vn-glencore2", jobId: "25173781-06ee-45b6-af24-416a08b28108", technicianId: jakeId,
+      audioUrl: "https://fcklf2vxlrwgthln.private.blob.vercel-storage.com/voice-notes/f5b67a7d-5c61-4404-8ce9-c52ac3af77fa/1783562159680.webm",
+      durationSeconds: 78,
+      transcript: "First visit under the new Glencore contract, west wing tower. Drift eliminators are badly corroded, well past service life — logged a variation for a full replacement set, Mike's got the quote ready. Water distribution looks even across the deck, no blockages. Basin's clean, no debris buildup. Overall the tower's been under-maintained for a while but nothing else urgent today. Naomi from Glencore mentioned they might want to bring a second tower onto the contract next quarter, worth following up.",
+      summary: "Drift eliminators corroded and replaced under variation. Basin and water distribution in good condition. Customer may expand contract to a second tower — follow up next quarter.",
+      actionItems: ["Follow up with Glencore about adding a second tower to the contract"],
+      status: "transcribed" as const,
+    },
+    {
+      id: "seed-vn-glencore-active", jobId: "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6", technicianId: jakeId,
+      audioUrl: "https://fcklf2vxlrwgthln.private.blob.vercel-storage.com/voice-notes/f5b67a7d-5c61-4404-8ce9-c52ac3af77fa/1783601705862.webm",
+      durationSeconds: 420,
+      transcript: "Day two on the Glencore annual service. Tower 3 fan belt is definitely on its way out, cracking and glazing right across it — put a variation in yesterday, waiting on approval before we touch it, so we've capped that tower at 60% load for now per Tom's instruction. Tower 1 float valve is leaking too, Tom's asked for a photo before he signs off the variation, I'll grab that this afternoon. Everything else on the mechanical side is tracking fine, motors are running within spec, no unusual noise or vibration on towers 1 and 2. Sarah's finishing up the water treatment log now. We should be done and clocked off by tomorrow arvo if the parts for tower 3 show up on time.",
+      summary: "Tower 3 fan belt replacement pending variation approval, load capped at 60% in the meantime. Tower 1 float valve leak — photo required before variation approval. Towers 1 and 2 mechanically sound. On track to finish tomorrow afternoon.",
+      actionItems: ["Photograph Tower 1 float valve leak for variation approval", "Confirm Tower 3 fan belt delivery"],
+      status: "transcribed" as const,
+    },
+    {
+      id: "seed-vn-stanwell2", jobId: "c0390a2a-ff0a-4ea5-a814-b76d72dc46c0", technicianId: mikeId,
+      audioUrl: "https://fcklf2vxlrwgthln.private.blob.vercel-storage.com/voice-notes/f5b67a7d-5c61-4404-8ce9-c52ac3af77fa/1783601776952.webm",
+      durationSeconds: 200,
+      transcript: "Stanwell annual service, second day. Found two rungs on the north access ladder with significant corrosion, flagged it as a fall risk and put a variation in this morning — using the alternate stair in the meantime, told the site HSE officer so it's on their radar too. Rest of the tower's in decent shape for its age. Sarah's about to start on the water treatment checks, I'll keep going on the mechanical inspection.",
+      summary: "Corroded access ladder rungs identified as a fall risk — variation submitted, alternate access in use, site HSE notified. Tower otherwise in reasonable condition.",
+      actionItems: ["Await variation approval for ladder rung replacement"],
+      status: "transcribed" as const,
+    },
+  ];
+
+  for (const vn of voiceNotes) {
+    await db.voiceNote.upsert({ where: { id: vn.id }, update: vn, create: vn });
+  }
+
+  // Index a couple of transcripts for semantic search — same real embedding
+  // pipeline the app uses for genuine voice notes (src/lib/ai/semanticSearch.ts),
+  // so the AI assistant's "search notes" feature has real, findable content.
+  await indexDocument("VoiceNote", "seed-vn-glencore2", "25173781-06ee-45b6-af24-416a08b28108", voiceNotes[1].transcript);
+  await indexDocument("VoiceNote", "seed-vn-glencore-active", "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6", voiceNotes[2].transcript);
+  console.log("  ✓ Voice notes (4, reusing real recordings — 2 indexed for semantic search)");
 
   // ─── Assets (Phase 3 batch b) ──────────────────────────────────────────────
   const assets = [
@@ -730,9 +1029,21 @@ async function main() {
         quantity: 1, estimatedCost: 420, actualCost: 445, status: "received",
         createdAt: d("2026-06-22T13:15:00Z"),
       },
+      {
+        jobId: "25173781-06ee-45b6-af24-416a08b28108", createdById: jakeId,
+        description: "Replacement drift eliminator set", supplierName: "CoolTower Parts Co",
+        quantity: 1, estimatedCost: 1580, actualCost: 1650, status: "reconciled",
+        createdAt: d("2026-05-05T13:45:00Z"), reconciledAt: d("2026-05-09T02:00:00Z"),
+      },
+      {
+        jobId: "c0390a2a-ff0a-4ea5-a814-b76d72dc46c0", createdById: mikeId,
+        description: "Access ladder rung set (galvanised)", supplierName: null,
+        quantity: 2, estimatedCost: 260, status: "pending",
+        createdAt: d("2026-07-18T07:35:00Z"),
+      },
     ],
   });
-  console.log("  ✓ Material entries (5 — two Glencore, one reconciled/one pending; one Rio Tinto reconciled; one BHP received)");
+  console.log("  ✓ Material entries (7 — reconciled, pending, and received across 5 jobs)");
 
   // ─── Quotes (Phase 3 batch d) ───────────────────────────────────────────────
   const quotes = [
@@ -769,11 +1080,21 @@ async function main() {
       ],
       totalAmount: 1460, status: "declined" as const, validUntil: d("2026-06-30T00:00:00Z"),
     },
+    {
+      id: "1b32b1f8-8852-4c03-9598-dd3a4830a7f8", createdById: tomId,
+      customerId: "e57c9861-0db7-4093-b449-267915c90ec3",
+      customerName: "Capricorn Minerals Ltd", siteName: "Boyne Island Site", jobType: "Initial Site Assessment",
+      lineItems: [
+        { description: "Site assessment — 10 hrs", qty: 10, unitPrice: 145 },
+        { description: "Travel", qty: 1, unitPrice: 210 },
+      ],
+      totalAmount: 1660, status: "accepted" as const, validUntil: d("2026-08-15T00:00:00Z"),
+    },
   ];
   for (const q of quotes) {
     await db.quote.upsert({ where: { id: q.id }, update: q, create: q });
   }
-  console.log("  ✓ Quotes (4 — draft, sent, accepted, declined)");
+  console.log("  ✓ Quotes (5 — draft, sent, accepted×2, declined)");
 
   // ─── Maintenance contracts (Phase 3 batch e) ───────────────────────────────
   const contracts = [
@@ -821,19 +1142,32 @@ async function main() {
   console.log("   lukeherod7+technician@gmail.com → Jake Morrison  (technician)");
   console.log("   lukeherod7+admin@gmail.com      → Tom Wilson     (service manager)");
   console.log("   lukeherod7@gmail.com            → your account   (director/admin)");
-  console.log("\n📋 Jobs:");
-  console.log("   COMPLETE — Rio Tinto Weipa Annual Service      → INV-2026-0001 PAID  $8,900");
-  console.log("   COMPLETE — BHP Hay Point Quarterly Inspection  → INV-2026-0002 SENT  $3,363");
-  console.log("   COMPLETE — Stanwell Power Station Emergency     → Draft invoice        $480");
-  console.log("   ACTIVE   — Glencore Mt Isa Annual Service      → Jake clocked in now");
-  console.log("   SCHEDULED — Incitec Pivot Gibson Island        → Thu 10 Jul");
-  console.log("   SCHEDULED — Queensland Alumina Gladstone       → Mon 14 Jul");
-  console.log("\n🆕 Phase 3 data:");
-  console.log("   Communication log  — 5 entries across Rio Tinto, Glencore, BHP jobs");
+  console.log("\n🔐 Real OAuth logins:");
+  console.log("   Google (your gmail)  → matches the existing lukeherod7@gmail.com account above by email — no seed change needed.");
+  console.log("   GitHub                → first sign-in auto-creates a new user via the Clerk webhook, role defaults");
+  console.log("                            to technician, name is pulled from your GitHub profile. Nothing to seed —");
+  console.log("                            just sign in once, then change the role in /team if it doesn't come through as \"Luke Herod\".");
+  console.log("\n📋 Jobs (11 — 5 complete, 2 active, 3 scheduled, 1 cancelled), spanning 5 May – 28 Jul:");
+  console.log("   COMPLETE  — Rio Tinto Weipa Annual Service      (10 Jun) → INV-2026-0001 PAID  $8,900");
+  console.log("   COMPLETE  — Rio Tinto Weipa Quarterly Insp.     (20 May) → INV-2026-0003 PAID  $1,360");
+  console.log("   COMPLETE  — BHP Hay Point Quarterly Inspection  (22 Jun) → INV-2026-0002 SENT  $3,363");
+  console.log("   CANCELLED — BHP Hay Point Emergency Repair      (15 Jun) → cancelled by customer, no charge");
+  console.log("   COMPLETE  — Stanwell Power Station Emergency    (1 Jul)  → Draft invoice        $480");
+  console.log("   COMPLETE  — Glencore Mt Isa contract-start visit (5 May) → INV-2026-0004 SENT  $6,950");
+  console.log("   ACTIVE    — Glencore Mt Isa Annual Service      (7 Jul)  → Jake clocked in now");
+  console.log("   ACTIVE    — Stanwell Power Station 2nd visit    (16 Jul) → Mike clocked in now");
+  console.log("   SCHEDULED — Incitec Pivot Gibson Island         → Thu 10 Jul");
+  console.log("   SCHEDULED — Queensland Alumina Gladstone        → Mon 14 Jul");
+  console.log("   SCHEDULED — Capricorn Minerals Boyne Island     → Tue 28 Jul (new customer, first job)");
+  console.log("\n🆕 Full feature coverage:");
+  console.log("   Communication log  — 9 entries across 6 jobs");
+  console.log("   Voice notes        — 4 (reusing real recordings), 2 indexed for semantic search");
+  console.log("   Compliance docs    — 5 submitted, all 4 types represented (JSA×2, SWMS, WHS Mgmt Plan, Induction)");
   console.log("   Assets             — 4 cooling towers, linked to service history");
-  console.log("   Job costing        — 4 material entries (1 reconciled, 1 received, 2 pending)");
-  console.log("   Quotes             — 4 (draft, sent, accepted, declined) at /quotes");
+  console.log("   Job costing        — 7 material entries (reconciled/received/pending)");
+  console.log("   Quotes             — 5 (draft, sent, accepted×2, declined) at /quotes");
   console.log("   Contracts          — 3 (Rio Tinto renews ~1 week out, BHP lapsed, Glencore linked to its active job)");
+  console.log("   Customers          — 7 (added Capricorn Minerals as a new/first-job customer)");
   console.log("   Customer portal    — http://localhost:3000/portal/demo-portal-token-riotinto");
 }
 
