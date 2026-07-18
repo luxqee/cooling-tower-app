@@ -9,7 +9,7 @@ export default async function InvoicesPage() {
   const user = await requireRole(PAGE_ACCESS.invoices).catch(() => null);
   if (!user) redirect("/");
 
-  const invoices = await getAllInvoicesWithJob();
+  const invoices = await getAllInvoicesWithJob({ take: 200 });
 
   const rows = invoices.map((inv) => ({
     id: inv.id,

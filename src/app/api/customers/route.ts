@@ -22,12 +22,17 @@ export async function GET(req: Request) {
 
   const customers = await db.customer.findMany({
     where: q ? { name: { contains: q, mode: "insensitive" } } : undefined,
-    select: { id: true, name: true, email: true, phone: true, abn: true },
+    select: { id: true, name: true, email: true, phone: true, abn: true, contactPerson: true, _count: { select: { jobs: true } } },
     orderBy: { name: "asc" },
     take: 200,
   });
 
-  return NextResponse.json(customers);
+  return NextResponse.json(
+    customers.map((c) => ({
+      id: c.id, name: c.name, email: c.email, phone: c.phone, abn: c.abn,
+      contactPerson: c.contactPerson, jobCount: c._count.jobs,
+    }))
+  );
 }
 
 export async function POST(req: Request) {

@@ -56,19 +56,29 @@ describe("GET /api/customers", () => {
   it("returns customer list for admin", async () => {
     vi.mocked(requireRole).mockResolvedValue(ADMIN as any);
     vi.mocked(db.customer.findMany).mockResolvedValue([
-      { id: CUST_ID, name: "Rio Tinto", email: null, phone: null, abn: null },
+      { id: CUST_ID, name: "Rio Tinto", email: null, phone: null, abn: null, contactPerson: null, _count: { jobs: 3 } },
     ] as any);
     const res = await GET_LIST(makeReq("/api/customers"));
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data).toHaveLength(1);
     expect(data[0].name).toBe("Rio Tinto");
+    expect(data[0].jobCount).toBe(3);
+  });
+
+  it("caps the result set so it never grows unbounded", async () => {
+    vi.mocked(requireRole).mockResolvedValue(ADMIN as any);
+    vi.mocked(db.customer.findMany).mockResolvedValue([]);
+    await GET_LIST(makeReq("/api/customers"));
+    expect(vi.mocked(db.customer.findMany)).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 200 })
+    );
   });
 
   it("passes ?q filter to Prisma with contains insensitive", async () => {
     vi.mocked(requireRole).mockResolvedValue(DIRECTOR as any);
     vi.mocked(db.customer.findMany).mockResolvedValue([
-      { id: CUST_ID, name: "Rio Tinto", email: null, phone: null, abn: null },
+      { id: CUST_ID, name: "Rio Tinto", email: null, phone: null, abn: null, contactPerson: null, _count: { jobs: 0 } },
     ] as any);
     await GET_LIST(makeReq("/api/customers?q=rio"));
     expect(vi.mocked(db.customer.findMany)).toHaveBeenCalledWith(

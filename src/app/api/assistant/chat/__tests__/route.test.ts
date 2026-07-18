@@ -80,6 +80,47 @@ describe("POST /api/assistant/chat", () => {
     );
   });
 
+  it("caps chat history fetched from the DB so a long-running session's cost doesn't grow forever", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
+    vi.mocked(db.chatSession.findFirst).mockResolvedValue({ id: "sess1", userId: "u1" } as any);
+    const mockCreate = vi.fn().mockResolvedValue({
+      content: [{ type: "text", text: "Hi" }],
+      stop_reason: "end_turn",
+      usage: { input_tokens: 10, output_tokens: 5 },
+    });
+    vi.mocked(getAnthropicClient).mockReturnValue({ messages: { create: mockCreate } } as any);
+
+    await POST(makeReq({ message: "hi", sessionId: "sess1" }));
+
+    expect(db.chatMessage.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { createdAt: "desc" }, take: 20 })
+    );
+  });
+
+  it("sends capped chat history to Claude in chronological order, oldest first", async () => {
+    vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
+    vi.mocked(db.chatSession.findFirst).mockResolvedValue({ id: "sess1", userId: "u1" } as any);
+    // findMany is called with orderBy: desc, so the mock returns newest-first —
+    // the route must reverse this back to chronological order for the prompt.
+    vi.mocked(db.chatMessage.findMany).mockResolvedValue([
+      { role: "assistant", content: "third" },
+      { role: "user", content: "second" },
+      { role: "assistant", content: "first" },
+    ] as any);
+    const mockCreate = vi.fn().mockResolvedValue({
+      content: [{ type: "text", text: "Hi" }],
+      stop_reason: "end_turn",
+      usage: { input_tokens: 10, output_tokens: 5 },
+    });
+    vi.mocked(getAnthropicClient).mockReturnValue({ messages: { create: mockCreate } } as any);
+
+    await POST(makeReq({ message: "newest", sessionId: "sess1" }));
+
+    const [callArg] = mockCreate.mock.calls[0];
+    const contents = callArg.messages.map((m: { content: string }) => m.content);
+    expect(contents).toEqual(["first", "second", "third", "newest"]);
+  });
+
   it("uses the business profile's industry description in the system prompt instead of a hardcoded trade", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
     vi.mocked(db.businessProfile.findFirst).mockResolvedValue({ industryDescription: "HVAC servicing" } as any);

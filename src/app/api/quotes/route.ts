@@ -8,7 +8,7 @@ export async function GET() {
   const user = await requireRole(["admin", "director", "sales_engineer"]).catch(() => null);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const quotes = await db.quote.findMany({ orderBy: { createdAt: "desc" } });
+  const quotes = await db.quote.findMany({ orderBy: { createdAt: "desc" }, take: 200 });
 
   return NextResponse.json(quotes.map((q) => ({ ...q, totalAmount: q.totalAmount.toNumber() })));
 }

@@ -109,11 +109,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Chat session not found" }, { status: 404 });
   }
 
-  const history = await db.chatMessage.findMany({
+  // Capped to the most recent messages, not the session's full history — an
+  // uncapped fetch here would mean token cost (and DB read size) grows with
+  // every message added to a long-running session, forever. Fetched newest
+  // first so the cap keeps the *most recent* messages, then reversed back to
+  // chronological order for the prompt.
+  const CHAT_HISTORY_LIMIT = 20;
+  const recentHistory = await db.chatMessage.findMany({
     where: { sessionId: session.id },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: "desc" },
+    take: CHAT_HISTORY_LIMIT,
     select: { role: true, content: true },
   });
+  const history = recentHistory.reverse();
 
   const messages: Anthropic.MessageParam[] = [
     ...history.map((h) => ({ role: h.role as "user" | "assistant", content: h.content })),

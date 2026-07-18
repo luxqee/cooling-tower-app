@@ -21,6 +21,7 @@ export default async function CustomersPage() {
       _count: { select: { jobs: true } },
     },
     orderBy: { name: "asc" },
+    take: 200,
   });
 
   const rows = customers.map((c) => ({

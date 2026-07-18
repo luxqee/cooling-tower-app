@@ -10,6 +10,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const entries = await db.materialEntry.findMany({
     where: { jobId: params.id },
     orderBy: { createdAt: "desc" },
+    take: 200,
   });
 
   return NextResponse.json(

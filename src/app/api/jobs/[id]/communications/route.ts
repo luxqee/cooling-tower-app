@@ -21,6 +21,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const communications = await db.jobCommunication.findMany({
       where: { jobId, type: "field_instruction" },
       orderBy: { createdAt: "desc" },
+      take: 200,
     });
     return NextResponse.json(communications);
   }
@@ -29,6 +30,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     where: { jobId },
     orderBy: { createdAt: "desc" },
     include: { author: { select: { name: true } } },
+    take: 200,
   });
   return NextResponse.json(communications);
 }
