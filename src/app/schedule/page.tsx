@@ -23,7 +23,15 @@ export default async function SchedulePage({
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     const assignments = await db.assignment.findMany({
-      where: { userId: user.id, assignedDate: { gte: today, lt: tomorrow } },
+      where: {
+        userId: user.id,
+        OR: [
+          // Single-day assignment exactly today
+          { assignedDate: { gte: today, lt: tomorrow }, endDate: null },
+          // Multi-day assignment that spans today
+          { assignedDate: { lte: today }, endDate: { gte: today } },
+        ],
+      },
       include: {
         job: {
           select: {
@@ -80,7 +88,19 @@ export default async function SchedulePage({
 
   const [assignments, technicians, jobs] = await Promise.all([
     db.assignment.findMany({
-      where: { assignedDate: { gte: monday, lt: weekEnd } },
+      // Overlap with the displayed week, not just "starts within it" — a
+      // multi-day assignment that began the previous week but is still
+      // ongoing (endDate on/after Monday) must still show up, or the grid
+      // silently drops anyone whose assignment started before the week
+      // being viewed. Single-day assignments (endDate: null) only need
+      // their one assignedDate to fall in-week.
+      where: {
+        assignedDate: { lt: weekEnd },
+        OR: [
+          { endDate: { gte: monday } },
+          { endDate: null, assignedDate: { gte: monday } },
+        ],
+      },
       include: {
         user: { select: { id: true, name: true, role: true } },
         job: {

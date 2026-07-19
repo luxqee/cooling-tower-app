@@ -31,7 +31,11 @@ export type UserRole = (typeof ALL_ROLES)[number];
 // `PAGE_ACCESS.x.includes(...)` call site.
 export const PAGE_ACCESS: Record<string, readonly UserRole[]> = {
   jobs: ["director", "service_manager", "admin", "sales_engineer"],
-  timeTracking: ["director", "service_manager", "technician"],
+  // Directors never get job assignments in this app's model (see prisma/seed.ts's
+  // comment on why assignments only ever go to technicians/service managers),
+  // so /time-tracking can never show them anything to clock into — hidden from
+  // their nav entirely rather than showing a permanently-empty page.
+  timeTracking: ["service_manager", "technician"],
   variations: ["director", "admin"],
   variationsSubmit: ["technician"],
   team: ["director", "service_manager"],

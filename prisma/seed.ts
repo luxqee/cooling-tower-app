@@ -475,12 +475,12 @@ async function main() {
       // demo clock-in/out against. Sarah's original 2-day stint is unchanged.
       { userId: jakeId,  jobId: "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6", assignedDate: d("2026-07-07T00:00:00Z"), endDate: d("2026-07-19T00:00:00Z") },
       { userId: sarahId, jobId: "1e8e4c27-feb5-47fa-811b-d68bc2b3c8a6", assignedDate: d("2026-07-07T00:00:00Z"), endDate: d("2026-07-08T00:00:00Z") },
-      // Incitec — upcoming Thu 10 Jul
-      { userId: sarahId, jobId: "ef78d400-db40-4b4c-96fb-819ed060aa34", assignedDate: d("2026-07-10T00:00:00Z") },
-      { userId: mikeId,  jobId: "ef78d400-db40-4b4c-96fb-819ed060aa34", assignedDate: d("2026-07-10T00:00:00Z") },
-      // QAL — upcoming Mon 14 Jul
-      { userId: jakeId, jobId: "cb4aef5a-a7e8-4411-bd89-a9b9e086bfce", assignedDate: d("2026-07-14T00:00:00Z"), endDate: d("2026-07-15T00:00:00Z") },
-      { userId: mikeId, jobId: "cb4aef5a-a7e8-4411-bd89-a9b9e086bfce", assignedDate: d("2026-07-14T00:00:00Z"), endDate: d("2026-07-15T00:00:00Z") },
+      // Incitec — upcoming Fri 24 Jul
+      { userId: sarahId, jobId: "ef78d400-db40-4b4c-96fb-819ed060aa34", assignedDate: d("2026-07-24T00:00:00Z") },
+      { userId: mikeId,  jobId: "ef78d400-db40-4b4c-96fb-819ed060aa34", assignedDate: d("2026-07-24T00:00:00Z") },
+      // QAL — upcoming Thu 30 Jul
+      { userId: jakeId, jobId: "cb4aef5a-a7e8-4411-bd89-a9b9e086bfce", assignedDate: d("2026-07-30T00:00:00Z"), endDate: d("2026-07-31T00:00:00Z") },
+      { userId: mikeId, jobId: "cb4aef5a-a7e8-4411-bd89-a9b9e086bfce", assignedDate: d("2026-07-30T00:00:00Z"), endDate: d("2026-07-31T00:00:00Z") },
       // Rio Tinto — earlier quarterly inspection, 1 day, Sarah
       { userId: sarahId, jobId: "518fcc62-0409-4f47-960b-844b0732dcef", assignedDate: d("2026-05-20T00:00:00Z") },
       // Glencore — contract-commencement service, 2 days, Jake + Mike
@@ -1412,7 +1412,7 @@ async function main() {
   console.log("   GitHub                → first sign-in auto-creates a new user via the Clerk webhook, role defaults");
   console.log("                            to technician, name is pulled from your GitHub profile. Nothing to seed —");
   console.log("                            just sign in once, then change the role in /team if it doesn't come through as \"Luke Herod\".");
-  console.log("\n📋 Jobs (11 — 5 complete, 2 active, 3 scheduled, 1 cancelled), spanning 5 May – 28 Jul:");
+  console.log("\n📋 Jobs (11 — 5 complete, 2 active, 3 scheduled, 1 cancelled), spanning 5 May – 31 Jul:");
   console.log("   COMPLETE  — Rio Tinto Weipa Annual Service      (10 Jun) → INV-2026-0001 PAID  $8,900");
   console.log("   COMPLETE  — Rio Tinto Weipa Quarterly Insp.     (20 May) → INV-2026-0003 PAID  $1,360");
   console.log("   COMPLETE  — BHP Hay Point Quarterly Inspection  (22 Jun) → INV-2026-0002 SENT  $3,363");
@@ -1421,8 +1421,8 @@ async function main() {
   console.log("   COMPLETE  — Glencore Mt Isa contract-start visit (5 May) → INV-2026-0004 SENT  $6,950");
   console.log("   ACTIVE    — Glencore Mt Isa Annual Service      (7 Jul)  → Jake clocked in now");
   console.log("   ACTIVE    — Stanwell Power Station 2nd visit    (16 Jul) → Mike clocked in now");
-  console.log("   SCHEDULED — Incitec Pivot Gibson Island         → Thu 10 Jul");
-  console.log("   SCHEDULED — Queensland Alumina Gladstone        → Mon 14 Jul");
+  console.log("   SCHEDULED — Incitec Pivot Gibson Island         → Fri 24 Jul");
+  console.log("   SCHEDULED — Queensland Alumina Gladstone        → Thu 30 Jul");
   console.log("   SCHEDULED — Capricorn Minerals Boyne Island     → Tue 28 Jul (new customer, first job)");
   console.log("\n🆕 Full feature coverage:");
   console.log("   Communication log  — 9 entries across 6 jobs");
