@@ -1,12 +1,28 @@
 import type { ReactElement, ReactNode } from "react";
+import Link from "next/link";
+
+const LINK_PATTERN = /^\[([^\]]+)\]\(([^)]+)\)$/;
 
 function parseInline(text: string, keyPrefix: string): ReactNode[] {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  const parts = text.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g);
   return parts
     .filter((part) => part.length > 0)
     .map((part, i) => {
       if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
         return <strong key={`${keyPrefix}-b-${i}`}>{part.slice(2, -2)}</strong>;
+      }
+      const linkMatch = part.match(LINK_PATTERN);
+      // Only ever render internal, relative links (e.g. "/jobs/<id>") as
+      // navigable — every quick-action formatter that produces these links
+      // controls both the label and the target itself (no user input flows
+      // into either), but anything not starting with "/" still degrades to
+      // plain text rather than becoming a clickable external/protocol link.
+      if (linkMatch && linkMatch[2].startsWith("/")) {
+        return (
+          <Link key={`${keyPrefix}-a-${i}`} href={linkMatch[2]} className="font-medium text-amber-600 dark:text-amber-400 underline underline-offset-2 hover:no-underline">
+            {linkMatch[1]}
+          </Link>
+        );
       }
       return <span key={`${keyPrefix}-t-${i}`}>{part}</span>;
     });

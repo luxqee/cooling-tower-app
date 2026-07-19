@@ -87,13 +87,14 @@ export async function findAssignments(args: { technicianName?: string; siteId?: 
 
   const assignments = await db.assignment.findMany({
     where,
-    include: { user: { select: { name: true } }, job: { select: { customerName: true, siteName: true } } },
+    include: { user: { select: { name: true } }, job: { select: { id: true, customerName: true, siteName: true } } },
     take: 20,
     orderBy: { assignedDate: "desc" },
   });
 
   return assignments.map((a) => ({
     technicianName: a.user.name,
+    jobId: a.job.id,
     customerName: a.job.customerName,
     siteName: a.job.siteName,
     assignedDate: a.assignedDate.toISOString(),

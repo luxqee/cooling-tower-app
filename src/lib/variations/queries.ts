@@ -6,7 +6,7 @@ export async function getPendingVariations(opts?: { order?: "asc" | "desc"; take
     where: { status: "pending" },
     include: {
       technician: { select: { name: true } },
-      job: { select: { customerName: true, siteName: true } },
+      job: { select: { id: true, customerName: true, siteName: true } },
     },
     orderBy: { submittedAt: opts?.order ?? "asc" },
     ...(opts?.take ? { take: opts.take } : {}),

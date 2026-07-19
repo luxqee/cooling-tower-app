@@ -9,30 +9,36 @@ import { weekStart } from "@/lib/schedule/dateUtils";
 
 const QUICK_ACTION_ROLES = ["director", "service_manager", "admin", "sales_engineer"] as const;
 
+// Every line below links straight to the record it names — [text](/path) is
+// rendered as a real internal <Link> by renderFormattedMessage (see
+// src/lib/chat/formatMessage.tsx), entirely client-side and independent of
+// this being a zero-LLM quick-action in the first place. No AI/token cost
+// either way; this just saves the extra click through a list page.
+
 function formatActiveJobs(jobs: Awaited<ReturnType<typeof getActiveJobs>>): string {
   if (jobs.length === 0) return "No active or scheduled jobs.";
-  const lines = jobs.map((j) => `- **${j.customerName}** — ${j.siteName} (${j.status})`);
+  const lines = jobs.map((j) => `- [${j.customerName} — ${j.siteName}](/jobs/${j.id}) (${j.status})`);
   return ["**Active & scheduled jobs:**", "", ...lines].join("\n");
 }
 
 function formatWeekAssignments(assignments: Awaited<ReturnType<typeof findAssignments>>): string {
   if (assignments.length === 0) return "No assignments this week.";
   const lines = assignments.map(
-    (a) => `- **${a.technicianName}** — ${a.customerName} (${a.siteName}), ${new Date(a.assignedDate).toLocaleDateString("en-AU")}`
+    (a) => `- **${a.technicianName}** — [${a.customerName} (${a.siteName})](/jobs/${a.jobId}), ${new Date(a.assignedDate).toLocaleDateString("en-AU")}`
   );
   return ["**This week's assignments:**", "", ...lines].join("\n");
 }
 
 function formatOverdueJobs(jobs: Awaited<ReturnType<typeof findJobs>>): string {
   if (jobs.length === 0) return "No jobs currently over their quoted hours.";
-  const lines = jobs.map((j) => `- **${j.customerName}** — ${j.siteName} (quoted ${j.quotedHours}h)`);
+  const lines = jobs.map((j) => `- [${j.customerName} — ${j.siteName}](/jobs/${j.id}) (quoted ${j.quotedHours}h)`);
   return ["**Jobs over quoted hours:**", "", ...lines].join("\n");
 }
 
 function formatPendingVariations(variations: Awaited<ReturnType<typeof getPendingVariations>>): string {
   if (variations.length === 0) return "No variations awaiting a decision.";
   const lines = variations.map(
-    (v) => `- **${v.job.customerName}** — ${v.job.siteName}: ${v.description} ($${v.costEstimate.toNumber().toFixed(0)}, submitted by ${v.technician.name})`
+    (v) => `- [${v.job.customerName} — ${v.job.siteName}](/jobs/${v.job.id}): ${v.description} ($${v.costEstimate.toNumber().toFixed(0)}, submitted by ${v.technician.name})`
   );
   return ["**Variations awaiting your decision:**", "", ...lines].join("\n");
 }
@@ -40,7 +46,7 @@ function formatPendingVariations(variations: Awaited<ReturnType<typeof getPendin
 function formatUnpaidInvoices(invoices: Awaited<ReturnType<typeof getUnpaidInvoices>>): string {
   if (invoices.length === 0) return "No unpaid invoices — everything sent has been paid.";
   const lines = invoices.map(
-    (i) => `- **${i.invoiceNumber ?? "Draft"}** — ${i.job.customerName} (${i.job.siteName}): $${i.totalAmount.toNumber().toFixed(0)}${i.sentAt ? `, sent ${new Date(i.sentAt).toLocaleDateString("en-AU")}` : ""}`
+    (i) => `- [${i.invoiceNumber ?? "Draft"}](/invoices/${i.id}) — ${i.job.customerName} (${i.job.siteName}): $${i.totalAmount.toNumber().toFixed(0)}${i.sentAt ? `, sent ${new Date(i.sentAt).toLocaleDateString("en-AU")}` : ""}`
   );
   return ["**Unpaid invoices:**", "", ...lines].join("\n");
 }

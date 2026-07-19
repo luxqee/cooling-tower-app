@@ -54,4 +54,24 @@ describe("renderFormattedMessage", () => {
     expect(html).not.toMatch(/<ul[^>]*>/);
     expect(html).toContain("<strong>Job A</strong>");
   });
+
+  it("renders a markdown link to an internal route as a clickable <a>", () => {
+    const html = renderToHtml("- [Glencore — Mt Isa](/jobs/abc123)");
+    expect(html).toContain('href="/jobs/abc123"');
+    expect(html).toContain("Glencore — Mt Isa");
+    expect(html).toMatch(/<a[^>]*>Glencore — Mt Isa<\/a>/);
+  });
+
+  it("renders a link inline alongside other bold/plain text on the same line", () => {
+    const html = renderToHtml("- **INV-2026-0002** — [BHP (Hay Point)](/invoices/inv1): $3,363");
+    expect(html).toContain("<strong>INV-2026-0002</strong>");
+    expect(html).toContain('href="/invoices/inv1"');
+    expect(html).toContain("$3,363");
+  });
+
+  it("does not render a link whose target is not an internal relative path", () => {
+    const html = renderToHtml("- [Click here](https://example.com/evil)");
+    expect(html).not.toContain("<a ");
+    expect(html).toContain("[Click here](https://example.com/evil)");
+  });
 });

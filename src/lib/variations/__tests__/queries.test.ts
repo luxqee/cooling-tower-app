@@ -9,7 +9,7 @@ import { getPendingVariations } from "../queries";
 
 const INCLUDE = {
   technician: { select: { name: true } },
-  job: { select: { customerName: true, siteName: true } },
+  job: { select: { id: true, customerName: true, siteName: true } },
 };
 
 beforeEach(() => vi.clearAllMocks());

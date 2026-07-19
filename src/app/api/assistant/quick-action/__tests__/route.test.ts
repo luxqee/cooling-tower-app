@@ -49,6 +49,7 @@ describe("POST /api/assistant/quick-action", () => {
     const data = await res.json();
     expect(data.reply).toContain("Glencore");
     expect(data.reply).toContain("Mt Isa");
+    expect(data.reply).toContain("(/jobs/j1)");
   });
 
   it("returns a fallback message when there are no active jobs", async () => {
@@ -62,12 +63,13 @@ describe("POST /api/assistant/quick-action", () => {
   it("formats this week's assignments using a computed date range", async () => {
     vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
     vi.mocked(findAssignments).mockResolvedValue([
-      { technicianName: "Jake Morrison", customerName: "Glencore", siteName: "Mt Isa", assignedDate: "2026-07-14T00:00:00.000Z" },
+      { technicianName: "Jake Morrison", jobId: "j1", customerName: "Glencore", siteName: "Mt Isa", assignedDate: "2026-07-14T00:00:00.000Z" },
     ] as any);
     const res = await POST(makeReq({ action: "weekAssignments" }));
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.reply).toContain("Jake Morrison");
+    expect(data.reply).toContain("(/jobs/j1)");
     expect(findAssignments).toHaveBeenCalledWith(
       expect.objectContaining({ dateFrom: expect.any(String), dateTo: expect.any(String) })
     );
@@ -90,6 +92,7 @@ describe("POST /api/assistant/quick-action", () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.reply).toContain("Glencore");
+    expect(data.reply).toContain("(/jobs/j1)");
     expect(findJobs).toHaveBeenCalledWith({ overdueOnly: true });
   });
 
@@ -106,7 +109,7 @@ describe("POST /api/assistant/quick-action", () => {
     vi.mocked(getPendingVariations).mockResolvedValue([
       {
         description: "Replace fan belt", costEstimate: { toNumber: () => 320 },
-        technician: { name: "Jake Morrison" }, job: { customerName: "Glencore", siteName: "Mt Isa" },
+        technician: { name: "Jake Morrison" }, job: { id: "j1", customerName: "Glencore", siteName: "Mt Isa" },
       },
     ] as any);
     const res = await POST(makeReq({ action: "pendingVariations" }));
@@ -115,6 +118,7 @@ describe("POST /api/assistant/quick-action", () => {
     expect(data.reply).toContain("Glencore");
     expect(data.reply).toContain("Jake Morrison");
     expect(data.reply).toContain("320");
+    expect(data.reply).toContain("(/jobs/j1)");
   });
 
   it("returns a fallback message when there are no pending variations", async () => {
@@ -129,7 +133,7 @@ describe("POST /api/assistant/quick-action", () => {
     vi.mocked(requireRole).mockResolvedValue(mockDirector as any);
     vi.mocked(getUnpaidInvoices).mockResolvedValue([
       {
-        invoiceNumber: "INV-2026-0002", totalAmount: { toNumber: () => 3363 },
+        id: "inv1", invoiceNumber: "INV-2026-0002", totalAmount: { toNumber: () => 3363 },
         sentAt: "2026-06-25T00:00:00.000Z", job: { customerName: "BHP", siteName: "Hay Point" },
       },
     ] as any);
@@ -139,6 +143,7 @@ describe("POST /api/assistant/quick-action", () => {
     expect(data.reply).toContain("BHP");
     expect(data.reply).toContain("INV-2026-0002");
     expect(data.reply).toContain("3363");
+    expect(data.reply).toContain("(/invoices/inv1)");
     expect(getUnpaidInvoices).toHaveBeenCalledWith({ take: 20 });
   });
 
