@@ -7,16 +7,26 @@ import { Toaster } from "sonner";
 import { PushRegistrar } from "@/components/PushRegistrar";
 import "./globals.css";
 
-export const metadata: Metadata = {
-  title: "Field Ops | Job & Service Management",
-  description: "Field operations platform for service and maintenance teams",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "Field Ops",
-  },
-};
+import * as Sentry from "@sentry/nextjs";
+
+// A plain `export const metadata` can't include Sentry's trace data — that's
+// generated per-request, so it needs the dynamic generateMetadata() form
+// instead of a static object.
+export function generateMetadata(): Metadata {
+  return {
+    title: "Field Ops | Job & Service Management",
+    description: "Field operations platform for service and maintenance teams",
+    manifest: "/manifest.json",
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "black-translucent",
+      title: "Field Ops",
+    },
+    other: {
+      ...Sentry.getTraceData(),
+    },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#f59e0b",
