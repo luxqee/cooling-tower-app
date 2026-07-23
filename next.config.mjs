@@ -33,15 +33,28 @@ const nextConfig = {
 
 const configWithServiceWorker = withSerwist(nextConfig);
 
-// Inert by default: withSentryConfig's build-time work (source map upload,
-// server/edge instrumentation) needs an auth token to do anything useful,
-// so it's only applied when one is configured. Without SENTRY_AUTH_TOKEN
-// the exported config is exactly configWithServiceWorker, unmodified.
-export default process.env.SENTRY_AUTH_TOKEN
-  ? withSentryConfig(configWithServiceWorker, {
-      org: process.env.SENTRY_ORG,
-      project: process.env.SENTRY_PROJECT,
-      authToken: process.env.SENTRY_AUTH_TOKEN,
-      silent: !process.env.CI,
-    })
-  : configWithServiceWorker;
+// Sentry is actively configured (real DSN, see sentry.*.config.ts) so this
+// wraps unconditionally now — withSentryConfig does more than upload source
+// maps, it's also what makes the App Router's automatic instrumentation
+// (instrumentation.ts's onRequestError) actually register correctly. Without
+// SENTRY_AUTH_TOKEN, the source-map-upload step alone is skipped gracefully
+// (Sentry's own documented behavior) — the rest still applies.
+export default withSentryConfig(configWithServiceWorker, {
+  org: "luke-herod",
+  project: "javascript-nextjs",
+
+  // Only print logs for uploading source maps in CI
+  silent: !process.env.CI,
+
+  // Upload a larger set of source maps for prettier stack traces (increases build time)
+  widenClientFileUpload: true,
+
+  webpack: {
+    // Enables automatic instrumentation of Vercel Cron Monitors. (Does not yet work with App Router route handlers.)
+    automaticVercelMonitors: true,
+    // Tree-shaking options for reducing bundle size
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
+});
