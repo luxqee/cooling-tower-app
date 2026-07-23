@@ -18,14 +18,17 @@ export default clerkMiddleware(
     // Clerk's own guide (clerk.com/docs/security/clerk-csp) recommends this
     // built-in option over hand-writing the CSP header — it already knows its
     // own Frontend API / Cloudflare Turnstile domains. We only extend it with
-    // this app's own third-party origins (Vercel Blob for photos/logos/voice
-    // notes). Non-strict mode (no nonce) so it doesn't force ClerkProvider
-    // into fully dynamic rendering app-wide.
+    // this app's own third-party origins: Vercel Blob (photos/logos/voice
+    // notes) and Sentry's ingest host (added after Sentry activation — without
+    // this, the browser's own CSP silently blocks every client-side error
+    // report, which looks exactly like an ad-blocker but isn't one). Non-strict
+    // mode (no nonce) so it doesn't force ClerkProvider into fully dynamic
+    // rendering app-wide.
     contentSecurityPolicy: {
       directives: {
         "img-src": ["*.public.blob.vercel-storage.com"],
         "media-src": ["*.public.blob.vercel-storage.com"],
-        "connect-src": ["*.public.blob.vercel-storage.com"],
+        "connect-src": ["*.public.blob.vercel-storage.com", "o4511762125357056.ingest.de.sentry.io"],
       },
     },
   }
